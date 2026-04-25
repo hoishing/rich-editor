@@ -1,0 +1,64 @@
+app:
+  commands:
+    - name: save
+      description: Save
+      key: ctrl+s
+    - name: quit_check
+      description: Quit
+      key: ctrl+q
+    - name: open_file_menu
+      description: File menu
+      key: f10
+    - name: open_keybindings
+      description: Keybindings
+      key: ctrl+k
+
+editor:
+  - key: alt+up
+    action: move_line_up
+    description: Move line up
+    show: false
+  - key: alt+down
+    action: move_line_down
+    description: Move line down
+    show: false
+  - key: shift+alt+up
+    action: copy_line_up
+    description: Copy line up
+    show: false
+  - key: shift+alt+down
+    action: copy_line_down
+    description: Copy line down
+    show: false
+  - key: alt+backspace
+    action: delete_word_left
+    description: Delete word left
+    show: false
+  - key: super+shift+left,cmd+shift+left
+    action: cursor_line_start(True)
+    description: Select to line start
+    show: false
+  - key: super+shift+right,cmd+shift+right
+    action: cursor_line_end(True)
+    description: Select to line end
+    show: false
+
+screens:
+  file_menu:
+    - key: escape
+      action: dismiss_none
+      description: Close
+  unsaved_changes:
+    - key: escape
+      action: cancel
+      description: Cancel
+  keybindings:
+    - key: escape
+      action: close
+      description: Close
+    - key: r
+      action: reset
+      description: Reset
+
+key_capture:
+  cancel_key: escape

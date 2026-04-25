@@ -16,6 +16,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Awaitable, Callable
 
+import yaml
 from textual.widgets import DataTable, DirectoryTree, TextArea
 
 ROOT = Path(__file__).resolve().parent
@@ -54,8 +55,9 @@ mod = SimpleNamespace(
 def _fresh_env() -> tuple[Path, Path]:
     """Create an isolated tmpdir + redirect riched's config + reset globals."""
     tmp = Path(tempfile.mkdtemp(prefix="riched-e2e-"))
-    cfg = tmp / "keybindings.json"
+    cfg = tmp / "keybindings.yaml"
     keybindings.CONFIG_PATH = cfg
+    keybindings.LEGACY_CONFIG_PATH = tmp / "keybindings.json"
     syntax_mod.reset_ts_registration()
     return tmp, cfg
 
@@ -307,7 +309,7 @@ async def test_keybindings_default_load_no_file() -> None:
     assert mod.load_bindings() == mod.DEFAULT_BINDINGS
 
 
-async def test_keybindings_corrupt_json_fallback() -> None:
+async def test_keybindings_corrupt_yaml_fallback() -> None:
     _, cfg = _fresh_env()
     cfg.parent.mkdir(parents=True, exist_ok=True)
     cfg.write_text("{not valid")
@@ -320,9 +322,19 @@ async def test_keybindings_persist_roundtrip() -> None:
     m["save"] = "ctrl+w"
     mod.save_bindings(m)
     assert mod.load_bindings()["save"] == "ctrl+w"
-    data = json.loads(cfg.read_text())
+    data = yaml.safe_load(cfg.read_text())
     assert data["save"] == "ctrl+w"
     assert data["quit_check"] == "ctrl+q"
+
+
+async def test_keybindings_legacy_json_migrates_to_yaml() -> None:
+    tmp, cfg = _fresh_env()
+    legacy = tmp / "keybindings.json"
+    legacy.write_text(json.dumps({"save": "ctrl+w"}))
+    assert mod.load_bindings()["save"] == "ctrl+w"
+    data = yaml.safe_load(cfg.read_text())
+    assert data["save"] == "ctrl+w", data
+    assert data["quit_check"] == "ctrl+q", data
 
 
 async def test_custom_bindings_active_in_app() -> None:
@@ -376,7 +388,7 @@ async def test_keybindings_edit_via_capture_screen_persists_to_disk() -> None:
         await pilot.press("ctrl+w")
         await pilot.pause()
         assert isinstance(app.screen, mod.KeybindingsScreen)
-    data = json.loads(cfg.read_text())
+    data = yaml.safe_load(cfg.read_text())
     assert data["save"] == "ctrl+w", data
     # Other defaults preserved.
     assert data["quit_check"] == "ctrl+q"
@@ -413,7 +425,7 @@ async def test_keybindings_reset_to_defaults() -> None:
         await pilot.pause()
         await pilot.press("r")
         await pilot.pause()
-    data = json.loads(cfg.read_text())
+    data = yaml.safe_load(cfg.read_text())
     assert data == mod.DEFAULT_BINDINGS, data
 
 
@@ -521,6 +533,62 @@ async def test_alt_backspace_deletes_word_left() -> None:
         assert text.startswith("hello world"), repr(text)
 
 
+async def test_cmd_shift_left_selects_to_line_start() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "select.txt"
+    f.write_text("hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 5))
+        await pilot.pause()
+        await pilot.press("cmd+shift+left")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 0), editor.cursor_location
+        assert editor.selection.start == (0, 5), editor.selection
+        assert editor.selection.end == (0, 0), editor.selection
+
+
+async def test_cmd_shift_right_selects_to_line_end() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "select.txt"
+    f.write_text("hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 5))
+        await pilot.pause()
+        await pilot.press("cmd+shift+right")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 11), editor.cursor_location
+        assert editor.selection.start == (0, 5), editor.selection
+        assert editor.selection.end == (0, 11), editor.selection
+
+
+async def test_super_shift_line_selection_aliases() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "select.txt"
+    f.write_text("hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 5))
+        await pilot.pause()
+        await pilot.press("super+shift+left")
+        await pilot.pause()
+        assert editor.selection.start == (0, 5), editor.selection
+        assert editor.selection.end == (0, 0), editor.selection
+        editor.move_cursor((0, 5))
+        await pilot.pause()
+        await pilot.press("super+shift+right")
+        await pilot.pause()
+        assert editor.selection.start == (0, 5), editor.selection
+        assert editor.selection.end == (0, 11), editor.selection
+
+
 # ---------------------------------------------------------------- runner ----
 
 
@@ -544,8 +612,9 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("syntax: tsx", test_tsx_highlight),
     ("syntax: unknown extension", test_unknown_extension_no_language),
     ("keybindings: default load (no file)", test_keybindings_default_load_no_file),
-    ("keybindings: corrupt JSON fallback", test_keybindings_corrupt_json_fallback),
+    ("keybindings: corrupt YAML fallback", test_keybindings_corrupt_yaml_fallback),
     ("keybindings: persist roundtrip", test_keybindings_persist_roundtrip),
+    ("keybindings: legacy JSON migrates", test_keybindings_legacy_json_migrates_to_yaml),
     ("keybindings: custom binding active", test_custom_bindings_active_in_app),
     ("keybindings: screen opens via Ctrl+K", test_keybindings_screen_opens_via_ctrl_k),
     ("keybindings: edit via capture", test_keybindings_edit_via_capture_screen_persists_to_disk),
@@ -557,6 +626,9 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("editor: copy line down", test_copy_line_down),
     ("editor: copy line up", test_copy_line_up),
     ("editor: alt+backspace deletes word", test_alt_backspace_deletes_word_left),
+    ("editor: cmd+shift+left selects line start", test_cmd_shift_left_selects_to_line_start),
+    ("editor: cmd+shift+right selects line end", test_cmd_shift_right_selects_to_line_end),
+    ("editor: super+shift line selection aliases", test_super_shift_line_selection_aliases),
 ]
 
 

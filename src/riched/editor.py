@@ -1,19 +1,14 @@
 from __future__ import annotations
 
-from textual.binding import Binding
 from textual.widgets import TextArea
+
+from .keybindings import build_static_bindings
 
 
 class RichedTextArea(TextArea):
     """TextArea with VS Code-style line-edit shortcuts."""
 
-    BINDINGS = [
-        Binding("alt+up", "move_line_up", "Move line up", show=False),
-        Binding("alt+down", "move_line_down", "Move line down", show=False),
-        Binding("shift+alt+up", "copy_line_up", "Copy line up", show=False),
-        Binding("shift+alt+down", "copy_line_down", "Copy line down", show=False),
-        Binding("alt+backspace", "delete_word_left", "Delete word left", show=False),
-    ]
+    BINDINGS = build_static_bindings("editor")
 
     def action_move_line_down(self) -> None:
         row, col = self.cursor_location
@@ -54,4 +49,3 @@ class RichedTextArea(TextArea):
         line = self.document.get_line(row)
         self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
         self.move_cursor((row, col))
-

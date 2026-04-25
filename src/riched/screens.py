@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from textual import events
 from textual.app import ComposeResult
-from textual.binding import Binding
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Label, OptionList
@@ -12,6 +11,8 @@ from .keybindings import (
     COMMAND_DESCRIPTIONS,
     COMMANDS,
     DEFAULT_BINDINGS,
+    build_screen_bindings,
+    key_capture_cancel_key,
     save_bindings,
 )
 
@@ -19,7 +20,7 @@ from .keybindings import (
 class FileMenuScreen(ModalScreen[str | None]):
     """Pulldown-style File menu anchored below the File button."""
 
-    BINDINGS = [Binding("escape", "dismiss_none", "Close")]
+    BINDINGS = build_screen_bindings("file_menu")
 
     CSS = """
     FileMenuScreen {
@@ -67,7 +68,7 @@ class FileMenuScreen(ModalScreen[str | None]):
 class UnsavedChangesScreen(ModalScreen[str]):
     """Prompt asking whether to save, discard, or cancel."""
 
-    BINDINGS = [Binding("escape", "cancel", "Cancel")]
+    BINDINGS = build_screen_bindings("unsaved_changes")
 
     CSS = """
     UnsavedChangesScreen {
@@ -141,7 +142,7 @@ class KeyCaptureScreen(ModalScreen[str | None]):
     def on_key(self, event: events.Key) -> None:
         event.stop()
         event.prevent_default()
-        if event.key == "escape":
+        if event.key == key_capture_cancel_key():
             self.dismiss(None)
         else:
             self.dismiss(event.key)
@@ -150,10 +151,7 @@ class KeyCaptureScreen(ModalScreen[str | None]):
 class KeybindingsScreen(ModalScreen[None]):
     """Config page: lists every command and its current key."""
 
-    BINDINGS = [
-        Binding("escape", "close", "Close"),
-        Binding("r", "reset", "Reset"),
-    ]
+    BINDINGS = build_screen_bindings("keybindings")
 
     CSS = """
     KeybindingsScreen {
@@ -246,4 +244,3 @@ class KeybindingsScreen(ModalScreen[None]):
 
     def action_close(self) -> None:
         self.dismiss(None)
-
