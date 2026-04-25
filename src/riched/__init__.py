@@ -1,0 +1,2 @@
+"""Riched package."""
+
