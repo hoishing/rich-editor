@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shortcut config, `bindings.yaml` defines shipped app-owned bindings, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`; `e2e.py` is a compatibility runner. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`; `e2e.py` is a compatibility runner. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
@@ -16,7 +16,7 @@ This repository is a uv-managed Python project for `riched`, a Textual TUI edito
 
 Use Python 3.14-compatible code with type hints, `from __future__ import annotations`, `Path`, and small focused helpers. Use 4-space indentation. Keep constants in `UPPER_SNAKE_CASE`, classes in `PascalCase`, functions and methods in `snake_case`, and private helpers prefixed with `_`. Prefer Textual widgets and events over manual terminal control. Keep comments brief and only for non-obvious behavior.
 
-Keep app-owned key bindings in `src/riched/bindings.yaml`, not hardcoded in Python.
+Keep key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays one user-facing key per binding, preferring `cmd` aliases over `super`.
 
 ## Testing Guidelines
 

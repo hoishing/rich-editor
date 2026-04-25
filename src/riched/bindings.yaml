@@ -9,6 +9,9 @@ app:
     - name: close_buffer
       description: Close buffer
       key: ctrl+w
+    - name: show_keys_popup
+      description: Key bindings
+      key: f1
     - name: toggle_file_tree
       description: Toggle file tree
       key: cmd+b,super+b
@@ -28,11 +31,11 @@ editor:
     action: move_line_down
     description: Move line down
     show: false
-  - key: shift+alt+up
+  - key: alt+shift+up,shift+alt+up
     action: copy_line_up
     description: Copy line up
     show: false
-  - key: shift+alt+down
+  - key: alt+shift+down,shift+alt+down
     action: copy_line_down
     description: Copy line down
     show: false

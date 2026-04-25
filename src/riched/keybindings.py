@@ -68,22 +68,52 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
     groups: list[KeyBindingHelpGroup] = []
 
     app_rows = tuple(
-        (item["key"], item.get("description") or item["name"])
+        (_display_key(item["key"]), item.get("description") or item["name"])
         for item in BINDING_SPEC["app"]["commands"]
     )
     groups.append(KeyBindingHelpGroup("App", app_rows))
 
     editor_rows = tuple(
-        (item["key"], item.get("description") or item["action"])
+        (_display_key(item["key"]), item.get("description") or item["action"])
         for item in BINDING_SPEC["editor"]
     )
     groups.append(KeyBindingHelpGroup("Editor", editor_rows))
 
     for screen, items in BINDING_SPEC["screens"].items():
         rows = tuple(
-            (item["key"], item.get("description") or item["action"])
+            (_display_key(item["key"]), item.get("description") or item["action"])
             for item in items
         )
         groups.append(KeyBindingHelpGroup(f"Screens / {screen}", rows))
 
     return groups
+
+
+def _display_key(key: str) -> str:
+    keys = [part.strip() for part in key.split(",") if part.strip()]
+    if not keys:
+        return key
+
+    without_super = [candidate for candidate in keys if "super" not in candidate]
+    candidates = without_super or keys
+
+    def score(candidate: str) -> tuple[int, int, int]:
+        parts = candidate.split("+")
+        has_cmd = "cmd" in parts
+        preferred_cmd_order = not (
+            "cmd" in parts
+            and "shift" in parts
+            and parts.index("shift") < parts.index("cmd")
+        )
+        preferred_alt_order = not (
+            "alt" in parts
+            and "shift" in parts
+            and parts.index("shift") < parts.index("alt")
+        )
+        return (
+            0 if has_cmd else 1,
+            0 if preferred_cmd_order else 1,
+            0 if preferred_alt_order else 1,
+        )
+
+    return min(candidates, key=score)
