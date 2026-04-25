@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shortcut config, `bindings.yaml` defines shipped app-owned bindings, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `e2e.py`. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shortcut config, `bindings.yaml` defines shipped app-owned bindings, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`; `e2e.py` is a compatibility runner. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
@@ -20,7 +20,7 @@ Keep app-owned key bindings in `src/riched/bindings.yaml`, not hardcoded in Pyth
 
 ## Testing Guidelines
 
-Only add end-to-end tests in `e2e.py`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, keybindings, or syntax highlighting. Use temporary files and isolated config paths as existing tests do.
+Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, keybindings, or syntax highlighting. Use temporary files and isolated config paths as existing tests do.
 
 ## Commit & Pull Request Guidelines
 

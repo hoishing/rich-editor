@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -10,6 +11,42 @@ from textual.widgets import Button, DirectoryTree, Footer, Header, TextArea
 from .editor import RichedTextArea
 from .screens import FileMenuScreen, KeybindingsScreen, UnsavedChangesScreen
 from .syntax import apply_language
+
+
+class RichedDirectoryTree(DirectoryTree):
+    """Directory tree with editor-style keyboard affordances."""
+
+    BINDINGS = [
+        *(binding for binding in DirectoryTree.BINDINGS if binding.key != "space"),
+        Binding("left", "collapse_cursor", "Collapse folder", show=False),
+        Binding("right", "expand_cursor", "Expand folder", show=False),
+        Binding("space", "activate_cursor", "Open file or toggle folder", show=False),
+    ]
+
+    def _cursor_dir_node(self) -> Any | None:
+        node = self.cursor_node
+        if node is None or node.data is None or not node.allow_expand:
+            return None
+        return node
+
+    def action_collapse_cursor(self) -> None:
+        node = self._cursor_dir_node()
+        if node is not None:
+            node.collapse()
+
+    def action_expand_cursor(self) -> None:
+        node = self._cursor_dir_node()
+        if node is not None:
+            node.expand()
+
+    def action_activate_cursor(self) -> None:
+        node = self.cursor_node
+        if node is None:
+            return
+        if node.allow_expand:
+            node.toggle()
+            return
+        self.action_select_cursor()
 
 
 class RichedApp(App):
@@ -70,7 +107,7 @@ class RichedApp(App):
         with Horizontal(id="menubar"):
             yield Button("File", id="file-btn")
         with Horizontal(id="workspace"):
-            yield DirectoryTree(str(self.root), id="file-tree")
+            yield RichedDirectoryTree(str(self.root), id="file-tree")
             yield Container(id="editor-slot")
         yield Footer()
 
@@ -86,6 +123,18 @@ class RichedApp(App):
         editors = list(self.query("#editor"))
         return editors[0] if editors else None
 
+    def _file_tree(self) -> DirectoryTree:
+        return self.query_one("#file-tree", DirectoryTree)
+
+    def _is_file_tree_visible(self) -> bool:
+        return self._file_tree().styles.display != "none"
+
+    def _show_file_tree(self) -> None:
+        self._file_tree().styles.display = "block"
+
+    def _hide_file_tree(self) -> None:
+        self._file_tree().styles.display = "none"
+
     def _get_or_create_editor(self) -> TextArea:
         editor = self._editor_or_none()
         if editor is not None:
@@ -99,7 +148,8 @@ class RichedApp(App):
         self.path = None
         self.sub_title = ""
         self._saved_text = ""
-        self.query_one("#file-tree", DirectoryTree).focus()
+        self._show_file_tree()
+        self._file_tree().focus()
 
     def _open_path(self, path: Path) -> None:
         self.path = path.expanduser()
@@ -217,3 +267,26 @@ class RichedApp(App):
                 self._close_buffer()
 
         self.push_screen(UnsavedChangesScreen(), handle)
+
+    def action_toggle_file_tree(self) -> None:
+        editor = self._editor_or_none()
+        if self._is_file_tree_visible():
+            if editor is None:
+                return
+            self._hide_file_tree()
+            editor.focus()
+            return
+        self._show_file_tree()
+
+    def action_toggle_file_tree_focus(self) -> None:
+        tree = self._file_tree()
+        if not self._is_file_tree_visible():
+            self._show_file_tree()
+            tree.focus()
+            return
+        editor = self._editor_or_none()
+        if tree.has_focus:
+            if editor is not None:
+                editor.focus()
+            return
+        tree.focus()

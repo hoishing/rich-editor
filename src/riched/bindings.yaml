@@ -15,6 +15,12 @@ app:
     - name: open_keybindings
       description: Keybindings
       key: ctrl+k
+    - name: toggle_file_tree
+      description: Toggle file tree
+      key: cmd+b,super+b
+    - name: toggle_file_tree_focus
+      description: Toggle file tree focus
+      key: cmd+shift+e,shift+cmd+e,super+shift+e,shift+super+e
 
 editor:
   - key: alt+up
