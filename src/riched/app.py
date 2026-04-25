@@ -1,16 +1,33 @@
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from textual.app import App, ComposeResult
+from textual import events
+from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
+from textual.command import CommandPalette
 from textual.containers import Container, Horizontal
-from textual.widgets import Button, DirectoryTree, Footer, Header, TextArea
+from textual.screen import Screen
+from textual.widgets import DirectoryTree, Footer, Header, Static, TextArea
 
 from .editor import RichedTextArea
-from .screens import FileMenuScreen, KeybindingsScreen, UnsavedChangesScreen
+from .screens import KeysHelpScreen, QuickOpenScreen, UnsavedChangesScreen
+from .settings import load_theme, save_theme
 from .syntax import apply_language
+
+FILE_TREE_DEFAULT_WIDTH = 30
+FILE_TREE_MIN_WIDTH = 18
+FILE_TREE_MAX_WIDTH = 44
+QUICK_OPEN_SKIP_DIRS = {
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+}
 
 
 class RichedDirectoryTree(DirectoryTree):
@@ -49,24 +66,54 @@ class RichedDirectoryTree(DirectoryTree):
         self.action_select_cursor()
 
 
+class FileTreeResizeHandle(Static):
+    """Mouse handle for resizing the file tree."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("", id="file-tree-resize-handle")
+        self._drag_start_x: int | None = None
+        self._drag_start_width: int | None = None
+
+    def on_mouse_down(self, event: events.MouseDown) -> None:
+        if event.button != 1 or event.screen_x is None:
+            return
+        tree = self.app.query_one("#file-tree", DirectoryTree)
+        self._drag_start_x = int(event.screen_x)
+        self._drag_start_width = tree.region.width
+        self.capture_mouse()
+        self.add_class("dragging")
+        event.stop()
+        event.prevent_default()
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        if self._drag_start_x is None or self._drag_start_width is None:
+            return
+        if event.screen_x is None:
+            return
+        delta = int(event.screen_x) - self._drag_start_x
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.set_file_tree_width(self._drag_start_width + delta)
+        event.stop()
+        event.prevent_default()
+
+    def on_mouse_up(self, event: events.MouseUp) -> None:
+        if self._drag_start_x is None:
+            return
+        self._drag_start_x = None
+        self._drag_start_width = None
+        self.release_mouse()
+        self.remove_class("dragging")
+        event.stop()
+        event.prevent_default()
+
+
 class RichedApp(App):
     """TUI text editor with a project file tree."""
 
     CSS = """
-    #menubar {
-        height: 1;
-        background: $panel;
-    }
-    #file-btn {
-        min-width: 8;
-        height: 1;
-        border: none;
-        background: $panel;
-        color: $text;
-    }
-    #file-btn:hover {
-        background: $accent;
-    }
     #workspace {
         height: 1fr;
     }
@@ -74,7 +121,17 @@ class RichedApp(App):
         width: 30;
         min-width: 18;
         max-width: 44;
-        border-right: solid $panel;
+    }
+    #file-tree-resize-handle {
+        width: 1;
+        min-width: 1;
+        max-width: 1;
+        height: 1fr;
+        background: $panel;
+    }
+    #file-tree-resize-handle:hover,
+    #file-tree-resize-handle.dragging {
+        background: $accent;
     }
     #editor {
         height: 1fr;
@@ -91,28 +148,47 @@ class RichedApp(App):
     def __init__(
         self,
         path: Path,
-        bindings_map: dict[str, str],
         root: Path | None = None,
     ) -> None:
         super().__init__()
+        saved_theme = load_theme()
+        if saved_theme in self.available_themes:
+            self.theme = saved_theme
+        self.watch(self, "theme", self._save_theme, init=False)
         initial_path = path.expanduser()
         self._initial_path = None if initial_path.is_dir() else initial_path
         self.path: Path | None = self._initial_path
         self.root = root or Path.cwd()
         self._saved_text = ""
-        self._bindings_map = bindings_map
+
+    def _save_theme(self, theme: str) -> None:
+        try:
+            save_theme(theme)
+        except Exception as exc:
+            self.notify(f"Could not save theme: {exc}", severity="warning")
+
+    def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        for command in super().get_system_commands(screen):
+            if command.title == "Keys":
+                yield SystemCommand(
+                    "Keys",
+                    "Show key bindings",
+                    self.action_show_keys_popup,
+                )
+                continue
+            yield command
 
     def compose(self) -> ComposeResult:
         yield Header()
-        with Horizontal(id="menubar"):
-            yield Button("File", id="file-btn")
         with Horizontal(id="workspace"):
             yield RichedDirectoryTree(str(self.root), id="file-tree")
+            yield FileTreeResizeHandle()
             yield Container(id="editor-slot")
         yield Footer()
 
     def on_mount(self) -> None:
         self.title = "riched"
+        self.set_file_tree_width(FILE_TREE_DEFAULT_WIDTH)
         if self._initial_path is None:
             self.sub_title = ""
             self.query_one("#file-tree", DirectoryTree).focus()
@@ -126,20 +202,31 @@ class RichedApp(App):
     def _file_tree(self) -> DirectoryTree:
         return self.query_one("#file-tree", DirectoryTree)
 
+    def _file_tree_resize_handle(self) -> Static:
+        return self.query_one("#file-tree-resize-handle", Static)
+
     def _is_file_tree_visible(self) -> bool:
         return self._file_tree().styles.display != "none"
 
     def _show_file_tree(self) -> None:
         self._file_tree().styles.display = "block"
+        self._file_tree_resize_handle().styles.display = "block"
 
     def _hide_file_tree(self) -> None:
         self._file_tree().styles.display = "none"
+        self._file_tree_resize_handle().styles.display = "none"
+
+    def set_file_tree_width(self, width: int) -> None:
+        clamped_width = max(FILE_TREE_MIN_WIDTH, min(FILE_TREE_MAX_WIDTH, width))
+        tree = self._file_tree()
+        tree.styles.width = clamped_width
+        tree.refresh(layout=True)
 
     def _get_or_create_editor(self) -> TextArea:
         editor = self._editor_or_none()
         if editor is not None:
             return editor
-        editor = RichedTextArea.code_editor(id="editor")
+        editor = RichedTextArea.code_editor(id="editor", theme="css")
         self.query_one("#editor-slot", Container).mount(editor)
         return editor
 
@@ -175,10 +262,6 @@ class RichedApp(App):
         editor = self._editor_or_none()
         return self.path is not None and editor is not None and editor.text != self._saved_text
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        if event.button.id == "file-btn":
-            self.action_open_file_menu()
-
     def on_directory_tree_file_selected(
         self, event: DirectoryTree.FileSelected
     ) -> None:
@@ -206,19 +289,45 @@ class RichedApp(App):
 
         self.push_screen(UnsavedChangesScreen(), handle)
 
-    def action_open_file_menu(self) -> None:
-        def handle(choice: str | None) -> None:
-            if choice == "save":
-                self.action_save()
-            elif choice == "quit":
-                self.action_quit_check()
-            elif choice == "keybindings":
-                self.action_open_keybindings()
+    def _quick_open_files(self) -> list[Path]:
+        root = self.root.expanduser()
+        files: list[Path] = []
+        stack = [root]
+        while stack:
+            directory = stack.pop()
+            try:
+                entries = sorted(directory.iterdir(), key=lambda path: path.name.lower())
+            except OSError:
+                continue
+            for entry in entries:
+                try:
+                    if entry.is_dir():
+                        if entry.name not in QUICK_OPEN_SKIP_DIRS and not entry.is_symlink():
+                            stack.append(entry)
+                    elif entry.is_file():
+                        files.append(entry)
+                except OSError:
+                    continue
+        return sorted(files, key=lambda path: path.relative_to(root).as_posix().lower())
 
-        self.push_screen(FileMenuScreen(), handle)
+    def action_quick_open(self) -> None:
+        def handle(selected: Path | None) -> None:
+            if selected is not None:
+                self._switch_path(selected)
 
-    def action_open_keybindings(self) -> None:
-        self.push_screen(KeybindingsScreen(self._bindings_map))
+        self.push_screen(
+            QuickOpenScreen(self.root.expanduser(), self._quick_open_files()),
+            handle,
+        )
+
+    def action_toggle_command_palette(self) -> None:
+        if CommandPalette.is_open(self):
+            self.pop_screen()
+            return
+        self.action_command_palette()
+
+    def action_show_keys_popup(self) -> None:
+        self.push_screen(KeysHelpScreen())
 
     def action_save(self) -> None:
         if self.path is None:

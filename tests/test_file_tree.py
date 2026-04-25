@@ -6,26 +6,6 @@ from textual.widgets import DirectoryTree, TextArea
 
 from .helpers import _fresh_env, _make_app, mod
 
-# ------------------------------------------------------------- file menu ----
-
-
-async def test_file_menu_opens_via_f10_and_save_works() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "menu.txt"
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        app.query_one("#editor", TextArea).load_text("via menu")
-        await pilot.pause()
-        await pilot.press("f10")
-        await pilot.pause()
-        assert isinstance(app.screen, mod.FileMenuScreen)
-        # OptionList is focused; first option ("Save") highlighted by default.
-        await pilot.press("enter")
-        await pilot.pause()
-    assert f.read_text() == "via menu"
-
-
 # --------------------------------------------------------------- file tree --
 
 
@@ -76,5 +56,4 @@ async def test_file_tree_dirty_switch_prompts_then_discard_opens_file() -> None:
         assert editor.text == "second", repr(editor.text)
         assert app.path == second, app.path
     assert first.read_text() == "first"
-
 

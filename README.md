@@ -1,7 +1,7 @@
 # rich-editor
 
-`riched` is a Textual TUI editor with syntax highlighting, configurable
-shortcuts, and a project file tree.
+`riched` is a Textual TUI editor with syntax highlighting and a project file
+tree.
 
 ## Usage
 
@@ -15,14 +15,7 @@ uv run ./e2e.py
 
 ## Key Bindings
 
-Default app-owned bindings live in `src/riched/bindings.yaml`. User overrides
-are saved to `~/.config/riched/keybindings.yaml`. Older
-`~/.config/riched/keybindings.json` files are migrated when YAML config does not
-already exist.
-
-The in-app keybinding screen edits user-facing app commands such as save, quit,
-file menu, and keybindings. Internal editor and modal bindings also come from
-the shipped YAML file.
+Shipped key bindings live in `src/riched/bindings.yaml`.
 
 ## Ghostty Cmd-Shift Selection
 

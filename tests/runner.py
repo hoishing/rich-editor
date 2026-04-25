@@ -37,21 +37,9 @@ from .test_file_io import (
     test_save_writes_file,
 )
 from .test_file_tree import (
-    test_file_menu_opens_via_f10_and_save_works,
     test_file_tree_dirty_switch_prompts_then_discard_opens_file,
     test_file_tree_is_rooted_at_project_dir,
     test_file_tree_switch_opens_selected_file,
-)
-from .test_keybindings import (
-    test_custom_bindings_active_in_app,
-    test_keybindings_capture_escape_cancels,
-    test_keybindings_corrupt_yaml_fallback,
-    test_keybindings_default_load_no_file,
-    test_keybindings_edit_via_capture_screen_persists_to_disk,
-    test_keybindings_legacy_json_migrates_to_yaml,
-    test_keybindings_persist_roundtrip,
-    test_keybindings_reset_to_defaults,
-    test_keybindings_screen_opens_via_ctrl_k,
 )
 from .test_syntax import (
     test_python_highlight,
@@ -81,7 +69,6 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         "close buffer dirty: Space discard enters no-buffer state",
         test_close_buffer_dirty_space_discard_enters_no_buffer_state,
     ),
-    ("file menu via F10 + Save", test_file_menu_opens_via_f10_and_save_works),
     ("file tree: rooted at project dir", test_file_tree_is_rooted_at_project_dir),
     ("file tree: switch opens file", test_file_tree_switch_opens_selected_file),
     (
@@ -92,15 +79,6 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("syntax: typescript", test_typescript_highlight),
     ("syntax: tsx", test_tsx_highlight),
     ("syntax: unknown extension", test_unknown_extension_no_language),
-    ("keybindings: default load (no file)", test_keybindings_default_load_no_file),
-    ("keybindings: corrupt YAML fallback", test_keybindings_corrupt_yaml_fallback),
-    ("keybindings: persist roundtrip", test_keybindings_persist_roundtrip),
-    ("keybindings: legacy JSON migrates", test_keybindings_legacy_json_migrates_to_yaml),
-    ("keybindings: custom binding active", test_custom_bindings_active_in_app),
-    ("keybindings: screen opens via Ctrl+K", test_keybindings_screen_opens_via_ctrl_k),
-    ("keybindings: edit via capture", test_keybindings_edit_via_capture_screen_persists_to_disk),
-    ("keybindings: capture escape cancels", test_keybindings_capture_escape_cancels),
-    ("keybindings: reset to defaults", test_keybindings_reset_to_defaults),
     ("editor: move line down", test_move_line_down),
     ("editor: move line up", test_move_line_up),
     ("editor: move line at boundaries no-op", test_move_line_at_boundaries_is_noop),

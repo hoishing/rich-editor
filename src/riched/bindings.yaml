@@ -9,18 +9,15 @@ app:
     - name: close_buffer
       description: Close buffer
       key: ctrl+w
-    - name: open_file_menu
-      description: File menu
-      key: f10
-    - name: open_keybindings
-      description: Keybindings
-      key: ctrl+k
     - name: toggle_file_tree
       description: Toggle file tree
       key: cmd+b,super+b
     - name: toggle_file_tree_focus
       description: Toggle file tree focus
       key: cmd+shift+e,shift+cmd+e,super+shift+e,shift+super+e
+    - name: quick_open
+      description: Quick open
+      key: cmd+p,super+p
 
 editor:
   - key: alt+up
@@ -65,21 +62,15 @@ editor:
     show: false
 
 screens:
-  file_menu:
-    - key: escape
-      action: dismiss_none
-      description: Close
   unsaved_changes:
     - key: escape
       action: cancel
       description: Cancel
-  keybindings:
+  quick_open:
     - key: escape
       action: close
       description: Close
-    - key: r
-      action: reset
-      description: Reset
-
-key_capture:
-  cancel_key: escape
+  keys_help:
+    - key: escape
+      action: close
+      description: Close

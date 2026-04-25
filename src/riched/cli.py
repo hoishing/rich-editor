@@ -4,7 +4,7 @@ import argparse
 from pathlib import Path
 
 from .app import RichedApp
-from .keybindings import build_bindings, load_bindings
+from .keybindings import build_bindings
 
 
 def main() -> int:
@@ -16,10 +16,9 @@ def main() -> int:
 
     path = Path(args.filename).expanduser()
     root = path if path.is_dir() else Path.cwd()
-    bindings_map = load_bindings()
 
     class ConfiguredRichedApp(RichedApp):
-        BINDINGS = build_bindings(bindings_map)
+        BINDINGS = build_bindings()
 
-    ConfiguredRichedApp(path, bindings_map, root).run()
+    ConfiguredRichedApp(path, root).run()
     return 0

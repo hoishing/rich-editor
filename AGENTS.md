@@ -16,11 +16,11 @@ This repository is a uv-managed Python project for `riched`, a Textual TUI edito
 
 Use Python 3.14-compatible code with type hints, `from __future__ import annotations`, `Path`, and small focused helpers. Use 4-space indentation. Keep constants in `UPPER_SNAKE_CASE`, classes in `PascalCase`, functions and methods in `snake_case`, and private helpers prefixed with `_`. Prefer Textual widgets and events over manual terminal control. Keep comments brief and only for non-obvious behavior.
 
-Keep app-owned key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. User overrides are stored at `~/.config/riched/keybindings.yaml`; legacy JSON config is migrated on load.
+Keep app-owned key bindings in `src/riched/bindings.yaml`, not hardcoded in Python.
 
 ## Testing Guidelines
 
-Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, keybindings, or syntax highlighting. Use temporary files and isolated config paths as existing tests do.
+Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, or syntax highlighting. Use temporary files as existing tests do.
 
 ## Commit & Pull Request Guidelines
 
