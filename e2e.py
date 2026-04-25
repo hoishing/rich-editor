@@ -598,6 +598,27 @@ async def test_copy_line_up() -> None:
         assert editor.cursor_location == (1, 2), editor.cursor_location
 
 
+async def test_undo_multiline_insert_that_removes_scrollbar() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "undo.txt"
+    original = "\n".join(f"line {index}" for index in range(35))
+    f.write_text(original)
+    app = _make_app(f)
+    async with app.run_test(size=(180, 51)) as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((34, 0))
+        await pilot.pause()
+        inserted = "\n" + "\n".join(f"added {index}" for index in range(14)) + " tail"
+        editor.insert(inserted, maintain_selection_offset=False)
+        await pilot.pause()
+        assert editor.document.line_count == 49, editor.document.line_count
+        await pilot.press("ctrl+z")
+        await pilot.pause()
+        assert editor.text == original, repr(editor.text)
+        assert editor.cursor_location == (34, 0), editor.cursor_location
+
+
 async def test_alt_backspace_deletes_word_left() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "words.txt"
@@ -847,6 +868,10 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("editor: move line at boundaries no-op", test_move_line_at_boundaries_is_noop),
     ("editor: copy line down", test_copy_line_down),
     ("editor: copy line up", test_copy_line_up),
+    (
+        "editor: undo multiline insert that removes scrollbar",
+        test_undo_multiline_insert_that_removes_scrollbar,
+    ),
     ("editor: alt+backspace deletes word", test_alt_backspace_deletes_word_left),
     (
         "editor: alt+shift arrows select word",

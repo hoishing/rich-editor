@@ -10,6 +10,23 @@ class RichedTextArea(TextArea):
 
     BINDINGS = build_static_bindings("editor")
 
+    def _clamp_location(self, location: tuple[int, int]) -> tuple[int, int]:
+        row, column = location
+        row = max(0, min(row, self.document.line_count - 1))
+        column = max(0, min(column, len(self.document.get_line(row))))
+        return row, column
+
+    def _clamp_selection(self) -> None:
+        start, end = self.selection
+        clamped_start = self._clamp_location(start)
+        clamped_end = self._clamp_location(end)
+        if (clamped_start, clamped_end) != (start, end):
+            self.selection = type(self.selection)(clamped_start, clamped_end)
+
+    def _refresh_size(self) -> None:
+        self._clamp_selection()
+        super()._refresh_size()
+
     def _line_selection_end(self, row: int) -> tuple[int, int]:
         if row + 1 < self.document.line_count:
             return (row + 1, 0)
