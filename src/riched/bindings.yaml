@@ -6,6 +6,9 @@ app:
     - name: quit_check
       description: Quit
       key: ctrl+q
+    - name: close_buffer
+      description: Close buffer
+      key: ctrl+w
     - name: open_file_menu
       description: File menu
       key: f10
@@ -34,11 +37,23 @@ editor:
     action: delete_word_left
     description: Delete word left
     show: false
-  - key: super+shift+left,cmd+shift+left
+  - key: alt+shift+left,shift+alt+left
+    action: cursor_word_left(True)
+    description: Select word left
+    show: false
+  - key: alt+shift+right,shift+alt+right
+    action: cursor_word_right(True)
+    description: Select word right
+    show: false
+  - key: super+l,cmd+l
+    action: select_line
+    description: Select line
+    show: false
+  - key: shift+super+left,super+shift+left,shift+cmd+left,cmd+shift+left
     action: cursor_line_start(True)
     description: Select to line start
     show: false
-  - key: super+shift+right,cmd+shift+right
+  - key: shift+super+right,super+shift+right,shift+cmd+right,cmd+shift+right
     action: cursor_line_end(True)
     description: Select to line end
     show: false

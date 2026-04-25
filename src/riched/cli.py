@@ -15,7 +15,7 @@ def main() -> int:
     args = parser.parse_args()
 
     path = Path(args.filename).expanduser()
-    root = Path.cwd()
+    root = path if path.is_dir() else Path.cwd()
     bindings_map = load_bindings()
 
     class ConfiguredRichedApp(RichedApp):
@@ -23,4 +23,3 @@ def main() -> int:
 
     ConfiguredRichedApp(path, bindings_map, root).run()
     return 0
-

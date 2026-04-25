@@ -75,7 +75,7 @@ class UnsavedChangesScreen(ModalScreen[str]):
         align: center middle;
     }
     UnsavedChangesScreen > #dialog {
-        width: 50;
+        width: 64;
         height: auto;
         padding: 1 2;
         background: $panel;
@@ -105,6 +105,13 @@ class UnsavedChangesScreen(ModalScreen[str]):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id or "cancel")
+
+    def on_key(self, event: events.Key) -> None:
+        focused = self.focused
+        if event.key == "space" and isinstance(focused, Button):
+            event.stop()
+            event.prevent_default()
+            focused.action_press()
 
     def action_cancel(self) -> None:
         self.dismiss("cancel")

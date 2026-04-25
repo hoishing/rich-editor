@@ -17,7 +17,7 @@ from types import SimpleNamespace
 from typing import Awaitable, Callable
 
 import yaml
-from textual.widgets import DataTable, DirectoryTree, TextArea
+from textual.widgets import Button, DataTable, DirectoryTree, TextArea
 
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
@@ -103,6 +103,25 @@ async def test_open_missing_file() -> None:
         assert not f.exists()
 
 
+async def test_open_directory_starts_with_no_buffer() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "file.txt"
+    f.write_text("content")
+    app = _make_app(tmp, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        tree = app.query_one("#file-tree", DirectoryTree)
+        assert Path(tree.path) == tmp, tree.path
+        assert app.path is None, app.path
+        assert not list(app.query("#editor"))
+
+        app._switch_path(f)
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        assert app.path == f, app.path
+        assert editor.text == "content", repr(editor.text)
+
+
 async def test_save_writes_file() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "out.txt"
@@ -179,6 +198,69 @@ async def test_quit_dirty_discard_keeps_file() -> None:
         await pilot.pause()
         await pilot.click("#discard")
         await pilot.pause()
+    assert f.read_text() == "orig"
+
+
+async def test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "clean-close.txt"
+    f.write_text("foo")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await pilot.press("ctrl+w")
+        await pilot.pause()
+        assert app.path is None, app.path
+        assert not list(app.query("#editor"))
+
+
+async def test_close_buffer_dirty_shows_wide_modal_then_cancel() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "dirty-close.txt"
+    f.write_text("orig")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#editor", TextArea).load_text("changed")
+        await pilot.pause()
+        await pilot.press("ctrl+w")
+        await pilot.pause()
+        assert isinstance(app.screen, mod.UnsavedChangesScreen)
+        dialog = app.screen.query_one("#dialog")
+        buttons = list(app.screen.query("Button"))
+        assert dialog.region.width >= 64, dialog.region
+        assert buttons, "expected confirmation buttons"
+        assert all(
+            button.region.x + button.region.width <= dialog.region.x + dialog.region.width
+            for button in buttons
+        ), [(button.id, button.region) for button in buttons]
+        await pilot.click("#cancel")
+        await pilot.pause()
+        assert not isinstance(app.screen, mod.UnsavedChangesScreen)
+        assert app.path == f, app.path
+        assert app.query_one("#editor", TextArea).text == "changed"
+    assert f.read_text() == "orig"
+
+
+async def test_close_buffer_dirty_space_discard_enters_no_buffer_state() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "dirty-discard-close.txt"
+    f.write_text("orig")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#editor", TextArea).load_text("changed")
+        await pilot.pause()
+        await pilot.press("ctrl+w")
+        await pilot.pause()
+        assert isinstance(app.screen, mod.UnsavedChangesScreen)
+        app.screen.query_one("#discard", Button).focus()
+        await pilot.pause()
+        await pilot.press("space")
+        await pilot.pause()
+        assert not isinstance(app.screen, mod.UnsavedChangesScreen)
+        assert app.path is None, app.path
+        assert not list(app.query("#editor"))
     assert f.read_text() == "orig"
 
 
@@ -319,38 +401,38 @@ async def test_keybindings_corrupt_yaml_fallback() -> None:
 async def test_keybindings_persist_roundtrip() -> None:
     _, cfg = _fresh_env()
     m = dict(mod.DEFAULT_BINDINGS)
-    m["save"] = "ctrl+w"
+    m["save"] = "ctrl+g"
     mod.save_bindings(m)
-    assert mod.load_bindings()["save"] == "ctrl+w"
+    assert mod.load_bindings()["save"] == "ctrl+g"
     data = yaml.safe_load(cfg.read_text())
-    assert data["save"] == "ctrl+w"
+    assert data["save"] == "ctrl+g"
     assert data["quit_check"] == "ctrl+q"
 
 
 async def test_keybindings_legacy_json_migrates_to_yaml() -> None:
     tmp, cfg = _fresh_env()
     legacy = tmp / "keybindings.json"
-    legacy.write_text(json.dumps({"save": "ctrl+w"}))
-    assert mod.load_bindings()["save"] == "ctrl+w"
+    legacy.write_text(json.dumps({"save": "ctrl+g"}))
+    assert mod.load_bindings()["save"] == "ctrl+g"
     data = yaml.safe_load(cfg.read_text())
-    assert data["save"] == "ctrl+w", data
+    assert data["save"] == "ctrl+g", data
     assert data["quit_check"] == "ctrl+q", data
 
 
 async def test_custom_bindings_active_in_app() -> None:
     tmp, _ = _fresh_env()
     m = dict(mod.DEFAULT_BINDINGS)
-    m["save"] = "ctrl+w"
+    m["save"] = "ctrl+g"
     mod.save_bindings(m)
     f = tmp / "custom.txt"
     app = _make_app(f, mod.load_bindings())
     async with app.run_test() as pilot:
         await pilot.pause()
-        app.query_one("#editor", TextArea).load_text("via ctrl+w")
+        app.query_one("#editor", TextArea).load_text("via ctrl+g")
         await pilot.pause()
-        await pilot.press("ctrl+w")
+        await pilot.press("ctrl+g")
         await pilot.pause()
-    assert f.read_text() == "via ctrl+w"
+    assert f.read_text() == "via ctrl+g"
 
 
 # ---------------------------------------------------- keybindings (UI) -----
@@ -385,11 +467,11 @@ async def test_keybindings_edit_via_capture_screen_persists_to_disk() -> None:
         await pilot.press("enter")
         await pilot.pause()
         assert isinstance(app.screen, mod.KeyCaptureScreen), type(app.screen).__name__
-        await pilot.press("ctrl+w")
+        await pilot.press("ctrl+g")
         await pilot.pause()
         assert isinstance(app.screen, mod.KeybindingsScreen)
     data = yaml.safe_load(cfg.read_text())
-    assert data["save"] == "ctrl+w", data
+    assert data["save"] == "ctrl+g", data
     # Other defaults preserved.
     assert data["quit_check"] == "ctrl+q"
 
@@ -533,6 +615,106 @@ async def test_alt_backspace_deletes_word_left() -> None:
         assert text.startswith("hello world"), repr(text)
 
 
+async def test_alt_shift_arrows_select_word_left_and_right() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "words.txt"
+    f.write_text("alpha beta gamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 10))
+        await pilot.pause()
+        await pilot.press("alt+shift+left")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 6), editor.cursor_location
+        assert editor.selection.start == (0, 10), editor.selection
+        assert editor.selection.end == (0, 6), editor.selection
+        assert editor.selected_text == "beta", repr(editor.selected_text)
+
+        editor.move_cursor((0, 6))
+        await pilot.pause()
+        await pilot.press("alt+shift+right")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 10), editor.cursor_location
+        assert editor.selection.start == (0, 6), editor.selection
+        assert editor.selection.end == (0, 10), editor.selection
+        assert editor.selected_text == "beta", repr(editor.selected_text)
+
+
+async def test_cmd_l_selects_current_line_with_newline() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma\n")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 2))
+        await pilot.pause()
+        await pilot.press("cmd+l")
+        await pilot.pause()
+        assert editor.selection.start == (1, 0), editor.selection
+        assert editor.selection.end == (2, 0), editor.selection
+        assert editor.cursor_location == (2, 0), editor.cursor_location
+        assert editor.selected_text == "beta\n", repr(editor.selected_text)
+
+
+async def test_cmd_l_repeats_expand_line_selection() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma\n")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 3))
+        await pilot.pause()
+        await pilot.press("cmd+l")
+        await pilot.pause()
+        await pilot.press("cmd+l")
+        await pilot.pause()
+        assert editor.selection.start == (0, 0), editor.selection
+        assert editor.selection.end == (2, 0), editor.selection
+        assert editor.cursor_location == (2, 0), editor.cursor_location
+        assert editor.selected_text == "alpha\nbeta\n", repr(editor.selected_text)
+
+
+async def test_super_l_selects_current_line_alias() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\n")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 1))
+        await pilot.pause()
+        await pilot.press("super+l")
+        await pilot.pause()
+        assert editor.selection.start == (0, 0), editor.selection
+        assert editor.selection.end == (1, 0), editor.selection
+        assert editor.selected_text == "alpha\n", repr(editor.selected_text)
+
+
+async def test_cmd_l_selects_final_line_without_newline() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((2, 2))
+        await pilot.pause()
+        await pilot.press("cmd+l")
+        await pilot.pause()
+        assert editor.selection.start == (2, 0), editor.selection
+        assert editor.selection.end == (2, 5), editor.selection
+        assert editor.cursor_location == (2, 5), editor.cursor_location
+        assert editor.selected_text == "gamma", repr(editor.selected_text)
+
+
 async def test_cmd_shift_left_selects_to_line_start() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "select.txt"
@@ -589,17 +771,57 @@ async def test_super_shift_line_selection_aliases() -> None:
         assert editor.selection.end == (0, 11), editor.selection
 
 
+async def test_parser_order_super_shift_line_selection_aliases() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "select.txt"
+    f.write_text("  hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 8))
+        await pilot.pause()
+        await pilot.press("shift+super+left")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 2), editor.cursor_location
+        assert editor.selection.start == (0, 8), editor.selection
+        assert editor.selection.end == (0, 2), editor.selection
+        assert editor.selected_text == "hello ", repr(editor.selected_text)
+
+        editor.move_cursor((0, 5))
+        await pilot.pause()
+        await pilot.press("shift+super+right")
+        await pilot.pause()
+        assert editor.cursor_location == (0, 13), editor.cursor_location
+        assert editor.selection.start == (0, 5), editor.selection
+        assert editor.selection.end == (0, 13), editor.selection
+        assert editor.selected_text == "lo world", repr(editor.selected_text)
+
+
 # ---------------------------------------------------------------- runner ----
 
 
 TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("open existing file", test_open_existing_file),
     ("open missing file", test_open_missing_file),
+    ("open directory starts with no buffer", test_open_directory_starts_with_no_buffer),
     ("save writes file", test_save_writes_file),
     ("quit clean exits", test_quit_clean_exits),
     ("quit dirty: modal + cancel", test_quit_dirty_shows_modal_then_cancel),
     ("quit dirty: save writes & exits", test_quit_dirty_save_writes_and_exits),
     ("quit dirty: discard keeps file", test_quit_dirty_discard_keeps_file),
+    (
+        "close buffer clean enters no-buffer state via Ctrl+W",
+        test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
+    ),
+    (
+        "close buffer dirty: wide modal + cancel",
+        test_close_buffer_dirty_shows_wide_modal_then_cancel,
+    ),
+    (
+        "close buffer dirty: Space discard enters no-buffer state",
+        test_close_buffer_dirty_space_discard_enters_no_buffer_state,
+    ),
     ("file menu via F10 + Save", test_file_menu_opens_via_f10_and_save_works),
     ("file tree: rooted at project dir", test_file_tree_is_rooted_at_project_dir),
     ("file tree: switch opens file", test_file_tree_switch_opens_selected_file),
@@ -626,9 +848,24 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("editor: copy line down", test_copy_line_down),
     ("editor: copy line up", test_copy_line_up),
     ("editor: alt+backspace deletes word", test_alt_backspace_deletes_word_left),
+    (
+        "editor: alt+shift arrows select word",
+        test_alt_shift_arrows_select_word_left_and_right,
+    ),
+    ("editor: cmd+l selects current line", test_cmd_l_selects_current_line_with_newline),
+    ("editor: cmd+l repeats expand line selection", test_cmd_l_repeats_expand_line_selection),
+    ("editor: super+l selects current line alias", test_super_l_selects_current_line_alias),
+    (
+        "editor: cmd+l selects final line without newline",
+        test_cmd_l_selects_final_line_without_newline,
+    ),
     ("editor: cmd+shift+left selects line start", test_cmd_shift_left_selects_to_line_start),
     ("editor: cmd+shift+right selects line end", test_cmd_shift_right_selects_to_line_end),
     ("editor: super+shift line selection aliases", test_super_shift_line_selection_aliases),
+    (
+        "editor: parser-order super+shift line selection aliases",
+        test_parser_order_super_shift_line_selection_aliases,
+    ),
 ]
 
 

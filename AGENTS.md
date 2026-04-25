@@ -29,3 +29,4 @@ Use concise imperative commit messages, for example `Add file tree` or `Refactor
 ## Agent-Specific Instructions
 
 Prefer `uv` for Python tasks. Keep changes scoped to requested behavior. Update `AGENTS.md` when commands, structure, or testing policy changes.
+Never change Ghostty settings or configuration, even when investigating Command-key behavior; only document suggested user-side settings when explicitly asked.
