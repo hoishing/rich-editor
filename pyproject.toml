@@ -1,6 +1,6 @@
 [project]
 name = "riched"
-version = "0.2.2"
+version = "0.3.0"
 description = "TUI editor with VSCode keybindigs"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,6 +9,9 @@ dependencies = [
     "textual[syntax]>=8.2.4",
     "tree-sitter-typescript>=0.23.2",
 ]
+
+[project.urls]
+Repository = "https://github.com/hoishing/riched"
 
 [project.scripts]
 riched = "riched.cli:main"

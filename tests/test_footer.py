@@ -18,7 +18,7 @@ async def test_footer_uses_macos_modifier_symbols() -> None:
             for child in footer.children
             if hasattr(child, "key_display")
         }
-        assert labels["Save"] == "⌃S"
+        assert labels["Save"] == "⌘S"
         assert labels["Close buffer"] == "⌃W"
         assert labels["Toggle file tree"] == "⌘B"
         assert labels["Quick open"] == "⌘P"

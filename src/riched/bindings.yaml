@@ -2,7 +2,7 @@ app:
   commands:
     - name: save
       description: Save
-      key: ctrl+s
+      key: cmd+s,super+s
     - name: quit_check
       description: Quit
       key: ctrl+q

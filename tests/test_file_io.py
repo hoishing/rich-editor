@@ -58,7 +58,6 @@ async def test_save_writes_file() -> None:
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("typed content")
         await pilot.pause()
-        await pilot.press("ctrl+s")
+        await pilot.press("cmd+s")
         await pilot.pause()
     assert f.read_text() == "typed content"
-

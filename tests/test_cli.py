@@ -20,3 +20,21 @@ async def test_version_flag_prints_current_version() -> None:
     assert result.returncode == 0, result.stderr
     assert result.stdout == f"riched {version('riched')}\n", result.stdout
     assert result.stderr == "", result.stderr
+
+
+async def test_version_flag_rejects_filename() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from riched.cli import main; raise SystemExit(main())",
+            "--version",
+            "notes.txt",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 2, result.stdout
+    assert result.stdout == "", result.stdout
+    assert "riched --version does not take arguments" in result.stderr, result.stderr

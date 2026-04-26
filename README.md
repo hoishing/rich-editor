@@ -44,7 +44,7 @@ App shortcuts:
 
 | Shortcut | Action |
 | --- | --- |
-| `⌃S` | Save |
+| `⌘S` | Save |
 | `⌃Q` | Quit |
 | `⌃W` | Close buffer |
 | `F1` | Key bindings |
@@ -80,6 +80,13 @@ config directory: `~/Library/Application Support/riched/settings.yaml`
 - File search prefers git-indexed files when available, follows symlinked files and directories, skips cache/build dependency folders, and caps indexing at 10,000 files.
 - Fuzzy ranking now prioritizes exact path and filename matches such as `.zshrc`.
 
-## Won't Implemented
+## Limitations
 
-`riched` will not implement key bindings that require users to modify the Ghostty terminal configuration, since terminal-specific configuration makes shortcuts harder to document, test, and support consistently across environments.
+- `riched` does not support multi-cursor editing because Textual `TextArea`
+  currently models one active cursor/selection.
+- Some Command-key shortcuts can conflict with Ghostty or terminal-level
+  bindings, for example `⌘⇧P`, `⌘W`, and `⌘Q`.
+- `riched` will not implement key bindings that require users to modify the
+  Ghostty terminal configuration, since terminal-specific configuration makes
+  shortcuts harder to document, test, and support consistently across
+  environments.
