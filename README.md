@@ -1,5 +1,7 @@
 # Riched
 
+> TUI editor tailored for VSCode keybindigs in Ghostty terminal
+
 `riched` is a TUI editor powered by the [Rich](https://github.com/Textualize/rich) package and the [Textual](https://github.com/Textualize/textual) framework, the name is a nod to Rich.
 
 > [!NOTE]
@@ -9,10 +11,11 @@
 
 ## Key Features
 
+- VS Code-style text editing key bindings
 - Syntax highlighting
 - Resizable project file tree
-- Quick open with git-aware indexing, fuzzy matching, symlink traversal, and bounded large-folder scanning
-- VS Code-style text editing key bindings
+- Quick open with git-aware indexing, bounded large-folder scanning
+- fuzzy matching, symlink traversal
 
 ## Usage
 
