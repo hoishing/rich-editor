@@ -1,6 +1,6 @@
 # Riched
 
-[Rich](https://github.com/Textualize/rich) powered editor, so the name `riched`, that implement vscode keybinding in TUI with best effort.
+A [rich](https://github.com/Textualize/rich) framework-powered editor(hence the name `riched`) that implements VS Code keybindings in a TUI to the best extent possible.
 
 > [!NOTE]
 > `riched` is designed to work with [ghostty](https://ghostty.org) in macOS only
@@ -38,7 +38,6 @@ App shortcuts:
 | Shortcut | Action |
 | --- | --- |
 | `⌘S` | Save |
-| `⌃Q` | Quit |
 | `F1` | Command palette |
 | `⌘B` | Toggle file tree |
 | `⌘P` | Quick open |
@@ -67,24 +66,14 @@ Editor shortcuts:
 
 ## Settings
 
-`riched` persists the selected Textual theme in `settings.yaml` under the user
-config directory: `~/Library/Application Support/riched/settings.yaml`
-
-## Release Notes
-
-### 0.2.0
-
-- Quick open now opens immediately while indexing in the background.
-- File search prefers git-indexed files when available, follows symlinked files and directories, skips cache/build dependency folders, and caps indexing at 10,000 files.
-- Fuzzy ranking now prioritizes exact path and filename matches such as `.zshrc`.
+`riched` persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/riched/settings.yaml`
 
 ## Limitations
 
 - `riched` does not support multi-cursor editing because Textual `TextArea`
   currently models one active cursor/selection.
 - Some Command-key shortcuts can conflict with Ghostty or terminal-level
-  bindings, for example `⌘C`, `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⌫`,
-  `⌘Z`, `⌘⇧Z`, `⌘⇧P`, `⌘W`, and `⌘Q`.
+  bindings, for example `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
 - `riched` will not implement key bindings that require users to modify the
   Ghostty terminal configuration, since terminal-specific configuration makes
   shortcuts harder to document, test, and support consistently across

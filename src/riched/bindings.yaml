@@ -3,9 +3,6 @@ app:
     - name: save
       description: Save
       key: cmd+s,super+s
-    - name: quit_check
-      description: Quit
-      key: ctrl+q
     - name: command_palette
       description: Command palette
       key: f1

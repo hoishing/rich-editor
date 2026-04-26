@@ -7,7 +7,7 @@ from .helpers import _fresh_env, _make_app, mod
 # ----------------------------------------------------------- quit + dirty ---
 
 
-async def test_quit_clean_exits() -> None:
+async def test_ctrl_q_does_not_quit() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "clean.txt"
     f.write_text("foo")
@@ -16,7 +16,8 @@ async def test_quit_clean_exits() -> None:
         await pilot.pause()
         await pilot.press("ctrl+q")
         await pilot.pause()
-    # If the app didn't exit, run_test would never return — reaching here is the assertion.
+        assert app.path == f, app.path
+        assert list(app.query("#editor"))
 
 
 async def test_quit_dirty_shows_modal_then_cancel() -> None:
@@ -28,7 +29,9 @@ async def test_quit_dirty_shows_modal_then_cancel() -> None:
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("changed")
         await pilot.pause()
-        await pilot.press("ctrl+q")
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
         await pilot.pause()
         assert isinstance(app.screen, mod.UnsavedChangesScreen)
         await pilot.click("#cancel")
@@ -46,7 +49,9 @@ async def test_quit_dirty_save_writes_and_exits() -> None:
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("new content")
         await pilot.pause()
-        await pilot.press("ctrl+q")
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
         await pilot.pause()
         assert isinstance(app.screen, mod.UnsavedChangesScreen)
         await pilot.click("#save")
@@ -63,7 +68,9 @@ async def test_quit_dirty_discard_keeps_file() -> None:
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("changed")
         await pilot.pause()
-        await pilot.press("ctrl+q")
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
         await pilot.pause()
         await pilot.click("#discard")
         await pilot.pause()
