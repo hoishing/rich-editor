@@ -1,6 +1,6 @@
 # Riched
 
-A [rich](https://github.com/Textualize/rich) framework-powered editor(hence the name `riched`) that implements VS Code keybindings in a TUI to the best extent possible.
+A [rich](https://github.com/Textualize/rich) library powered editor(hence the name `riched`) that implements VS Code keybindings in TUI
 
 > [!NOTE]
 > `riched` is designed to work with [ghostty](https://ghostty.org) in macOS only

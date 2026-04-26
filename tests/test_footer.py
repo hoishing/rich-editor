@@ -23,3 +23,4 @@ async def test_footer_uses_macos_modifier_symbols() -> None:
         assert labels["Command palette"] == "F1"
         assert labels["Toggle file tree"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
+        assert not footer.query(".-command-palette")

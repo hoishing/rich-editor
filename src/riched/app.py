@@ -235,7 +235,7 @@ class RichedApp(App):
             yield RichedDirectoryTree(str(self.root), id="file-tree")
             yield FileTreeResizeHandle()
             yield Container(id="editor-slot")
-        yield Footer()
+        yield Footer(show_command_palette=False)
 
     def on_mount(self) -> None:
         self.title = "riched"
