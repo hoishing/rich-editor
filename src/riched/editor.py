@@ -94,3 +94,6 @@ class RichedTextArea(TextArea):
         line = self.document.get_line(row)
         self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
         self.move_cursor((row, col))
+
+    def action_ignore(self) -> None:
+        pass

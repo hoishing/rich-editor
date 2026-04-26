@@ -62,6 +62,7 @@ Editor shortcuts:
 | `⌥⇧←` | Select word left |
 | `⌥⇧→` | Select word right |
 | `⌘L` | Select line |
+| `⌘⇧K` | Delete line |
 | `⌘⇧←` | Select to line start |
 | `⌘⇧→` | Select to line end |
 

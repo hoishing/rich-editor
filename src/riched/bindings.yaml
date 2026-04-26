@@ -52,6 +52,14 @@ editor:
     action: select_line
     description: Select line
     show: false
+  - key: cmd+shift+k,shift+cmd+k,super+shift+k,shift+super+k
+    action: delete_line
+    description: Delete line
+  - key: ctrl+shift+k,shift+ctrl+k
+    action: ignore
+    description: Ignore inherited delete line
+    show: false
+    help: false
   - key: shift+super+left,super+shift+left,shift+cmd+left,cmd+shift+left
     action: cursor_line_start(True)
     description: Select to line start

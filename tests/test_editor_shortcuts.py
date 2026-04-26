@@ -229,6 +229,54 @@ async def test_cmd_l_selects_final_line_without_newline() -> None:
         assert editor.selected_text == "gamma", repr(editor.selected_text)
 
 
+async def test_cmd_shift_k_deletes_current_line() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 2))
+        await pilot.pause()
+        await pilot.press("cmd+shift+k")
+        await pilot.pause()
+        assert editor.text == "alpha\ngamma", repr(editor.text)
+        assert editor.cursor_location == (1, 2), editor.cursor_location
+
+
+async def test_super_shift_k_deletes_current_line_alias() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 2))
+        await pilot.pause()
+        await pilot.press("super+shift+k")
+        await pilot.pause()
+        assert editor.text == "alpha\ngamma", repr(editor.text)
+        assert editor.cursor_location == (1, 2), editor.cursor_location
+
+
+async def test_ctrl_shift_k_does_not_delete_current_line() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\nbeta\ngamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 2))
+        await pilot.pause()
+        await pilot.press("ctrl+shift+k")
+        await pilot.pause()
+        assert editor.text == "alpha\nbeta\ngamma", repr(editor.text)
+        assert editor.cursor_location == (1, 2), editor.cursor_location
+
+
 async def test_cmd_shift_left_selects_to_line_start() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "select.txt"

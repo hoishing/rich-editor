@@ -76,6 +76,7 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
     editor_rows = tuple(
         (_display_key(item["key"]), item.get("description") or item["action"])
         for item in BINDING_SPEC["editor"]
+        if item.get("help", True)
     )
     groups.append(KeyBindingHelpGroup("Editor", editor_rows))
 

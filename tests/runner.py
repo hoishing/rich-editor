@@ -23,8 +23,10 @@ from .test_editor_shortcuts import (
     test_cmd_l_repeats_expand_line_selection,
     test_cmd_l_selects_current_line_with_newline,
     test_cmd_l_selects_final_line_without_newline,
+    test_cmd_shift_k_deletes_current_line,
     test_cmd_shift_left_selects_to_line_start,
     test_cmd_shift_right_selects_to_line_end,
+    test_ctrl_shift_k_does_not_delete_current_line,
     test_copy_line_down,
     test_copy_line_up,
     test_move_line_at_boundaries_is_noop,
@@ -32,6 +34,7 @@ from .test_editor_shortcuts import (
     test_move_line_up,
     test_parser_order_super_shift_line_selection_aliases,
     test_super_l_selects_current_line_alias,
+    test_super_shift_k_deletes_current_line_alias,
     test_super_shift_line_selection_aliases,
     test_undo_multiline_insert_that_removes_scrollbar,
 )
@@ -144,6 +147,15 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "editor: cmd+l selects final line without newline",
         test_cmd_l_selects_final_line_without_newline,
+    ),
+    ("editor: cmd+shift+k deletes current line", test_cmd_shift_k_deletes_current_line),
+    (
+        "editor: super+shift+k deletes current line alias",
+        test_super_shift_k_deletes_current_line_alias,
+    ),
+    (
+        "editor: ctrl+shift+k does not delete current line",
+        test_ctrl_shift_k_does_not_delete_current_line,
     ),
     ("editor: cmd+shift+left selects line start", test_cmd_shift_left_selects_to_line_start),
     ("editor: cmd+shift+right selects line end", test_cmd_shift_right_selects_to_line_end),

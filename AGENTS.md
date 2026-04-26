@@ -15,7 +15,7 @@ This repository is a uv-managed Python project for `riched`, a Textual TUI edito
 
 ## Coding Style & Naming Conventions
 
-Use Python 3.14-compatible code with type hints, `from __future__ import annotations`, `Path`, and small focused helpers. Use 4-space indentation. Keep constants in `UPPER_SNAKE_CASE`, classes in `PascalCase`, functions and methods in `snake_case`, and private helpers prefixed with `_`. Prefer Textual widgets and events over manual terminal control. Keep comments brief and only for non-obvious behavior.
+Use Python 3.12-compatible code with type hints, `from __future__ import annotations`, `Path`, and small focused helpers. Use 4-space indentation. Keep constants in `UPPER_SNAKE_CASE`, classes in `PascalCase`, functions and methods in `snake_case`, and private helpers prefixed with `_`. Prefer Textual widgets and events over manual terminal control. Keep comments brief and only for non-obvious behavior.
 
 Keep key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays one user-facing key per binding, preferring `cmd` aliases over `super`.
 

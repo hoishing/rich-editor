@@ -1,9 +1,9 @@
 [project]
 name = "riched"
-version = "0.2.0"
-description = "A Textual TUI editor"
+version = "0.2.1"
+description = "TUI editor with VSCode keybindigs"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.12"
 dependencies = [
     "pyyaml>=6.0.3",
     "textual[syntax]>=8.2.4",
