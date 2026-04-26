@@ -8,6 +8,7 @@ from .test_command_palette import (
     test_command_palette_button_is_hidden,
     test_command_palette_omits_maximize,
 )
+from .test_cli import test_version_flag_prints_current_version
 from .test_dirty_buffers import (
     test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
     test_close_buffer_dirty_shows_wide_modal_then_cancel,
@@ -72,6 +73,7 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("open missing file", test_open_missing_file),
     ("open directory starts with no buffer", test_open_directory_starts_with_no_buffer),
     ("save writes file", test_save_writes_file),
+    ("cli: version flag prints current version", test_version_flag_prints_current_version),
     ("command palette: button hidden", test_command_palette_button_is_hidden),
     ("command palette: omit maximize", test_command_palette_omits_maximize),
     ("quit clean exits", test_quit_clean_exits),

@@ -1,6 +1,6 @@
 # Riched
 
-> TUI editor tailored for VSCode keybindigs in Ghostty terminal
+> TUI editor with VSCode keybindigs
 
 `riched` is a TUI editor powered by the [Rich](https://github.com/Textualize/rich) package and the [Textual](https://github.com/Textualize/textual) framework, the name is a nod to Rich.
 
@@ -22,6 +22,7 @@
 ```sh
 uv tool install riched
 riched .
+riched --version
 ```
 
 ## Dev

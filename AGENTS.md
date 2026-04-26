@@ -9,7 +9,7 @@ This repository is a uv-managed Python project for `riched`, a Textual TUI edito
 - `uv sync`: install project dependencies from `pyproject.toml` and `uv.lock`.
 - `uv run riched path/to/file.txt`: open or create a file in the editor.
 - `uv run python -m tests.runner`: run the Textual Pilot end-to-end suite.
-- `uv build`: build the source distribution and wheel in `dist/`.
+- `rm -rf dist && uv build`: clear stale artifacts, then build the source distribution and wheel in `dist/`.
 - `set -a; source .env; set +a; uv publish --token "$PYPI_API"`: publish built distributions for a release using the PyPI API key from `.env`.
 - `uv add <package>`: add runtime dependencies; do not use `pip`.
 
