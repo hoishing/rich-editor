@@ -47,6 +47,16 @@ from .test_file_tree import (
     test_file_tree_switch_opens_selected_file,
 )
 from .test_footer import test_footer_uses_macos_modifier_symbols
+from .test_quick_open import (
+    test_quick_open_exact_hidden_filename_match_wins,
+    test_quick_open_fallback_follows_symlinks,
+    test_quick_open_fallback_limit_is_visible,
+    test_quick_open_fallback_indexes_by_directory_level,
+    test_quick_open_fallback_skips_heavy_directories,
+    test_quick_open_git_index_limit_is_visible,
+    test_quick_open_git_index_respects_excludes,
+    test_quick_open_screen_opens_before_indexing_completes,
+)
 from .test_syntax import (
     test_python_highlight,
     test_tsx_highlight,
@@ -82,6 +92,32 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "file tree: dirty switch prompts then discard",
         test_file_tree_dirty_switch_prompts_then_discard_opens_file,
+    ),
+    (
+        "quick open: screen opens before indexing completes",
+        test_quick_open_screen_opens_before_indexing_completes,
+    ),
+    (
+        "quick open: fallback skips heavy directories",
+        test_quick_open_fallback_skips_heavy_directories,
+    ),
+    (
+        "quick open: fallback indexes by directory level",
+        test_quick_open_fallback_indexes_by_directory_level,
+    ),
+    (
+        "quick open: fallback follows symlinks",
+        test_quick_open_fallback_follows_symlinks,
+    ),
+    (
+        "quick open: git index respects excludes",
+        test_quick_open_git_index_respects_excludes,
+    ),
+    ("quick open: git index limit is visible", test_quick_open_git_index_limit_is_visible),
+    ("quick open: fallback limit is visible", test_quick_open_fallback_limit_is_visible),
+    (
+        "quick open: exact hidden filename match wins",
+        test_quick_open_exact_hidden_filename_match_wins,
     ),
     ("footer: macOS modifier symbols", test_footer_uses_macos_modifier_symbols),
     ("syntax: python", test_python_highlight),

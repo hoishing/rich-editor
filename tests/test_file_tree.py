@@ -56,4 +56,3 @@ async def test_file_tree_dirty_switch_prompts_then_discard_opens_file() -> None:
         assert editor.text == "second", repr(editor.text)
         assert app.path == second, app.path
     assert first.read_text() == "first"
-

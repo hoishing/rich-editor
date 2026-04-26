@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from heapq import nsmallest
 from pathlib import Path
 
 from textual import events
@@ -10,6 +11,7 @@ from textual.widgets import Button, Input, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
 from .keybindings import binding_help_groups, build_screen_bindings
+from .quick_open import QuickOpenEntry
 
 MAX_QUICK_OPEN_RESULTS = 100
 
@@ -93,18 +95,27 @@ class QuickOpenScreen(ModalScreen[Path | None]):
     }
     """
 
-    def __init__(self, root: Path, files: list[Path]) -> None:
+    def __init__(
+        self,
+        root: Path,
+        entries: list[QuickOpenEntry],
+        *,
+        indexing: bool,
+        limited: bool,
+    ) -> None:
         super().__init__()
         self.root = root
-        self.files = files
-        self._relative_paths = {
-            path: path.relative_to(root).as_posix() for path in files
-        }
+        self.entries = list(entries)
+        self._indexing = indexing
+        self._limited = limited
+        self._error: str | None = None
         self._option_paths: dict[str, Path] = {}
+        self._query = ""
 
     def compose(self) -> ComposeResult:
         with Vertical(id="dialog"):
             yield Input(placeholder="Quick open", id="query")
+            yield Static("", id="status")
             yield OptionList(id="results")
 
     def on_mount(self) -> None:
@@ -144,7 +155,45 @@ class QuickOpenScreen(ModalScreen[Path | None]):
     def action_close(self) -> None:
         self.dismiss(None)
 
+    def append_entries(
+        self,
+        entries: list[QuickOpenEntry],
+        *,
+        complete: bool = False,
+        limited: bool = False,
+    ) -> None:
+        self.entries.extend(entries)
+        if complete:
+            self._indexing = False
+        if limited:
+            self._limited = True
+        self._refresh_results(self._query)
+
+    def replace_entries(
+        self,
+        entries: list[QuickOpenEntry],
+        *,
+        complete: bool,
+        limited: bool,
+    ) -> None:
+        self.entries = list(entries)
+        self._indexing = not complete
+        self._limited = limited
+        self._refresh_results(self._query)
+
+    def finish_indexing(self, *, limited: bool) -> None:
+        self._indexing = False
+        self._limited = limited
+        self._refresh_results(self._query)
+
+    def fail_indexing(self, message: str) -> None:
+        self._indexing = False
+        self._error = message
+        self._refresh_results(self._query)
+
     def _refresh_results(self, query: str) -> None:
+        self._query = query
+        self._refresh_status()
         results = self.query_one("#results", OptionList)
         results.clear_options()
         self._option_paths.clear()
@@ -155,26 +204,42 @@ class QuickOpenScreen(ModalScreen[Path | None]):
             return
 
         options: list[Option] = []
-        for index, path in enumerate(matches[:MAX_QUICK_OPEN_RESULTS]):
+        for index, entry in enumerate(matches[:MAX_QUICK_OPEN_RESULTS]):
             option_id = str(index)
-            self._option_paths[option_id] = path
-            options.append(Option(self._relative_paths[path], id=option_id))
+            self._option_paths[option_id] = entry.path
+            options.append(Option(entry.relative_path, id=option_id))
         results.add_options(options)
         results.highlighted = 0
 
-    def _ranked_matches(self, query: str) -> list[Path]:
+    def _refresh_status(self) -> None:
+        status = self.query_one("#status", Static)
+        if self._error is not None:
+            status.update(f"Indexing failed: {self._error}")
+        elif self._limited:
+            status.update(
+                f"Showing first {len(self.entries)} files; index limit reached."
+            )
+        elif self._indexing:
+            status.update(f"Indexing {len(self.entries)} files...")
+        else:
+            status.update("")
+
+    def _ranked_matches(self, query: str) -> list[QuickOpenEntry]:
         stripped_query = query.strip()
         if not stripped_query:
-            return sorted(self.files, key=lambda path: self._relative_paths[path].lower())
+            return self.entries[:MAX_QUICK_OPEN_RESULTS]
 
-        scored: list[tuple[tuple[int, int, int, int, str], Path]] = []
-        for path in self.files:
-            relative_path = self._relative_paths[path]
-            score = _fuzzy_score(stripped_query, relative_path)
+        scored: list[tuple[tuple[int, int, int, int, str], QuickOpenEntry]] = []
+        for entry in self.entries:
+            score = _fuzzy_score(stripped_query, entry.relative_path)
             if score is not None:
-                scored.append((score, path))
-        scored.sort(key=lambda item: item[0])
-        return [path for _score, path in scored]
+                scored.append((score, entry))
+        return [
+            entry
+            for _score, entry in nsmallest(
+                MAX_QUICK_OPEN_RESULTS, scored, key=lambda item: item[0]
+            )
+        ]
 
     def _open_highlighted(self) -> None:
         results = self.query_one("#results", OptionList)
@@ -264,6 +329,47 @@ class KeysHelpScreen(ModalScreen[None]):
 def _fuzzy_score(query: str, candidate: str) -> tuple[int, int, int, int, str] | None:
     query_lower = query.lower()
     candidate_lower = candidate.lower()
+    basename = Path(candidate_lower).name
+    depth = candidate_lower.count("/")
+
+    if candidate_lower == query_lower:
+        return (0, depth, 0, len(candidate_lower), candidate_lower)
+    if basename == query_lower:
+        return (1, depth, 0, len(candidate_lower), candidate_lower)
+    if basename.startswith(query_lower):
+        return (2, depth, 0, len(candidate_lower), candidate_lower)
+    if candidate_lower.startswith(query_lower):
+        return (3, depth, 0, len(candidate_lower), candidate_lower)
+    if query_lower in basename:
+        return (
+            4,
+            depth,
+            basename.index(query_lower),
+            len(candidate_lower),
+            candidate_lower,
+        )
+    if query_lower in candidate_lower:
+        return (
+            5,
+            depth,
+            candidate_lower.index(query_lower),
+            len(candidate_lower),
+            candidate_lower,
+        )
+
+    basename_score = _fuzzy_positions(query_lower, basename)
+    if basename_score is not None:
+        first, gaps = basename_score
+        return (6, depth, gaps, first, candidate_lower)
+
+    path_score = _fuzzy_positions(query_lower, candidate_lower)
+    if path_score is None:
+        return None
+    first, gaps = path_score
+    return (7, depth, gaps, first, candidate_lower)
+
+
+def _fuzzy_positions(query_lower: str, candidate_lower: str) -> tuple[int, int] | None:
     positions: list[int] = []
     search_from = 0
     for char in query_lower:
@@ -277,8 +383,4 @@ def _fuzzy_score(query: str, candidate: str) -> tuple[int, int, int, int, str] |
     last = positions[-1]
     spread = last - first + 1
     gaps = spread - len(query_lower)
-    basename = Path(candidate_lower).name
-    basename_index = candidate_lower.rfind(basename)
-    basename_bonus = 0 if first >= basename_index else 1
-    contiguous_bonus = 0 if query_lower in candidate_lower else 1
-    return (basename_bonus, contiguous_bonus, gaps, len(candidate_lower), candidate_lower)
+    return first, gaps

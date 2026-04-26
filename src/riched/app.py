@@ -4,17 +4,25 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
-from textual import events
+from textual import events, work
 from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
 from textual.command import CommandPalette
 from textual.containers import Container, Horizontal
 from textual.keys import format_key
 from textual.screen import Screen
+from textual.worker import get_current_worker
 from textual.widgets import DirectoryTree, Footer, Header, Static, TextArea
 
 from .editor import RichedTextArea
 from .keybindings import display_key
+from .quick_open import (
+    MAX_QUICK_OPEN_INDEX_FILES,
+    QUICK_OPEN_BATCH_SIZE,
+    QuickOpenEntry,
+    git_quick_open_entries,
+    scan_quick_open_entries,
+)
 from .screens import KeysHelpScreen, QuickOpenScreen, UnsavedChangesScreen
 from .settings import load_theme, save_theme
 from .syntax import apply_language
@@ -22,14 +30,6 @@ from .syntax import apply_language
 FILE_TREE_DEFAULT_WIDTH = 30
 FILE_TREE_MIN_WIDTH = 18
 FILE_TREE_MAX_WIDTH = 44
-QUICK_OPEN_SKIP_DIRS = {
-    ".git",
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-    "node_modules",
-}
 KEY_MODIFIER_SYMBOLS = {
     "cmd": "⌘",
     "super": "⌘",
@@ -174,6 +174,12 @@ class RichedApp(App):
         self.path: Path | None = self._initial_path
         self.root = root or Path.cwd()
         self._saved_text = ""
+        self._quick_open_entries: list[QuickOpenEntry] = []
+        self._quick_open_complete = False
+        self._quick_open_indexing = False
+        self._quick_open_limited = False
+        self._quick_open_generation = 0
+        self._quick_open_screen: QuickOpenScreen | None = None
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -321,36 +327,138 @@ class RichedApp(App):
 
         self.push_screen(UnsavedChangesScreen(), handle)
 
-    def _quick_open_files(self) -> list[Path]:
-        root = self.root.expanduser()
-        files: list[Path] = []
-        stack = [root]
-        while stack:
-            directory = stack.pop()
-            try:
-                entries = sorted(directory.iterdir(), key=lambda path: path.name.lower())
-            except OSError:
-                continue
-            for entry in entries:
-                try:
-                    if entry.is_dir():
-                        if entry.name not in QUICK_OPEN_SKIP_DIRS and not entry.is_symlink():
-                            stack.append(entry)
-                    elif entry.is_file():
-                        files.append(entry)
-                except OSError:
-                    continue
-        return sorted(files, key=lambda path: path.relative_to(root).as_posix().lower())
-
     def action_quick_open(self) -> None:
+        root = self.root.expanduser()
+        screen = QuickOpenScreen(
+            root,
+            self._quick_open_entries,
+            indexing=not self._quick_open_complete,
+            limited=self._quick_open_limited,
+        )
+        self._quick_open_screen = screen
+
         def handle(selected: Path | None) -> None:
+            if self._quick_open_screen is screen:
+                self._quick_open_screen = None
             if selected is not None:
                 self._switch_path(selected)
 
-        self.push_screen(
-            QuickOpenScreen(self.root.expanduser(), self._quick_open_files()),
-            handle,
-        )
+        self.push_screen(screen, handle)
+        if not self._quick_open_complete and not self._quick_open_indexing:
+            self._start_quick_open_index()
+
+    def _start_quick_open_index(self) -> None:
+        self._quick_open_indexing = True
+        self._build_quick_open_index(self._quick_open_generation)
+
+    @work(thread=True, exclusive=True, group="quick_open_index", exit_on_error=False)
+    def _build_quick_open_index(self, generation: int) -> None:
+        try:
+            root = self.root.expanduser()
+            git_result = git_quick_open_entries(root, MAX_QUICK_OPEN_INDEX_FILES)
+            if git_result is not None:
+                git_entries, limited = git_result
+                self.call_from_thread(
+                    self._replace_quick_open_entries,
+                    generation,
+                    git_entries,
+                    True,
+                    limited,
+                )
+                return
+
+            worker = get_current_worker()
+            batch: list[QuickOpenEntry] = []
+            count = 0
+            limited = False
+            for entry in scan_quick_open_entries(root):
+                if worker.is_cancelled:
+                    return
+                if count >= MAX_QUICK_OPEN_INDEX_FILES:
+                    limited = True
+                    break
+                batch.append(entry)
+                count += 1
+                if len(batch) >= QUICK_OPEN_BATCH_SIZE:
+                    self.call_from_thread(
+                        self._append_quick_open_entries,
+                        generation,
+                        batch,
+                        False,
+                        False,
+                    )
+                    batch = []
+
+            if batch:
+                self.call_from_thread(
+                    self._append_quick_open_entries, generation, batch, False, False
+                )
+            self.call_from_thread(self._finish_quick_open_index, generation, limited)
+        except Exception as exc:
+            self.call_from_thread(
+                self._fail_quick_open_index, generation, str(exc) or type(exc).__name__
+            )
+
+    def _append_quick_open_entries(
+        self,
+        generation: int,
+        entries: list[QuickOpenEntry],
+        complete: bool,
+        limited: bool,
+    ) -> None:
+        if generation != self._quick_open_generation:
+            return
+        self._quick_open_entries.extend(entries)
+        self._quick_open_limited = self._quick_open_limited or limited
+        screen = self._quick_open_screen
+        if screen is not None and screen.is_mounted:
+            screen.append_entries(entries, complete=complete, limited=limited)
+
+    def _replace_quick_open_entries(
+        self,
+        generation: int,
+        entries: list[QuickOpenEntry],
+        complete: bool,
+        limited: bool,
+    ) -> None:
+        if generation != self._quick_open_generation:
+            return
+        self._quick_open_entries = list(entries)
+        self._quick_open_complete = complete
+        self._quick_open_limited = limited
+        self._quick_open_indexing = False
+        screen = self._quick_open_screen
+        if screen is not None and screen.is_mounted:
+            screen.replace_entries(entries, complete=complete, limited=limited)
+
+    def _finish_quick_open_index(self, generation: int, limited: bool) -> None:
+        if generation != self._quick_open_generation:
+            return
+        self._quick_open_complete = True
+        self._quick_open_limited = limited
+        self._quick_open_indexing = False
+        screen = self._quick_open_screen
+        if screen is not None and screen.is_mounted:
+            screen.finish_indexing(limited=limited)
+
+    def _fail_quick_open_index(self, generation: int, message: str) -> None:
+        if generation != self._quick_open_generation:
+            return
+        self._quick_open_complete = True
+        self._quick_open_indexing = False
+        screen = self._quick_open_screen
+        if screen is not None and screen.is_mounted:
+            screen.fail_indexing(message)
+
+    def _invalidate_quick_open_index(self) -> None:
+        self._quick_open_generation += 1
+        self._quick_open_entries = []
+        self._quick_open_complete = False
+        self._quick_open_indexing = False
+        self._quick_open_limited = False
+        screen = self._quick_open_screen
+        if screen is not None and screen.is_mounted:
+            screen.replace_entries([], complete=False, limited=False)
 
     def action_toggle_command_palette(self) -> None:
         if CommandPalette.is_open(self):
@@ -375,6 +483,7 @@ class RichedApp(App):
             self.notify(f"Save failed: {exc}", severity="error")
             return
         self._saved_text = editor.text
+        self._invalidate_quick_open_index()
         self.notify(f"Saved {self.path}")
 
     def action_quit_check(self) -> None:

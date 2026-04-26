@@ -16,40 +16,48 @@
 ## Usage
 
 ```sh
+uv tool install riched
+riched .
+```
+
+## Dev
+
+```sh
 uv sync
-uv run riched . 
+uv run riched .
 uv run python -m tests.runner
 ```
 
 ## Key Bindings
 
 Key bindings are generated from the YAML in `src/riched/bindings.yaml`.
+Symbols: `⌘` = Command, `⌃` = Control, `⌥` = Option, `⇧` = Shift.
 
 App shortcuts:
 
 | Shortcut | Action |
 | --- | --- |
-| `Ctrl+S` | Save |
-| `Ctrl+Q` | Quit |
-| `Ctrl+W` | Close buffer |
+| `⌃S` | Save |
+| `⌃Q` | Quit |
+| `⌃W` | Close buffer |
 | `F1` | Key bindings |
-| `Cmd+B` / `Super+B` | Toggle file tree |
-| `Cmd+P` / `Super+P` | Quick open |
+| `⌘B` | Toggle file tree |
+| `⌘P` | Quick open |
 
 Editor shortcuts:
 
 | Shortcut | Action |
 | --- | --- |
-| `Alt+Up` | Move line up |
-| `Alt+Down` | Move line down |
-| `Alt+Shift+Up` / `Shift+Alt+Up` | Copy line up |
-| `Alt+Shift+Down` / `Shift+Alt+Down` | Copy line down |
-| `Alt+Backspace` | Delete word left |
-| `Alt+Shift+Left` / `Shift+Alt+Left` | Select word left |
-| `Alt+Shift+Right` / `Shift+Alt+Right` | Select word right |
-| `Super+L` / `Cmd+L` | Select line |
-| `Shift+Super+Left` / `Super+Shift+Left` / `Shift+Cmd+Left` / `Cmd+Shift+Left` | Select to line start |
-| `Shift+Super+Right` / `Super+Shift+Right` / `Shift+Cmd+Right` / `Cmd+Shift+Right` | Select to line end |
+| `⌥↑` | Move line up |
+| `⌥↓` | Move line down |
+| `⌥⇧↑` | Copy line up |
+| `⌥⇧↓` | Copy line down |
+| `⌥⌫` | Delete word left |
+| `⌥⇧←` | Select word left |
+| `⌥⇧→` | Select word right |
+| `⌘L` | Select line |
+| `⌘⇧←` | Select to line start |
+| `⌘⇧→` | Select to line end |
 
 ## Settings
 
@@ -59,4 +67,3 @@ config directory: `~/Library/Application Support/riched/settings.yaml`
 ## Won't Implemented
 
 `riched` will not implement key bindings that require users to modify the Ghostty terminal configuration, since terminal-specific configuration makes shortcuts harder to document, test, and support consistently across environments.
-
