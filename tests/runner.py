@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import traceback
+import asyncio
 from collections.abc import Awaitable, Callable
 
 from .test_dirty_buffers import (
@@ -131,3 +132,7 @@ async def main() -> int:
             print(f"--- {name} " + "-" * (60 - len(name)))
             print(tb)
     return 0 if not failed else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(asyncio.run(main()))

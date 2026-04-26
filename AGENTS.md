@@ -2,14 +2,13 @@
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`; `e2e.py` is a compatibility runner. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
 - `uv sync`: install project dependencies from `pyproject.toml` and `uv.lock`.
 - `uv run riched path/to/file.txt`: open or create a file in the editor.
-- `./riched path/to/file.txt`: compatibility wrapper for the same editor command.
-- `uv run ./e2e.py`: run the Textual Pilot end-to-end suite.
+- `uv run python -m tests.runner`: run the Textual Pilot end-to-end suite.
 - `uv add <package>`: add runtime dependencies; do not use `pip`.
 
 ## Coding Style & Naming Conventions

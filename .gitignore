@@ -72,3 +72,4 @@ site/
 # custom
 try*
 secrets.toml
+keys.log

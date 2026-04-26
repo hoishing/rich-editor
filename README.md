@@ -18,10 +18,8 @@
 ```sh
 uv sync
 uv run riched hello.txt
-uv run ./e2e.py
+uv run python -m tests.runner
 ```
-
-`./riched hello.txt` is kept as a compatibility wrapper for local use.
 
 ## Key Bindings
 
