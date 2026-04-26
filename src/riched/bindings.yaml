@@ -40,6 +40,22 @@ editor:
     action: delete_word_left
     description: Delete word left
     show: false
+  - key: cmd+backspace,super+backspace,ctrl+u
+    action: delete_to_start_of_line_or_delete_left
+    description: Delete to line start
+    show: false
+  - key: cmd+z,super+z
+    action: undo
+    description: Undo
+    show: false
+  - key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z
+    action: redo
+    description: Redo
+    show: false
+  - key: cmd+x,super+x
+    action: cut
+    description: Cut
+    show: false
   - key: alt+shift+left,shift+alt+left
     action: cursor_word_left(True)
     description: Select word left

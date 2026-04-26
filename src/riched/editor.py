@@ -95,5 +95,11 @@ class RichedTextArea(TextArea):
         self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
         self.move_cursor((row, col))
 
+    def action_delete_to_start_of_line_or_delete_left(self) -> None:
+        if not self.selection.is_empty or self.cursor_location[1] == 0:
+            self.action_delete_left()
+            return
+        self.action_delete_to_start_of_line()
+
     def action_ignore(self) -> None:
         pass

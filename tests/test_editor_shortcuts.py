@@ -129,6 +129,136 @@ async def test_alt_backspace_deletes_word_left() -> None:
         assert text.startswith("hello world"), repr(text)
 
 
+async def test_cmd_backspace_deletes_to_line_start() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "line-start.txt"
+    f.write_text("hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 6))
+        await pilot.pause()
+        await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert editor.text == "world", repr(editor.text)
+        assert editor.cursor_location == (0, 0), editor.cursor_location
+
+
+async def test_cmd_backspace_at_line_start_joins_previous_line() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "join.txt"
+    f.write_text("alpha\nbeta")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 0))
+        await pilot.pause()
+        await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert editor.text == "alphabeta", repr(editor.text)
+        assert editor.cursor_location == (0, 5), editor.cursor_location
+
+
+async def test_ghostty_cmd_backspace_sequence_at_line_start_joins_previous_line() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "ghostty-join.txt"
+    f.write_text("alpha\nbeta")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 0))
+        await pilot.pause()
+        await pilot.press("ctrl+u")
+        await pilot.pause()
+        assert editor.text == "alphabeta", repr(editor.text)
+        assert editor.cursor_location == (0, 5), editor.cursor_location
+
+
+async def test_cmd_backspace_deletes_selection() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "selection.txt"
+    f.write_text("hello world")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 6), (0, 11))
+        await pilot.pause()
+        await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert editor.text == "hello ", repr(editor.text)
+        assert editor.cursor_location == (0, 6), editor.cursor_location
+
+
+async def test_cmd_z_undoes_edit() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "undo-cmd.txt"
+    f.write_text("alpha")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 5))
+        editor.insert(" beta", maintain_selection_offset=False)
+        await pilot.pause()
+        await pilot.press("cmd+z")
+        await pilot.pause()
+        assert editor.text == "alpha", repr(editor.text)
+
+
+async def test_cmd_shift_z_redoes_edit() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "redo-cmd.txt"
+    f.write_text("alpha")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 5))
+        editor.insert(" beta", maintain_selection_offset=False)
+        await pilot.pause()
+        await pilot.press("cmd+z")
+        await pilot.pause()
+        await pilot.press("cmd+shift+z")
+        await pilot.pause()
+        assert editor.text == "alpha beta", repr(editor.text)
+
+
+async def test_cmd_x_cuts_selected_text() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "cut-selection.txt"
+    f.write_text("alpha beta")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 6), (0, 10))
+        await pilot.pause()
+        await pilot.press("cmd+x")
+        await pilot.pause()
+        assert editor.text == "alpha ", repr(editor.text)
+        assert editor.cursor_location == (0, 6), editor.cursor_location
+
+
+async def test_cmd_x_without_selection_cuts_current_line() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "cut-line.txt"
+    f.write_text("alpha\nbeta\ngamma")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((1, 2))
+        await pilot.pause()
+        await pilot.press("cmd+x")
+        await pilot.pause()
+        assert editor.text == "alpha\ngamma", repr(editor.text)
+        assert editor.cursor_location == (1, 2), editor.cursor_location
+
+
 async def test_alt_shift_arrows_select_word_left_and_right() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "words.txt"

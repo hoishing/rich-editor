@@ -1,21 +1,17 @@
 # Riched
 
-> TUI editor with VSCode keybindigs
-
-`riched` is a TUI editor powered by the [Rich](https://github.com/Textualize/rich) package and the [Textual](https://github.com/Textualize/textual) framework, the name is a nod to Rich.
+[Rich](https://github.com/Textualize/rich) powered editor, so the name `riched`, that implement vscode keybinding in TUI with best effort.
 
 > [!NOTE]
-> `riched` targets Ghostty on macOS. Some key bindings, especially shortcuts
-> that use the Command key, may not work in other terminals or on other
-> operating systems.
+> `riched` is designed to work with [ghostty](https://ghostty.org) in macOS only
 
 ## Key Features
 
-- VS Code-style text editing key bindings
-- Syntax highlighting
-- Resizable project file tree
-- Quick open with git-aware indexing, bounded large-folder scanning
-- fuzzy matching, symlink traversal
+- vscode text editing key bindings
+- macOS style key bindings work in ssh session to linux host also
+- multiple built-in theme(atom, drcula, nordic ...etc)
+- syntax highlighting for major file formats
+- quick file open with fuzzy search
 
 ## Usage
 
@@ -31,14 +27,11 @@ riched --version
 uv sync
 uv run riched .
 uv run python -m tests.runner
-uv build
-uv publish
 ```
 
 ## Key Bindings
 
 Key bindings are generated from the YAML in `src/riched/bindings.yaml`.
-Symbols: `⌘` = Command, `⌃` = Control, `⌥` = Option, `⇧` = Shift.
 
 App shortcuts:
 
@@ -60,6 +53,10 @@ Editor shortcuts:
 | `⌥⇧↑` | Copy line up |
 | `⌥⇧↓` | Copy line down |
 | `⌥⌫` | Delete word left |
+| `⌘⌫` | Delete to line start |
+| `⌘Z` | Undo |
+| `⌘⇧Z` | Redo |
+| `⌘X` | Cut |
 | `⌥⇧←` | Select word left |
 | `⌥⇧→` | Select word right |
 | `⌘L` | Select line |
@@ -85,7 +82,7 @@ config directory: `~/Library/Application Support/riched/settings.yaml`
 - `riched` does not support multi-cursor editing because Textual `TextArea`
   currently models one active cursor/selection.
 - Some Command-key shortcuts can conflict with Ghostty or terminal-level
-  bindings, for example `⌘⇧P`, `⌘W`, and `⌘Q`.
+  bindings, for example `⌘⌫`, `⌘Z`, `⌘⇧Z`, `⌘⇧P`, `⌘W`, and `⌘Q`.
 - `riched` will not implement key bindings that require users to modify the
   Ghostty terminal configuration, since terminal-specific configuration makes
   shortcuts harder to document, test, and support consistently across
