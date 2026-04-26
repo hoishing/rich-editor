@@ -17,41 +17,46 @@
 
 ```sh
 uv sync
-uv run riched hello.txt
+uv run riched . 
 uv run python -m tests.runner
 ```
 
 ## Key Bindings
 
-Shipped key bindings live in `src/riched/bindings.yaml`. Press `F1` to show the
-hotkey popup; it is generated from the YAML and shows one user-facing shortcut
-per binding, preferring `cmd` aliases over `super`.
+Key bindings are generated from the YAML in `src/riched/bindings.yaml`.
 
-Common shortcuts:
+App shortcuts:
 
-- `Ctrl+S`: save
-- `Ctrl+Q`: quit with dirty-buffer check
-- `Ctrl+W`: close buffer
-- `Cmd+B`: toggle file tree
-- `Cmd+Shift+E`: focus/toggle file tree
-- `Cmd+P`: quick open
-- `Alt+Up/Down`: move line up/down
-- `Alt+Shift+Up/Down`: copy line up/down
-- `Cmd+L`: select line
-- `Cmd+Shift+Left/Right`: select to line start/end
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+S` | Save |
+| `Ctrl+Q` | Quit |
+| `Ctrl+W` | Close buffer |
+| `F1` | Key bindings |
+| `Cmd+B` / `Super+B` | Toggle file tree |
+| `Cmd+P` / `Super+P` | Quick open |
+
+Editor shortcuts:
+
+| Shortcut | Action |
+| --- | --- |
+| `Alt+Up` | Move line up |
+| `Alt+Down` | Move line down |
+| `Alt+Shift+Up` / `Shift+Alt+Up` | Copy line up |
+| `Alt+Shift+Down` / `Shift+Alt+Down` | Copy line down |
+| `Alt+Backspace` | Delete word left |
+| `Alt+Shift+Left` / `Shift+Alt+Left` | Select word left |
+| `Alt+Shift+Right` / `Shift+Alt+Right` | Select word right |
+| `Super+L` / `Cmd+L` | Select line |
+| `Shift+Super+Left` / `Super+Shift+Left` / `Shift+Cmd+Left` / `Cmd+Shift+Left` | Select to line start |
+| `Shift+Super+Right` / `Super+Shift+Right` / `Shift+Cmd+Right` / `Cmd+Shift+Right` | Select to line end |
 
 ## Settings
 
 `riched` persists the selected Textual theme in `settings.yaml` under the user
-config directory:
-
-- macOS: `~/Library/Application Support/riched/settings.yaml`
-- Other platforms: `$XDG_CONFIG_HOME/riched/settings.yaml` or
-  `~/.config/riched/settings.yaml`
+config directory: `~/Library/Application Support/riched/settings.yaml`
 
 ## Won't Implemented
 
-`riched` will not implement key bindings that require users to modify terminal
-emulator configuration. Shortcuts that work through normal terminal keyboard
-reporting are allowed; terminal-specific configuration makes shortcuts harder to
-document, test, and support consistently across environments.
+`riched` will not implement key bindings that require users to modify the Ghostty terminal configuration, since terminal-specific configuration makes shortcuts harder to document, test, and support consistently across environments.
+

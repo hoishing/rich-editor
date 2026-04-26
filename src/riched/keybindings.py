@@ -90,6 +90,10 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
 
 
 def _display_key(key: str) -> str:
+    return display_key(key)
+
+
+def display_key(key: str) -> str:
     keys = [part.strip() for part in key.split(",") if part.strip()]
     if not keys:
         return key

@@ -15,9 +15,6 @@ app:
     - name: toggle_file_tree
       description: Toggle file tree
       key: cmd+b,super+b
-    - name: toggle_file_tree_focus
-      description: Toggle file tree focus
-      key: cmd+shift+e,shift+cmd+e,super+shift+e,shift+super+e
     - name: quick_open
       description: Quick open
       key: cmd+p,super+p

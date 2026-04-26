@@ -9,10 +9,12 @@ from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
 from textual.command import CommandPalette
 from textual.containers import Container, Horizontal
+from textual.keys import format_key
 from textual.screen import Screen
 from textual.widgets import DirectoryTree, Footer, Header, Static, TextArea
 
 from .editor import RichedTextArea
+from .keybindings import display_key
 from .screens import KeysHelpScreen, QuickOpenScreen, UnsavedChangesScreen
 from .settings import load_theme, save_theme
 from .syntax import apply_language
@@ -27,6 +29,15 @@ QUICK_OPEN_SKIP_DIRS = {
     "build",
     "dist",
     "node_modules",
+}
+KEY_MODIFIER_SYMBOLS = {
+    "cmd": "⌘",
+    "super": "⌘",
+    "ctrl": "⌃",
+    "control": "⌃",
+    "alt": "⌥",
+    "option": "⌥",
+    "shift": "⇧",
 }
 
 
@@ -141,6 +152,9 @@ class RichedApp(App):
         height: 1fr;
         width: 1fr;
     }
+    HeaderIcon {
+        display: none;
+    }
     """
 
     BINDINGS: list[Binding] = []
@@ -169,6 +183,8 @@ class RichedApp(App):
 
     def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
         for command in super().get_system_commands(screen):
+            if command.title == "Maximize":
+                continue
             if command.title == "Keys":
                 yield SystemCommand(
                     "Keys",
@@ -177,6 +193,22 @@ class RichedApp(App):
                 )
                 continue
             yield command
+
+    def get_key_display(self, binding: Binding) -> str:
+        if binding.key_display:
+            return binding.key_display
+
+        key = display_key(binding.key)
+        parts = key.split("+")
+        base_key = format_key(parts[-1])
+        if len(base_key) == 1:
+            base_key = base_key.upper()
+        else:
+            base_key = base_key.title()
+        modifiers = "".join(
+            KEY_MODIFIER_SYMBOLS.get(part, part) for part in parts[:-1]
+        )
+        return f"{modifiers}{base_key}"
 
     def compose(self) -> ComposeResult:
         yield Header()
