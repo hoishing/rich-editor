@@ -11,6 +11,7 @@
 
 - Syntax highlighting
 - Resizable project file tree
+- Quick open with git-aware indexing, fuzzy matching, symlink traversal, and bounded large-folder scanning
 - VS Code-style text editing key bindings
 
 ## Usage
@@ -26,6 +27,8 @@ riched .
 uv sync
 uv run riched .
 uv run python -m tests.runner
+uv build
+uv publish
 ```
 
 ## Key Bindings
@@ -63,6 +66,14 @@ Editor shortcuts:
 
 `riched` persists the selected Textual theme in `settings.yaml` under the user
 config directory: `~/Library/Application Support/riched/settings.yaml`
+
+## Release Notes
+
+### 0.2.0
+
+- Quick open now opens immediately while indexing in the background.
+- File search prefers git-indexed files when available, follows symlinked files and directories, skips cache/build dependency folders, and caps indexing at 10,000 files.
+- Fuzzy ranking now prioritizes exact path and filename matches such as `.zshrc`.
 
 ## Won't Implemented
 

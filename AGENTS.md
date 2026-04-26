@@ -2,13 +2,15 @@
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Root-level `foo.*` and `hello.txt` files are test fixtures/sample content. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
 - `uv sync`: install project dependencies from `pyproject.toml` and `uv.lock`.
 - `uv run riched path/to/file.txt`: open or create a file in the editor.
 - `uv run python -m tests.runner`: run the Textual Pilot end-to-end suite.
+- `uv build`: build the source distribution and wheel in `dist/`.
+- `uv publish`: publish built distributions for a release.
 - `uv add <package>`: add runtime dependencies; do not use `pip`.
 
 ## Coding Style & Naming Conventions
@@ -19,7 +21,7 @@ Keep key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. The F1
 
 ## Testing Guidelines
 
-Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, or syntax highlighting. Use temporary files as existing tests do.
+Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, quick-open search/indexing, or syntax highlighting. Use temporary files as existing tests do.
 
 ## Commit & Pull Request Guidelines
 
