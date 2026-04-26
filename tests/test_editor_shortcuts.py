@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual.widgets import TextArea
+from textual.widgets import DirectoryTree, TextArea
 
 from .helpers import _fresh_env, _make_app
 
@@ -89,6 +89,132 @@ async def test_copy_line_up() -> None:
         await pilot.pause()
         assert editor.text == "aaa\nbbb\nbbb", repr(editor.text)
         assert editor.cursor_location == (1, 2), editor.cursor_location
+
+
+async def test_cmd_slash_toggles_python_line_comment() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment.py"
+    f.write_text("  print('hello')")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "  # print('hello')", repr(editor.text)
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "  print('hello')", repr(editor.text)
+
+
+async def test_cmd_slash_toggles_selected_typescript_lines() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment.ts"
+    f.write_text("const a = 1;\n  const b = 2;\nconst c = 3;")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 0), (2, 0))
+        await pilot.pause()
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "// const a = 1;\n  // const b = 2;\nconst c = 3;"
+        editor.selection = type(editor.selection)((0, 0), (2, 0))
+        await pilot.pause()
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "const a = 1;\n  const b = 2;\nconst c = 3;"
+
+
+async def test_cmd_slash_toggles_css_block_comments() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment.css"
+    f.write_text("body {\n  color: red;\n}")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 0), (2, 1))
+        await pilot.pause()
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "/* body { */\n  /* color: red; */\n/* } */"
+        editor.selection = type(editor.selection)((0, 0), (2, 7))
+        await pilot.pause()
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == "body {\n  color: red;\n}"
+
+
+async def test_cmd_slash_unsupported_language_notifies_without_change() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment.json"
+    f.write_text('{"a": 1}')
+    app = _make_app(f)
+    notifications: list[tuple[str, str | None]] = []
+    app.notify = lambda message, **kwargs: notifications.append(
+        (str(message), kwargs.get("severity"))
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        await pilot.press("cmd+/")
+        await pilot.pause()
+        assert editor.text == '{"a": 1}', repr(editor.text)
+        assert notifications == [
+            ("Line comments are not supported for this file type.", "warning")
+        ]
+
+
+async def test_alt_z_toggles_word_wrap() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "wrap.txt"
+    f.write_text("hello")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        assert editor.soft_wrap is False
+        await pilot.press("alt+z")
+        await pilot.pause()
+        assert editor.soft_wrap is True
+        await pilot.press("alt+z")
+        await pilot.pause()
+        assert editor.soft_wrap is False
+
+
+async def test_cmd_b_toggles_file_tree() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "tree.txt"
+    f.write_text("tree")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        tree = app.query_one("#file-tree", DirectoryTree)
+        assert tree.styles.display == "block"
+        await pilot.press("cmd+b")
+        await pilot.pause()
+        assert tree.styles.display == "none"
+        await pilot.press("cmd+b")
+        await pilot.pause()
+        assert tree.styles.display == "block"
+
+
+async def test_super_b_toggles_file_tree_alias() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "tree.txt"
+    f.write_text("tree")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        tree = app.query_one("#file-tree", DirectoryTree)
+        await pilot.press("super+b")
+        await pilot.pause()
+        assert tree.styles.display == "none"
+        await pilot.press("super+b")
+        await pilot.pause()
+        assert tree.styles.display == "block"
 
 
 async def test_undo_multiline_insert_that_removes_scrollbar() -> None:

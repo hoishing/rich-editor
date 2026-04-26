@@ -39,8 +39,7 @@ App shortcuts:
 | --- | --- |
 | `⌘S` | Save |
 | `⌃Q` | Quit |
-| `⌃W` | Close buffer |
-| `F1` | Key bindings |
+| `F1` | Command palette |
 | `⌘B` | Toggle file tree |
 | `⌘P` | Quick open |
 
@@ -57,6 +56,8 @@ Editor shortcuts:
 | `⌘Z` | Undo |
 | `⌘⇧Z` | Redo |
 | `⌘X` | Cut |
+| `⌘/` | Toggle line comment |
+| `⌥Z` | Toggle word wrap |
 | `⌥⇧←` | Select word left |
 | `⌥⇧→` | Select word right |
 | `⌘L` | Select line |
@@ -82,7 +83,8 @@ config directory: `~/Library/Application Support/riched/settings.yaml`
 - `riched` does not support multi-cursor editing because Textual `TextArea`
   currently models one active cursor/selection.
 - Some Command-key shortcuts can conflict with Ghostty or terminal-level
-  bindings, for example `⌘⌫`, `⌘Z`, `⌘⇧Z`, `⌘⇧P`, `⌘W`, and `⌘Q`.
+  bindings, for example `⌘C`, `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⌫`,
+  `⌘Z`, `⌘⇧Z`, `⌘⇧P`, `⌘W`, and `⌘Q`.
 - `riched` will not implement key bindings that require users to modify the
   Ghostty terminal configuration, since terminal-specific configuration makes
   shortcuts harder to document, test, and support consistently across

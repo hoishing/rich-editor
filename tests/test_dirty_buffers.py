@@ -123,17 +123,20 @@ async def test_file_tree_escape_dirty_shows_unsaved_changes() -> None:
     assert f.read_text() == "orig"
 
 
-async def test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w() -> None:
+async def test_ctrl_w_does_not_close_buffer() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "clean-close.txt"
-    f.write_text("foo")
+    f.write_text("foo bar")
     app = _make_app(f)
     async with app.run_test() as pilot:
         await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.move_cursor((0, 7))
+        await pilot.pause()
         await pilot.press("ctrl+w")
         await pilot.pause()
-        assert app.path is None, app.path
-        assert not list(app.query("#editor"))
+        assert app.path == f, app.path
+        assert list(app.query("#editor"))
 
 
 async def test_close_buffer_dirty_shows_wide_modal_then_cancel() -> None:
@@ -145,7 +148,7 @@ async def test_close_buffer_dirty_shows_wide_modal_then_cancel() -> None:
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("changed")
         await pilot.pause()
-        await pilot.press("ctrl+w")
+        app.action_close_buffer()
         await pilot.pause()
         assert isinstance(app.screen, mod.UnsavedChangesScreen)
         dialog = app.screen.query_one("#dialog")
@@ -173,7 +176,7 @@ async def test_close_buffer_dirty_space_discard_enters_no_buffer_state() -> None
         await pilot.pause()
         app.query_one("#editor", TextArea).load_text("changed")
         await pilot.pause()
-        await pilot.press("ctrl+w")
+        app.action_close_buffer()
         await pilot.pause()
         assert isinstance(app.screen, mod.UnsavedChangesScreen)
         app.screen.query_one("#discard", Button).focus()
@@ -184,4 +187,3 @@ async def test_close_buffer_dirty_space_discard_enters_no_buffer_state() -> None
         assert app.path is None, app.path
         assert not list(app.query("#editor"))
     assert f.read_text() == "orig"
-

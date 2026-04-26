@@ -4,6 +4,25 @@ from textual.widgets import TextArea
 
 from .keybindings import build_static_bindings
 
+LINE_COMMENT_MARKERS = {
+    "bash": "#",
+    "go": "//",
+    "java": "//",
+    "javascript": "//",
+    "python": "#",
+    "rust": "//",
+    "toml": "#",
+    "tsx": "//",
+    "typescript": "//",
+    "yaml": "#",
+}
+BLOCK_COMMENT_MARKERS = {
+    "css": ("/*", "*/"),
+    "html": ("<!--", "-->"),
+    "markdown": ("<!--", "-->"),
+    "xml": ("<!--", "-->"),
+}
+
 
 class RichedTextArea(TextArea):
     """TextArea with VS Code-style line-edit shortcuts."""
@@ -101,5 +120,135 @@ class RichedTextArea(TextArea):
             return
         self.action_delete_to_start_of_line()
 
+    def action_toggle_word_wrap(self) -> None:
+        self.soft_wrap = not self.soft_wrap
+
+    def action_toggle_line_comment(self) -> None:
+        language = self.language
+        if language in LINE_COMMENT_MARKERS:
+            self._toggle_line_comment(LINE_COMMENT_MARKERS[language])
+            return
+        if language in BLOCK_COMMENT_MARKERS:
+            self._toggle_block_comment(*BLOCK_COMMENT_MARKERS[language])
+            return
+        self.app.notify(
+            "Line comments are not supported for this file type.",
+            severity="warning",
+        )
+
+    def _selected_row_range(self) -> tuple[int, int]:
+        if self.selection.is_empty:
+            row, _column = self.cursor_location
+            return row, row
+
+        start, end = sorted(self.selection)
+        start_row = start[0]
+        end_row = end[0]
+        if end[1] == 0 and end_row > start_row:
+            end_row -= 1
+        return start_row, end_row
+
+    def _target_lines(self) -> tuple[int, int, list[str]]:
+        start_row, end_row = self._selected_row_range()
+        lines = [
+            self.document.get_line(row)
+            for row in range(start_row, end_row + 1)
+        ]
+        return start_row, end_row, lines
+
+    def _replace_target_lines(
+        self,
+        start_row: int,
+        end_row: int,
+        lines: list[str],
+    ) -> None:
+        text = "\n".join(lines)
+        self.replace(
+            text,
+            (start_row, 0),
+            (end_row, len(self.document.get_line(end_row))),
+            maintain_selection_offset=False,
+        )
+        self.move_cursor((start_row, 0))
+
+    def _toggle_line_comment(self, marker: str) -> None:
+        start_row, end_row, lines = self._target_lines()
+        non_blank = [line for line in lines if line.strip()]
+        if not non_blank:
+            return
+
+        should_uncomment = all(
+            line.lstrip().startswith(marker)
+            for line in non_blank
+        )
+        updated = [
+            _uncomment_line(line, marker)
+            if should_uncomment
+            else _comment_line(line, marker)
+            for line in lines
+        ]
+        self._replace_target_lines(start_row, end_row, updated)
+
+    def _toggle_block_comment(self, open_marker: str, close_marker: str) -> None:
+        start_row, end_row, lines = self._target_lines()
+        non_blank = [line for line in lines if line.strip()]
+        if not non_blank:
+            return
+
+        should_uncomment = all(
+            line.lstrip().startswith(open_marker)
+            and line.rstrip().endswith(close_marker)
+            for line in non_blank
+        )
+        updated = [
+            _uncomment_block_line(line, open_marker, close_marker)
+            if should_uncomment
+            else _comment_block_line(line, open_marker, close_marker)
+            for line in lines
+        ]
+        self._replace_target_lines(start_row, end_row, updated)
+
     def action_ignore(self) -> None:
         pass
+
+
+def _leading_spaces(line: str) -> str:
+    return line[: len(line) - len(line.lstrip())]
+
+
+def _comment_line(line: str, marker: str) -> str:
+    if not line.strip():
+        return line
+    indent = _leading_spaces(line)
+    return f"{indent}{marker} {line[len(indent):]}"
+
+
+def _uncomment_line(line: str, marker: str) -> str:
+    if not line.strip():
+        return line
+    indent = _leading_spaces(line)
+    rest = line[len(indent):]
+    if not rest.startswith(marker):
+        return line
+    rest = rest[len(marker):]
+    if rest.startswith(" "):
+        rest = rest[1:]
+    return f"{indent}{rest}"
+
+
+def _comment_block_line(line: str, open_marker: str, close_marker: str) -> str:
+    if not line.strip():
+        return line
+    indent = _leading_spaces(line)
+    return f"{indent}{open_marker} {line[len(indent):]} {close_marker}"
+
+
+def _uncomment_block_line(line: str, open_marker: str, close_marker: str) -> str:
+    if not line.strip():
+        return line
+    indent = _leading_spaces(line)
+    rest = line[len(indent):].strip()
+    if not rest.startswith(open_marker) or not rest.endswith(close_marker):
+        return line
+    rest = rest[len(open_marker): -len(close_marker)].strip()
+    return f"{indent}{rest}"

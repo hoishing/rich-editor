@@ -135,6 +135,8 @@ class FileTreeResizeHandle(Static):
 class RichedApp(App):
     """TUI text editor with a project file tree."""
 
+    COMMAND_PALETTE_BINDING = "f1"
+
     CSS = """
     #workspace {
         height: 1fr;
@@ -203,13 +205,13 @@ class RichedApp(App):
             if command.title == "Maximize":
                 continue
             if command.title == "Keys":
-                yield SystemCommand(
-                    "Keys",
-                    "Show key bindings",
-                    self.action_show_keys_popup,
-                )
                 continue
             yield command
+        yield SystemCommand(
+            "Show key bindings",
+            "Open the key bindings reference",
+            self.action_show_keys_popup,
+        )
 
     def get_key_display(self, binding: Binding) -> str:
         if binding.key_display:

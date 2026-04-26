@@ -6,13 +6,16 @@ from collections.abc import Awaitable, Callable
 
 from .test_command_palette import (
     test_command_palette_button_is_hidden,
+    test_command_palette_includes_show_key_bindings,
     test_command_palette_omits_maximize,
+    test_ctrl_p_does_not_open_command_palette,
+    test_f1_opens_command_palette,
 )
 from .test_cli import test_version_flag_prints_current_version, test_version_flag_rejects_filename
 from .test_dirty_buffers import (
-    test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
     test_close_buffer_dirty_shows_wide_modal_then_cancel,
     test_close_buffer_dirty_space_discard_enters_no_buffer_state,
+    test_ctrl_w_does_not_close_buffer,
     test_file_tree_escape_clean_quit_exits,
     test_file_tree_escape_clean_shows_quit_confirmation_then_cancel,
     test_file_tree_escape_dirty_shows_unsaved_changes,
@@ -23,13 +26,19 @@ from .test_dirty_buffers import (
 )
 from .test_editor_shortcuts import (
     test_alt_backspace_deletes_word_left,
+    test_alt_z_toggles_word_wrap,
     test_alt_shift_arrows_select_word_left_and_right,
     test_cmd_backspace_at_line_start_joins_previous_line,
     test_cmd_backspace_deletes_selection,
     test_cmd_backspace_deletes_to_line_start,
+    test_cmd_b_toggles_file_tree,
     test_cmd_l_repeats_expand_line_selection,
     test_cmd_l_selects_current_line_with_newline,
     test_cmd_l_selects_final_line_without_newline,
+    test_cmd_slash_toggles_css_block_comments,
+    test_cmd_slash_toggles_python_line_comment,
+    test_cmd_slash_toggles_selected_typescript_lines,
+    test_cmd_slash_unsupported_language_notifies_without_change,
     test_cmd_shift_k_deletes_current_line,
     test_cmd_shift_left_selects_to_line_start,
     test_cmd_shift_right_selects_to_line_end,
@@ -46,6 +55,7 @@ from .test_editor_shortcuts import (
     test_move_line_up,
     test_parser_order_super_shift_line_selection_aliases,
     test_super_l_selects_current_line_alias,
+    test_super_b_toggles_file_tree_alias,
     test_super_shift_k_deletes_current_line_alias,
     test_super_shift_line_selection_aliases,
     test_undo_multiline_insert_that_removes_scrollbar,
@@ -88,6 +98,15 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("cli: version flag rejects filename", test_version_flag_rejects_filename),
     ("command palette: button hidden", test_command_palette_button_is_hidden),
     ("command palette: omit maximize", test_command_palette_omits_maximize),
+    (
+        "command palette: includes show key bindings",
+        test_command_palette_includes_show_key_bindings,
+    ),
+    ("command palette: F1 opens palette", test_f1_opens_command_palette),
+    (
+        "command palette: Ctrl+P does not open palette",
+        test_ctrl_p_does_not_open_command_palette,
+    ),
     ("quit clean exits", test_quit_clean_exits),
     ("quit dirty: modal + cancel", test_quit_dirty_shows_modal_then_cancel),
     ("quit dirty: save writes & exits", test_quit_dirty_save_writes_and_exits),
@@ -101,10 +120,7 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         "file tree Escape dirty: unsaved modal",
         test_file_tree_escape_dirty_shows_unsaved_changes,
     ),
-    (
-        "close buffer clean enters no-buffer state via Ctrl+W",
-        test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
-    ),
+    ("close buffer: Ctrl+W does not close buffer", test_ctrl_w_does_not_close_buffer),
     (
         "close buffer dirty: wide modal + cancel",
         test_close_buffer_dirty_shows_wide_modal_then_cancel,
@@ -155,6 +171,19 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("editor: move line at boundaries no-op", test_move_line_at_boundaries_is_noop),
     ("editor: copy line down", test_copy_line_down),
     ("editor: copy line up", test_copy_line_up),
+    ("editor: cmd+/ toggles Python line comment", test_cmd_slash_toggles_python_line_comment),
+    (
+        "editor: cmd+/ toggles selected TypeScript lines",
+        test_cmd_slash_toggles_selected_typescript_lines,
+    ),
+    ("editor: cmd+/ toggles CSS block comments", test_cmd_slash_toggles_css_block_comments),
+    (
+        "editor: cmd+/ unsupported language notifies",
+        test_cmd_slash_unsupported_language_notifies_without_change,
+    ),
+    ("editor: alt+z toggles word wrap", test_alt_z_toggles_word_wrap),
+    ("app: cmd+b toggles file tree", test_cmd_b_toggles_file_tree),
+    ("app: super+b toggles file tree alias", test_super_b_toggles_file_tree_alias),
     (
         "editor: undo multiline insert that removes scrollbar",
         test_undo_multiline_insert_that_removes_scrollbar,

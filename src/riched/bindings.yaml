@@ -6,11 +6,8 @@ app:
     - name: quit_check
       description: Quit
       key: ctrl+q
-    - name: close_buffer
-      description: Close buffer
-      key: ctrl+w
-    - name: show_keys_popup
-      description: Key bindings
+    - name: command_palette
+      description: Command palette
       key: f1
     - name: toggle_file_tree
       description: Toggle file tree
@@ -55,6 +52,14 @@ editor:
   - key: cmd+x,super+x
     action: cut
     description: Cut
+    show: false
+  - key: cmd+/,super+/
+    action: toggle_line_comment
+    description: Toggle line comment
+    show: false
+  - key: alt+z
+    action: toggle_word_wrap
+    description: Toggle word wrap
     show: false
   - key: alt+shift+left,shift+alt+left
     action: cursor_word_left(True)
