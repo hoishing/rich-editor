@@ -70,11 +70,10 @@ Editor shortcuts:
 
 ## Limitations
 
-- `riched` does not support multi-cursor editing because Textual `TextArea`
-  currently models one active cursor/selection.
-- Some Command-key shortcuts can conflict with Ghostty or terminal-level
-  bindings, for example `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
-- `riched` will not implement key bindings that require users to modify the
-  Ghostty terminal configuration, since terminal-specific configuration makes
-  shortcuts harder to document, test, and support consistently across
-  environments.
+- [Textual](https://github.com/textualize/textual) textarea limitation: 
+  - no multi-cursor editing
+  - no chord hotkey sequence such as `⌘K ⌘S` 
+
+- Ghostty conflicts: 
+  - conflicted Ghostty hotkey. eg. `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
+  - won't implement features that require modifying Ghostty default config

@@ -11,7 +11,11 @@ from .test_command_palette import (
     test_ctrl_p_does_not_open_command_palette,
     test_f1_opens_command_palette,
 )
-from .test_cli import test_version_flag_prints_current_version, test_version_flag_rejects_filename
+from .test_cli import (
+    test_no_filename_opens_current_folder,
+    test_version_flag_prints_current_version,
+    test_version_flag_rejects_filename,
+)
 from .test_dirty_buffers import (
     test_close_buffer_dirty_shows_wide_modal_then_cancel,
     test_close_buffer_dirty_space_discard_enters_no_buffer_state,
@@ -96,6 +100,7 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("open missing file", test_open_missing_file),
     ("open directory starts with no buffer", test_open_directory_starts_with_no_buffer),
     ("save writes file", test_save_writes_file),
+    ("cli: no filename opens current folder", test_no_filename_opens_current_folder),
     ("cli: version flag prints current version", test_version_flag_prints_current_version),
     ("cli: version flag rejects filename", test_version_flag_rejects_filename),
     ("command palette: button hidden", test_command_palette_button_is_hidden),

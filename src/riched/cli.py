@@ -17,7 +17,11 @@ def main() -> int:
         action="store_true",
         help="Show the version and exit",
     )
-    parser.add_argument("filename", nargs="?", help="File to open (created on save if missing)")
+    parser.add_argument(
+        "filename",
+        nargs="?",
+        help="File or folder to open; defaults to the current folder",
+    )
     args = parser.parse_args()
 
     if args.version:
@@ -26,10 +30,7 @@ def main() -> int:
         print(f"riched {version('riched')}")
         return 0
 
-    if args.filename is None:
-        parser.error("the following arguments are required: filename")
-
-    path = Path(args.filename).expanduser()
+    path = Path.cwd() if args.filename is None else Path(args.filename).expanduser()
     root = path if path.is_dir() else Path.cwd()
 
     class ConfiguredRichedApp(RichedApp):
