@@ -1,7 +1,17 @@
-# rich-editor
+# Riched
 
-`riched` is a Textual TUI editor with syntax highlighting and a project file
-tree.
+`riched` is a TUI editor powered by the [Rich](https://github.com/Textualize/rich) package and the [Textual](https://github.com/Textualize/textual) framework, the name is a nod to Rich.
+
+> [!NOTE]
+> `riched` targets Ghostty on macOS. Some key bindings, especially shortcuts
+> that use the Command key, may not work in other terminals or on other
+> operating systems.
+
+## Key Features
+
+- Syntax highlighting
+- Resizable project file tree
+- VS Code-style text editing key bindings
 
 ## Usage
 
@@ -30,7 +40,7 @@ Common shortcuts:
 - `Alt+Up/Down`: move line up/down
 - `Alt+Shift+Up/Down`: copy line up/down
 - `Cmd+L`: select line
-- `Cmd+Shift+Left/Right`: select to line start/end when the terminal sends it
+- `Cmd+Shift+Left/Right`: select to line start/end
 
 ## Settings
 
@@ -41,21 +51,9 @@ config directory:
 - Other platforms: `$XDG_CONFIG_HOME/riched/settings.yaml` or
   `~/.config/riched/settings.yaml`
 
-## Ghostty Cmd-Shift Selection
+## Won't Implemented
 
-Ghostty can expose macOS Command as `super` in terminal keybinds. Its default
-Cmd-left/right bindings send Ctrl-A/Ctrl-E, which Textual already treats as line
-start/end. Cmd-Shift-left/right needs an explicit terminal sequence because
-there is no equivalent control character for "select to line start/end".
-
-For Ghostty, add:
-
-```text
-keybind = super+shift+arrow_left=csi:1;2H
-keybind = super+shift+arrow_right=csi:1;2F
-```
-
-`riched` binds both `super+shift+left/right` and `cmd+shift+left/right` to
-select from the cursor to line start/end. This is documented as Ghostty-specific
-for now because many terminals do not pass Command-modified keys through to TUI
-applications.
+`riched` will not implement key bindings that require users to modify terminal
+emulator configuration. Shortcuts that work through normal terminal keyboard
+reporting are allowed; terminal-specific configuration makes shortcuts harder to
+document, test, and support consistently across environments.

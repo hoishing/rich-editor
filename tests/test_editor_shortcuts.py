@@ -310,5 +310,3 @@ async def test_parser_order_super_shift_line_selection_aliases() -> None:
         assert editor.selection.start == (0, 5), editor.selection
         assert editor.selection.end == (0, 13), editor.selection
         assert editor.selected_text == "lo world", repr(editor.selected_text)
-
-
