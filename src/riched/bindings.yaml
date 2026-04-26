@@ -70,6 +70,10 @@ editor:
     show: false
 
 screens:
+  quit_confirmation:
+    - key: escape
+      action: cancel
+      description: Cancel
   unsaved_changes:
     - key: escape
       action: cancel

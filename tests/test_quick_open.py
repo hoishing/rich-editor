@@ -120,13 +120,18 @@ async def test_quick_open_fallback_follows_symlinks() -> None:
     assert len(relative_paths) == len(set(relative_paths))
 
 
-async def test_quick_open_git_index_respects_excludes() -> None:
+async def test_quick_open_git_index_includes_ignored_files() -> None:
     tmp, _ = _fresh_env()
     subprocess.run(["git", "init"], cwd=tmp, check=True, capture_output=True)
-    (tmp / ".gitignore").write_text("*.log\n")
+    (tmp / ".gitignore").write_text(".env*\n*.log\nnode_modules/\n")
     (tmp / "tracked.py").write_text("tracked")
     (tmp / "untracked.py").write_text("untracked")
+    (tmp / ".env").write_text("secret")
+    (tmp / ".env.local").write_text("local secret")
     (tmp / "ignored.log").write_text("ignored")
+    skipped = tmp / "node_modules"
+    skipped.mkdir()
+    (skipped / "hidden.py").write_text("hidden")
     subprocess.run(
         ["git", "add", ".gitignore", "tracked.py"],
         cwd=tmp,
@@ -143,7 +148,10 @@ async def test_quick_open_git_index_respects_excludes() -> None:
     relative_paths = {entry.relative_path for entry in app._quick_open_entries}
     assert "tracked.py" in relative_paths
     assert "untracked.py" in relative_paths
-    assert "ignored.log" not in relative_paths
+    assert ".env" in relative_paths
+    assert ".env.local" in relative_paths
+    assert "ignored.log" in relative_paths
+    assert "node_modules/hidden.py" not in relative_paths
 
 
 async def test_quick_open_git_index_limit_is_visible() -> None:

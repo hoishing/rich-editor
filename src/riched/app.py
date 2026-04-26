@@ -23,7 +23,12 @@ from .quick_open import (
     git_quick_open_entries,
     scan_quick_open_entries,
 )
-from .screens import KeysHelpScreen, QuickOpenScreen, UnsavedChangesScreen
+from .screens import (
+    KeysHelpScreen,
+    QuickOpenScreen,
+    QuitConfirmationScreen,
+    UnsavedChangesScreen,
+)
 from .settings import load_theme, save_theme
 from .syntax import apply_language
 
@@ -49,6 +54,7 @@ class RichedDirectoryTree(DirectoryTree):
         Binding("left", "collapse_cursor", "Collapse folder", show=False),
         Binding("right", "expand_cursor", "Expand folder", show=False),
         Binding("space", "activate_cursor", "Open file or toggle folder", show=False),
+        Binding("escape", "quit_check", "Quit", show=False),
     ]
 
     def _cursor_dir_node(self) -> Any | None:
@@ -75,6 +81,11 @@ class RichedDirectoryTree(DirectoryTree):
             node.toggle()
             return
         self.action_select_cursor()
+
+    def action_quit_check(self) -> None:
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.action_file_tree_quit_check()
 
 
 class FileTreeResizeHandle(Static):
@@ -500,6 +511,17 @@ class RichedApp(App):
                 self.exit()
 
         self.push_screen(UnsavedChangesScreen(), handle)
+
+    def action_file_tree_quit_check(self) -> None:
+        if self._is_dirty():
+            self.action_quit_check()
+            return
+
+        def handle(choice: str) -> None:
+            if choice == "quit":
+                self.exit()
+
+        self.push_screen(QuitConfirmationScreen(), handle)
 
     def action_close_buffer(self) -> None:
         if self.path is None:

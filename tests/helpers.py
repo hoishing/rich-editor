@@ -16,6 +16,7 @@ from riched.keybindings import (  # noqa: E402
     build_bindings,
 )
 from riched.screens import (  # noqa: E402
+    QuitConfirmationScreen,
     UnsavedChangesScreen,
 )
 
@@ -23,6 +24,7 @@ mod = SimpleNamespace(
     COMMANDS=COMMANDS,
     DEFAULT_BINDINGS=DEFAULT_BINDINGS,
     RichedApp=RichedApp,
+    QuitConfirmationScreen=QuitConfirmationScreen,
     UnsavedChangesScreen=UnsavedChangesScreen,
     build_bindings=build_bindings,
 )

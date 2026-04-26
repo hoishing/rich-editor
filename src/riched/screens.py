@@ -68,6 +68,57 @@ class UnsavedChangesScreen(ModalScreen[str]):
         self.dismiss("cancel")
 
 
+class QuitConfirmationScreen(ModalScreen[str]):
+    """Prompt asking whether to quit a clean session."""
+
+    BINDINGS = build_screen_bindings("quit_confirmation")
+
+    CSS = """
+    QuitConfirmationScreen {
+        align: center middle;
+    }
+    QuitConfirmationScreen > #dialog {
+        width: 44;
+        height: auto;
+        padding: 1 2;
+        background: $panel;
+        border: tall $accent;
+    }
+    QuitConfirmationScreen Label {
+        width: 100%;
+        content-align: center middle;
+        padding-bottom: 1;
+    }
+    QuitConfirmationScreen #buttons {
+        height: auto;
+        align: center middle;
+    }
+    QuitConfirmationScreen Button {
+        margin: 0 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Quit riched?")
+            with Horizontal(id="buttons"):
+                yield Button("Quit", variant="error", id="quit")
+                yield Button("Cancel", id="cancel")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss(event.button.id or "cancel")
+
+    def on_key(self, event: events.Key) -> None:
+        focused = self.focused
+        if event.key == "space" and isinstance(focused, Button):
+            event.stop()
+            event.prevent_default()
+            focused.action_press()
+
+    def action_cancel(self) -> None:
+        self.dismiss("cancel")
+
+
 class QuickOpenScreen(ModalScreen[Path | None]):
     """Fuzzy file picker."""
 

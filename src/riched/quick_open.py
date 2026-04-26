@@ -48,7 +48,6 @@ def git_quick_open_entries(
                 "ls-files",
                 "--cached",
                 "--others",
-                "--exclude-standard",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL,

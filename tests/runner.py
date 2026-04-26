@@ -13,6 +13,9 @@ from .test_dirty_buffers import (
     test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
     test_close_buffer_dirty_shows_wide_modal_then_cancel,
     test_close_buffer_dirty_space_discard_enters_no_buffer_state,
+    test_file_tree_escape_clean_quit_exits,
+    test_file_tree_escape_clean_shows_quit_confirmation_then_cancel,
+    test_file_tree_escape_dirty_shows_unsaved_changes,
     test_quit_clean_exits,
     test_quit_dirty_discard_keeps_file,
     test_quit_dirty_save_writes_and_exits,
@@ -57,8 +60,8 @@ from .test_quick_open import (
     test_quick_open_fallback_limit_is_visible,
     test_quick_open_fallback_indexes_by_directory_level,
     test_quick_open_fallback_skips_heavy_directories,
+    test_quick_open_git_index_includes_ignored_files,
     test_quick_open_git_index_limit_is_visible,
-    test_quick_open_git_index_respects_excludes,
     test_quick_open_screen_opens_before_indexing_completes,
 )
 from .test_syntax import (
@@ -81,6 +84,15 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("quit dirty: modal + cancel", test_quit_dirty_shows_modal_then_cancel),
     ("quit dirty: save writes & exits", test_quit_dirty_save_writes_and_exits),
     ("quit dirty: discard keeps file", test_quit_dirty_discard_keeps_file),
+    (
+        "file tree Escape clean: modal + cancel",
+        test_file_tree_escape_clean_shows_quit_confirmation_then_cancel,
+    ),
+    ("file tree Escape clean: quit exits", test_file_tree_escape_clean_quit_exits),
+    (
+        "file tree Escape dirty: unsaved modal",
+        test_file_tree_escape_dirty_shows_unsaved_changes,
+    ),
     (
         "close buffer clean enters no-buffer state via Ctrl+W",
         test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w,
@@ -116,8 +128,8 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         test_quick_open_fallback_follows_symlinks,
     ),
     (
-        "quick open: git index respects excludes",
-        test_quick_open_git_index_respects_excludes,
+        "quick open: git index includes ignored files",
+        test_quick_open_git_index_includes_ignored_files,
     ),
     ("quick open: git index limit is visible", test_quick_open_git_index_limit_is_visible),
     ("quick open: fallback limit is visible", test_quick_open_fallback_limit_is_visible),

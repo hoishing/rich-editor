@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual.widgets import Button, TextArea
+from textual.widgets import Button, DirectoryTree, TextArea
 
 from .helpers import _fresh_env, _make_app, mod
 
@@ -70,6 +70,59 @@ async def test_quit_dirty_discard_keeps_file() -> None:
     assert f.read_text() == "orig"
 
 
+async def test_file_tree_escape_clean_shows_quit_confirmation_then_cancel() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "tree-escape-clean.txt"
+    f.write_text("foo")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, mod.QuitConfirmationScreen)
+        await pilot.click("#cancel")
+        await pilot.pause()
+        assert not isinstance(app.screen, mod.QuitConfirmationScreen)
+        assert app.path == f, app.path
+
+
+async def test_file_tree_escape_clean_quit_exits() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "tree-escape-quit.txt"
+    f.write_text("foo")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, mod.QuitConfirmationScreen)
+        await pilot.click("#quit")
+        await pilot.pause()
+
+
+async def test_file_tree_escape_dirty_shows_unsaved_changes() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "tree-escape-dirty.txt"
+    f.write_text("orig")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#editor", TextArea).load_text("changed")
+        app.query_one("#file-tree", DirectoryTree).focus()
+        await pilot.pause()
+        await pilot.press("escape")
+        await pilot.pause()
+        assert isinstance(app.screen, mod.UnsavedChangesScreen)
+        await pilot.click("#cancel")
+        await pilot.pause()
+        assert not isinstance(app.screen, mod.UnsavedChangesScreen)
+    assert f.read_text() == "orig"
+
+
 async def test_close_buffer_clean_enters_no_buffer_state_via_ctrl_w() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "clean-close.txt"
@@ -131,5 +184,4 @@ async def test_close_buffer_dirty_space_discard_enters_no_buffer_state() -> None
         assert app.path is None, app.path
         assert not list(app.query("#editor"))
     assert f.read_text() == "orig"
-
 
