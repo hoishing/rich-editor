@@ -19,6 +19,8 @@ Use Python 3.12-compatible code with type hints, `from __future__ import annotat
 
 Keep key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays one user-facing key per binding, preferring `cmd` aliases over `super`.
 
+When changing app-level key bindings, test both file-open and no-buffer/directory-start states. For Command-key regressions, verify both Textual names (`cmd+...` and terminal-normalized `super+...`) because Pilot can pass for synthetic keys while a real terminal path or missing app state still breaks. Do not patch Command-key behavior by adding Python-side hardcoded fallbacks; add aliases to `bindings.yaml` and e2e coverage instead.
+
 ## Testing Guidelines
 
 Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, quick-open search/indexing, or syntax highlighting. Use temporary files as existing tests do.

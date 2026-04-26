@@ -32,6 +32,7 @@ from .test_editor_shortcuts import (
     test_cmd_backspace_deletes_selection,
     test_cmd_backspace_deletes_to_line_start,
     test_cmd_b_toggles_file_tree,
+    test_cmd_b_toggles_file_tree_without_open_buffer,
     test_cmd_l_repeats_expand_line_selection,
     test_cmd_l_selects_current_line_with_newline,
     test_cmd_l_selects_final_line_without_newline,
@@ -56,6 +57,7 @@ from .test_editor_shortcuts import (
     test_parser_order_super_shift_line_selection_aliases,
     test_super_l_selects_current_line_alias,
     test_super_b_toggles_file_tree_alias,
+    test_super_b_toggles_file_tree_without_open_buffer,
     test_super_shift_k_deletes_current_line_alias,
     test_super_shift_line_selection_aliases,
     test_undo_multiline_insert_that_removes_scrollbar,
@@ -183,7 +185,15 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ),
     ("editor: alt+z toggles word wrap", test_alt_z_toggles_word_wrap),
     ("app: cmd+b toggles file tree", test_cmd_b_toggles_file_tree),
+    (
+        "app: cmd+b toggles file tree without open buffer",
+        test_cmd_b_toggles_file_tree_without_open_buffer,
+    ),
     ("app: super+b toggles file tree alias", test_super_b_toggles_file_tree_alias),
+    (
+        "app: super+b toggles file tree without open buffer",
+        test_super_b_toggles_file_tree_without_open_buffer,
+    ),
     (
         "editor: undo multiline insert that removes scrollbar",
         test_undo_multiline_insert_that_removes_scrollbar,

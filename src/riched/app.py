@@ -545,10 +545,9 @@ class RichedApp(App):
     def action_toggle_file_tree(self) -> None:
         editor = self._editor_or_none()
         if self._is_file_tree_visible():
-            if editor is None:
-                return
             self._hide_file_tree()
-            editor.focus()
+            if editor is not None:
+                editor.focus()
             return
         self._show_file_tree()
 

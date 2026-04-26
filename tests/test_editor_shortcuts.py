@@ -201,6 +201,21 @@ async def test_cmd_b_toggles_file_tree() -> None:
         assert tree.styles.display == "block"
 
 
+async def test_cmd_b_toggles_file_tree_without_open_buffer() -> None:
+    tmp, _ = _fresh_env()
+    app = _make_app(tmp, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        tree = app.query_one("#file-tree", DirectoryTree)
+        assert tree.styles.display == "block"
+        await pilot.press("cmd+b")
+        await pilot.pause()
+        assert tree.styles.display == "none"
+        await pilot.press("cmd+b")
+        await pilot.pause()
+        assert tree.styles.display == "block"
+
+
 async def test_super_b_toggles_file_tree_alias() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "tree.txt"
@@ -209,6 +224,21 @@ async def test_super_b_toggles_file_tree_alias() -> None:
     async with app.run_test() as pilot:
         await pilot.pause()
         tree = app.query_one("#file-tree", DirectoryTree)
+        await pilot.press("super+b")
+        await pilot.pause()
+        assert tree.styles.display == "none"
+        await pilot.press("super+b")
+        await pilot.pause()
+        assert tree.styles.display == "block"
+
+
+async def test_super_b_toggles_file_tree_without_open_buffer() -> None:
+    tmp, _ = _fresh_env()
+    app = _make_app(tmp, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        tree = app.query_one("#file-tree", DirectoryTree)
+        assert tree.styles.display == "block"
         await pilot.press("super+b")
         await pilot.pause()
         assert tree.styles.display == "none"
