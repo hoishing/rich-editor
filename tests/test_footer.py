@@ -1,27 +1,33 @@
 from __future__ import annotations
 
-import os
 from subprocess import CompletedProcess
 
 from textual.widgets import Footer
 
-from .helpers import _fresh_env, _make_app
+from .helpers import _file_app, _footer_labels, _temporary_env
 from riched.keybindings import ghostty_app_hotkey_conflicts
 
 
-def _footer_labels(footer: Footer) -> dict[str, str]:
-    return {
-        child.description: child.key_display
-        for child in footer.children
-        if hasattr(child, "key_display")
-    }
+def _footer_app(**kwargs):
+    return _file_app("footer.txt", "footer", **kwargs)[2]
+
+
+def _conflicts_from_config(*lines: str) -> set[str]:
+    config = "\n".join(lines)
+    return ghostty_app_hotkey_conflicts(
+        env={"TERM_PROGRAM": "ghostty"},
+        run_command=lambda *args, **kwargs: CompletedProcess(
+            args[0],
+            0,
+            stdout=config,
+            stderr="",
+        ),
+        find_binary=lambda name: name,
+    )
 
 
 async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    app = _make_app(f, ghostty_app_hotkey_conflicts=set())
+    app = _footer_app(ghostty_app_hotkey_conflicts=set())
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -42,10 +48,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
 
 
 async def test_footer_uses_command_palette_fallback_for_ghostty_conflict() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    app = _make_app(f, ghostty_app_hotkey_conflicts={"command_palette"})
+    app = _footer_app(ghostty_app_hotkey_conflicts={"command_palette"})
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -54,26 +57,12 @@ async def test_footer_uses_command_palette_fallback_for_ghostty_conflict() -> No
 
 
 async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    config = "\n".join(
-        [
+    app = _footer_app(
+        ghostty_app_hotkey_conflicts=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
             "keybind = super+shift+v=toggle_quick_terminal",
-        ]
+        )
     )
-    conflicts = ghostty_app_hotkey_conflicts(
-        env={"TERM_PROGRAM": "ghostty"},
-        run_command=lambda *args, **kwargs: CompletedProcess(
-            args[0],
-            0,
-            stdout=config,
-            stderr="",
-        ),
-        find_binary=lambda name: name,
-    )
-    app = _make_app(f, ghostty_app_hotkey_conflicts=conflicts)
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -84,10 +73,7 @@ async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> N
 
 
 async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    app = _make_app(f, markdown_preview_hotkey_conflicted=True)
+    app = _footer_app(markdown_preview_hotkey_conflicted=True)
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -96,24 +82,8 @@ async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
 
 
 async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    original_term = os.environ.get("TERM")
-    original_term_program = os.environ.get("TERM_PROGRAM")
-    try:
-        os.environ["TERM"] = "xterm-256color"
-        os.environ.pop("TERM_PROGRAM", None)
-        app = _make_app(f)
-    finally:
-        if original_term is None:
-            os.environ.pop("TERM", None)
-        else:
-            os.environ["TERM"] = original_term
-        if original_term_program is None:
-            os.environ.pop("TERM_PROGRAM", None)
-        else:
-            os.environ["TERM_PROGRAM"] = original_term_program
+    with _temporary_env(TERM="xterm-256color", TERM_PROGRAM=None):
+        app = _footer_app()
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -124,26 +94,12 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
 
 
 async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "footer.txt"
-    f.write_text("footer")
-    config = "\n".join(
-        [
+    app = _footer_app(
+        ghostty_app_hotkey_conflicts=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
             "keybind = super+shift+v=unbind",
-        ]
+        )
     )
-    conflicts = ghostty_app_hotkey_conflicts(
-        env={"TERM_PROGRAM": "ghostty"},
-        run_command=lambda *args, **kwargs: CompletedProcess(
-            args[0],
-            0,
-            stdout=config,
-            stderr="",
-        ),
-        find_binary=lambda name: name,
-    )
-    app = _make_app(f, ghostty_app_hotkey_conflicts=conflicts)
 
     async with app.run_test() as pilot:
         await pilot.pause()

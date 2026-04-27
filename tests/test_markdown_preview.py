@@ -1,60 +1,47 @@
 from __future__ import annotations
 
-from textual.widgets import Markdown, MarkdownViewer, Static, TextArea
+from textual.widgets import Markdown, MarkdownViewer, Static
 
-from .helpers import _fresh_env, _make_app
+from .helpers import _editor, _file_app, _key_help_rows, _press
 
 
-async def test_cmd_shift_v_toggles_markdown_preview() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Title\n\nBody")
-    app = _make_app(f, root=tmp)
+async def test_markdown_preview_toggles_from_primary_key() -> None:
+    _, _, app = _file_app("README.md", "# Title\n\nBody", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
 
         preview = app.query_one("#markdown-preview", MarkdownViewer)
         assert editor.styles.display == "none"
         assert preview.document.source == "# Title\n\nBody"
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
 
         assert not list(app.query("#markdown-preview"))
         assert editor.styles.display == "block"
         assert editor.has_focus
 
 
-async def test_super_shift_v_toggles_markdown_preview_alias() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.markdown"
-    f.write_text("# Title")
-    app = _make_app(f, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-
-        await pilot.press("super+shift+v")
-        await pilot.pause()
-
-        assert app.query_one("#markdown-preview", MarkdownViewer).document.source == "# Title"
+async def test_markdown_preview_opens_from_alias_keys() -> None:
+    for key, name in (("cmd+shift+v", "README.md"), ("super+shift+v", "README.markdown")):
+        _, _, app = _file_app(name, "# Title", root_is_tmp=True)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await _press(pilot, key)
+            preview = app.query_one("#markdown-preview", MarkdownViewer)
+            assert preview.document.source == "# Title", key
 
 
 async def test_markdown_preview_uses_unsaved_editor_content() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Saved")
-    app = _make_app(f, root=tmp)
+    _, f, app = _file_app("README.md", "# Saved", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         editor.load_text("# Unsaved\n\nPreview this")
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
 
         preview = app.query_one("#markdown-preview", MarkdownViewer)
         assert preview.document.source == "# Unsaved\n\nPreview this"
@@ -62,20 +49,16 @@ async def test_markdown_preview_uses_unsaved_editor_content() -> None:
 
 
 async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "notes.txt"
-    f.write_text("# Plain text")
-    app = _make_app(f, root=tmp)
+    _, _, app = _file_app("notes.txt", "# Plain text", root_is_tmp=True)
     notifications: list[tuple[str, str | None]] = []
     app.notify = lambda message, **kwargs: notifications.append(
         (str(message), kwargs.get("severity"))
     )
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
 
         assert not list(app.query("#markdown-preview"))
         assert editor.styles.display == "block"
@@ -85,23 +68,19 @@ async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
 
 
 async def test_switching_files_exits_markdown_preview() -> None:
-    tmp, _ = _fresh_env()
-    first = tmp / "first.md"
+    tmp, first, app = _file_app("first.md", "# First", root_is_tmp=True)
     second = tmp / "second.md"
-    first.write_text("# First")
     second.write_text("# Second")
-    app = _make_app(first, root=tmp)
     async with app.run_test() as pilot:
         await pilot.pause()
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
         assert app.query_one("#markdown-preview", MarkdownViewer)
 
         app._switch_path(second)
         await pilot.pause()
 
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         assert not list(app.query("#markdown-preview"))
         assert editor.styles.display == "block"
         assert editor.text == "# Second"
@@ -109,17 +88,17 @@ async def test_switching_files_exits_markdown_preview() -> None:
 
 
 async def test_markdown_preview_external_link_opens_without_navigation() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("[Rich](https://github.com/Textualize/rich)")
-    app = _make_app(f, root=tmp)
+    _, _, app = _file_app(
+        "README.md",
+        "[Rich](https://github.com/Textualize/rich)",
+        root_is_tmp=True,
+    )
     opened_urls: list[str] = []
     app.open_url = lambda url, **kwargs: opened_urls.append(url)
     async with app.run_test() as pilot:
         await pilot.pause()
 
-        await pilot.press("cmd+shift+v")
-        await pilot.pause()
+        await _press(pilot, "cmd+shift+v")
 
         preview = app.query_one("#markdown-preview", MarkdownViewer)
         preview.document.post_message(
@@ -135,30 +114,27 @@ async def test_markdown_preview_external_link_opens_without_navigation() -> None
 
 
 async def test_keys_help_includes_markdown_preview_binding() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Title")
-    app = _make_app(f, root=tmp, ghostty_app_hotkey_conflicts=set())
+    _, _, app = _file_app(
+        "README.md",
+        "# Title",
+        root_is_tmp=True,
+        ghostty_app_hotkey_conflicts=set(),
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
 
         app.action_show_keys_popup()
         await pilot.pause()
 
-        rows = [
-            (row.children[0].content, row.children[1].content)
-            for row in app.screen.query(".binding-row")
-        ]
+        rows = _key_help_rows(app)
         assert ("⌘⇧V", "Toggle Markdown preview") in rows
 
 
 async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Title")
-    app = _make_app(
-        f,
-        root=tmp,
+    _, _, app = _file_app(
+        "README.md",
+        "# Title",
+        root_is_tmp=True,
         ghostty_app_hotkey_conflicts={"toggle_markdown_preview"},
     )
     async with app.run_test() as pilot:
@@ -167,10 +143,7 @@ async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None
         app.action_show_keys_popup()
         await pilot.pause()
 
-        rows = [
-            (row.children[0].content, row.children[1].content)
-            for row in app.screen.query(".binding-row")
-        ]
+        rows = _key_help_rows(app)
         assert ("⚠️ ⌘⇧V", "Toggle Markdown preview") in rows
         assert (
             app.screen.query_one(".binding-legend", Static).content

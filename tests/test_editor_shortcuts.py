@@ -1,306 +1,207 @@
 from __future__ import annotations
 
-from textual.widgets import DirectoryTree, TextArea
+from textual.widgets import DirectoryTree
 
-from .helpers import _fresh_env, _make_app
-
-# -------------------------------------------------- editor line shortcuts --
+from .helpers import _directory_app, _editor, _file_app, _press, _press_many, _select
 
 
-async def test_move_line_down() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb\nccc")
-    app = _make_app(f)
+async def _run_editor_case(
+    *,
+    key: str,
+    content: str,
+    cursor: tuple[int, int] | None = None,
+    selection: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    expected_text: str,
+    expected_cursor: tuple[int, int] | None = None,
+    name: str = "lines.txt",
+) -> None:
+    _, _, app = _file_app(name, content)
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 1))
+        editor = _editor(app)
+        if cursor is not None:
+            editor.move_cursor(cursor)
+        if selection is not None:
+            _select(editor, *selection)
         await pilot.pause()
-        await pilot.press("alt+down")
-        await pilot.pause()
-        assert editor.text == "bbb\naaa\nccc", repr(editor.text)
-        assert editor.cursor_location == (1, 1), editor.cursor_location
+        await _press(pilot, key)
+        assert editor.text == expected_text, (key, repr(editor.text))
+        if expected_cursor is not None:
+            assert editor.cursor_location == expected_cursor, (key, editor.cursor_location)
 
 
-async def test_move_line_up() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb\nccc")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("alt+up")
-        await pilot.pause()
-        assert editor.text == "bbb\naaa\nccc", repr(editor.text)
-        assert editor.cursor_location == (0, 2), editor.cursor_location
+async def test_move_line_shortcuts() -> None:
+    cases = (
+        ("alt+down", "aaa\nbbb\nccc", (0, 1), "bbb\naaa\nccc", (1, 1)),
+        ("alt+up", "aaa\nbbb\nccc", (1, 2), "bbb\naaa\nccc", (0, 2)),
+    )
+    for key, content, cursor, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key=key,
+            content=content,
+            cursor=cursor,
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
 
 
 async def test_move_line_at_boundaries_is_noop() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 0))
-        await pilot.pause()
-        await pilot.press("alt+up")
-        await pilot.pause()
-        assert editor.text == "aaa\nbbb", repr(editor.text)
-        editor.move_cursor((1, 0))
-        await pilot.pause()
-        await pilot.press("alt+down")
-        await pilot.pause()
-        assert editor.text == "aaa\nbbb", repr(editor.text)
+    for key, cursor in (("alt+up", (0, 0)), ("alt+down", (1, 0))):
+        await _run_editor_case(
+            key=key,
+            content="aaa\nbbb",
+            cursor=cursor,
+            expected_text="aaa\nbbb",
+        )
 
 
-async def test_copy_line_down() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 1))
-        await pilot.pause()
-        await pilot.press("shift+alt+down")
-        await pilot.pause()
-        assert editor.text == "aaa\naaa\nbbb", repr(editor.text)
-        assert editor.cursor_location == (1, 1), editor.cursor_location
-
-
-async def test_copy_line_up() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("shift+alt+up")
-        await pilot.pause()
-        assert editor.text == "aaa\nbbb\nbbb", repr(editor.text)
-        assert editor.cursor_location == (1, 2), editor.cursor_location
-
-
-async def test_insert_line_below_aliases() -> None:
-    keys = ("cmd+enter", "super+enter")
-    for key in keys:
-        tmp, _ = _fresh_env()
-        f = tmp / "lines.txt"
-        f.write_text("aaa\nbbb")
-        app = _make_app(f)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            editor = app.query_one("#editor", TextArea)
-            editor.move_cursor((0, 2))
-            await pilot.pause()
-            await pilot.press(key)
-            await pilot.pause()
-            assert editor.text == "aaa\n\nbbb", (key, repr(editor.text))
-            assert editor.cursor_location == (1, 0), (key, editor.cursor_location)
-
-
-async def test_insert_line_above_aliases() -> None:
-    keys = ("cmd+shift+enter", "super+shift+enter")
-    for key in keys:
-        tmp, _ = _fresh_env()
-        f = tmp / "lines.txt"
-        f.write_text("aaa\nbbb")
-        app = _make_app(f)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            editor = app.query_one("#editor", TextArea)
-            editor.move_cursor((1, 2))
-            await pilot.pause()
-            await pilot.press(key)
-            await pilot.pause()
-            assert editor.text == "aaa\n\nbbb", (key, repr(editor.text))
-            assert editor.cursor_location == (1, 0), (key, editor.cursor_location)
-
-
-async def test_indent_line_aliases() -> None:
-    keys = (
-        "cmd+]",
-        "super+]",
-        "cmd+right_square_bracket",
-        "super+right_square_bracket",
+async def test_copy_line_shortcuts() -> None:
+    cases = (
+        ("shift+alt+down", (0, 1), "aaa\naaa\nbbb", (1, 1)),
+        ("shift+alt+up", (1, 2), "aaa\nbbb\nbbb", (1, 2)),
     )
-    for key in keys:
-        tmp, _ = _fresh_env()
-        f = tmp / "lines.txt"
-        f.write_text("aaa\nbbb")
-        app = _make_app(f)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            editor = app.query_one("#editor", TextArea)
-            editor.move_cursor((1, 1))
-            await pilot.pause()
-            await pilot.press(key)
-            await pilot.pause()
-            assert editor.text == "aaa\n  bbb", (key, repr(editor.text))
-            assert editor.cursor_location == (1, 3), (key, editor.cursor_location)
+    for key, cursor, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key=key,
+            content="aaa\nbbb",
+            cursor=cursor,
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
 
 
-async def test_indent_selected_lines() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("aaa\nbbb\nccc")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 1), (1, 2))
-        await pilot.pause()
-        await pilot.press("cmd+]")
-        await pilot.pause()
-        assert editor.text == "  aaa\n  bbb\nccc", repr(editor.text)
-        assert editor.cursor_location == (1, 4), editor.cursor_location
-
-
-async def test_outdent_line_aliases() -> None:
-    keys = (
-        "cmd+[",
-        "super+[",
-        "cmd+left_square_bracket",
-        "super+left_square_bracket",
+async def test_insert_line_aliases() -> None:
+    cases = (
+        (("cmd+enter", "super+enter"), (0, 2)),
+        (("cmd+shift+enter", "super+shift+enter"), (1, 2)),
     )
-    for key in keys:
-        tmp, _ = _fresh_env()
-        f = tmp / "lines.txt"
-        f.write_text("aaa\n  bbb")
-        app = _make_app(f)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            editor = app.query_one("#editor", TextArea)
-            editor.move_cursor((1, 3))
-            await pilot.pause()
-            await pilot.press(key)
-            await pilot.pause()
-            assert editor.text == "aaa\nbbb", (key, repr(editor.text))
-            assert editor.cursor_location == (1, 1), (key, editor.cursor_location)
+    for keys, cursor in cases:
+        for key in keys:
+            await _run_editor_case(
+                key=key,
+                content="aaa\nbbb",
+                cursor=cursor,
+                expected_text="aaa\n\nbbb",
+                expected_cursor=(1, 0),
+            )
 
 
-async def test_outdent_selected_lines_removes_up_to_two_spaces() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\n bravo\n  charlie\n\tdelta")
-    app = _make_app(f)
+async def test_indent_and_outdent_aliases() -> None:
+    cases = (
+        (
+            ("cmd+]", "super+]", "cmd+right_square_bracket", "super+right_square_bracket"),
+            "aaa\nbbb",
+            (1, 1),
+            "aaa\n  bbb",
+            (1, 3),
+        ),
+        (
+            ("cmd+[", "super+[", "cmd+left_square_bracket", "super+left_square_bracket"),
+            "aaa\n  bbb",
+            (1, 3),
+            "aaa\nbbb",
+            (1, 1),
+        ),
+    )
+    for keys, content, cursor, expected_text, expected_cursor in cases:
+        for key in keys:
+            await _run_editor_case(
+                key=key,
+                content=content,
+                cursor=cursor,
+                expected_text=expected_text,
+                expected_cursor=expected_cursor,
+            )
+
+
+async def test_indent_and_outdent_selected_lines() -> None:
+    cases = (
+        (
+            "cmd+]",
+            "aaa\nbbb\nccc",
+            ((0, 1), (1, 2)),
+            "  aaa\n  bbb\nccc",
+            (1, 4),
+        ),
+        (
+            "cmd+[",
+            "alpha\n bravo\n  charlie\n\tdelta",
+            ((0, 0), (3, 3)),
+            "alpha\nbravo\ncharlie\n\tdelta",
+            (3, 3),
+        ),
+    )
+    for key, content, selection, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key=key,
+            content=content,
+            selection=selection,
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
+
+
+async def test_comment_shortcuts() -> None:
+    for key in ("cmd+/", "cmd+slash", "super+slash"):
+        await _run_editor_case(
+            key=key,
+            name="comment.py",
+            content="print('hello')",
+            expected_text="# print('hello')",
+        )
+
+    _, _, app = _file_app("comment.py", "  print('hello')")
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 0), (3, 3))
-        await pilot.pause()
-        await pilot.press("cmd+[")
-        await pilot.pause()
-        assert editor.text == "alpha\nbravo\ncharlie\n\tdelta", repr(editor.text)
-        assert editor.cursor_location == (3, 3), editor.cursor_location
-
-
-async def test_cmd_slash_toggles_python_line_comment() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment.py"
-    f.write_text("  print('hello')")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        await pilot.press("cmd+/")
-        await pilot.pause()
-        assert editor.text == "  # print('hello')", repr(editor.text)
-        await pilot.press("cmd+/")
-        await pilot.pause()
+        editor = _editor(app)
+        await _press_many(pilot, "cmd+/", "cmd+/")
         assert editor.text == "  print('hello')", repr(editor.text)
 
 
-async def test_cmd_slash_normalized_alias_toggles_python_line_comment() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment-normalized.py"
-    f.write_text("print('hello')")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        await pilot.press("cmd+slash")
-        await pilot.pause()
-        assert editor.text == "# print('hello')", repr(editor.text)
-
-
-async def test_super_slash_normalized_alias_toggles_python_line_comment() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment-super-normalized.py"
-    f.write_text("print('hello')")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        await pilot.press("super+slash")
-        await pilot.pause()
-        assert editor.text == "# print('hello')", repr(editor.text)
-
-
-async def test_cmd_slash_toggles_selected_typescript_lines() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment.ts"
-    f.write_text("const a = 1;\n  const b = 2;\nconst c = 3;")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 0), (2, 0))
-        await pilot.pause()
-        await pilot.press("cmd+/")
-        await pilot.pause()
-        assert editor.text == "// const a = 1;\n  // const b = 2;\nconst c = 3;"
-        editor.selection = type(editor.selection)((0, 0), (2, 0))
-        await pilot.pause()
-        await pilot.press("cmd+/")
-        await pilot.pause()
-        assert editor.text == "const a = 1;\n  const b = 2;\nconst c = 3;"
-
-
-async def test_cmd_slash_toggles_css_block_comments() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment.css"
-    f.write_text("body {\n  color: red;\n}")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 0), (2, 1))
-        await pilot.pause()
-        await pilot.press("cmd+/")
-        await pilot.pause()
-        assert editor.text == "/* body { */\n  /* color: red; */\n/* } */"
-        editor.selection = type(editor.selection)((0, 0), (2, 7))
-        await pilot.pause()
-        await pilot.press("cmd+/")
-        await pilot.pause()
-        assert editor.text == "body {\n  color: red;\n}"
+async def test_comment_selection_and_block_comment_cases() -> None:
+    cases = (
+        (
+            "comment.ts",
+            "const a = 1;\n  const b = 2;\nconst c = 3;",
+            ((0, 0), (2, 0)),
+            "// const a = 1;\n  // const b = 2;\nconst c = 3;",
+            ((0, 0), (2, 0)),
+            "const a = 1;\n  const b = 2;\nconst c = 3;",
+        ),
+        (
+            "comment.css",
+            "body {\n  color: red;\n}",
+            ((0, 0), (2, 1)),
+            "/* body { */\n  /* color: red; */\n/* } */",
+            ((0, 0), (2, 7)),
+            "body {\n  color: red;\n}",
+        ),
+    )
+    for name, content, first_selection, commented, second_selection, uncommented in cases:
+        _, _, app = _file_app(name, content)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            _select(editor, *first_selection)
+            await pilot.pause()
+            await _press(pilot, "cmd+/")
+            assert editor.text == commented
+            _select(editor, *second_selection)
+            await pilot.pause()
+            await _press(pilot, "cmd+/")
+            assert editor.text == uncommented
 
 
 async def test_cmd_slash_unsupported_language_notifies_without_change() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "comment.json"
-    f.write_text('{"a": 1}')
-    app = _make_app(f)
+    _, _, app = _file_app("comment.json", '{"a": 1}')
     notifications: list[tuple[str, str | None]] = []
     app.notify = lambda message, **kwargs: notifications.append(
         (str(message), kwargs.get("severity"))
     )
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        await pilot.press("cmd+/")
-        await pilot.pause()
+        editor = _editor(app)
+        await _press(pilot, "cmd+/")
         assert editor.text == '{"a": 1}', repr(editor.text)
         assert notifications == [
             ("Line comments are not supported for this file type.", "warning")
@@ -308,265 +209,122 @@ async def test_cmd_slash_unsupported_language_notifies_without_change() -> None:
 
 
 async def test_alt_z_toggles_word_wrap() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "wrap.txt"
-    f.write_text("hello")
-    app = _make_app(f)
+    _, _, app = _file_app("wrap.txt", "hello")
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         assert editor.soft_wrap is False
-        await pilot.press("alt+z")
-        await pilot.pause()
+        await _press(pilot, "alt+z")
         assert editor.soft_wrap is True
-        await pilot.press("alt+z")
-        await pilot.pause()
+        await _press(pilot, "alt+z")
         assert editor.soft_wrap is False
 
 
-async def test_cmd_b_toggles_file_tree() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "tree.txt"
-    f.write_text("tree")
-    app = _make_app(f, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
-        assert tree.styles.display == "block"
-        await pilot.press("cmd+b")
-        await pilot.pause()
-        assert tree.styles.display == "none"
-        await pilot.press("cmd+b")
-        await pilot.pause()
-        assert tree.styles.display == "block"
-
-
-async def test_cmd_b_toggles_file_tree_without_open_buffer() -> None:
-    tmp, _ = _fresh_env()
-    app = _make_app(tmp, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
-        assert tree.styles.display == "block"
-        await pilot.press("cmd+b")
-        await pilot.pause()
-        assert tree.styles.display == "none"
-        await pilot.press("cmd+b")
-        await pilot.pause()
-        assert tree.styles.display == "block"
-
-
-async def test_super_b_toggles_file_tree_alias() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "tree.txt"
-    f.write_text("tree")
-    app = _make_app(f, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
-        await pilot.press("super+b")
-        await pilot.pause()
-        assert tree.styles.display == "none"
-        await pilot.press("super+b")
-        await pilot.pause()
-        assert tree.styles.display == "block"
-
-
-async def test_super_b_toggles_file_tree_without_open_buffer() -> None:
-    tmp, _ = _fresh_env()
-    app = _make_app(tmp, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
-        assert tree.styles.display == "block"
-        await pilot.press("super+b")
-        await pilot.pause()
-        assert tree.styles.display == "none"
-        await pilot.press("super+b")
-        await pilot.pause()
-        assert tree.styles.display == "block"
+async def test_file_tree_toggle_aliases_with_and_without_open_buffer() -> None:
+    for key, with_buffer in (
+        ("cmd+b", True),
+        ("super+b", True),
+        ("cmd+b", False),
+        ("super+b", False),
+    ):
+        if with_buffer:
+            _, _, app = _file_app("tree.txt", "tree", root_is_tmp=True)
+        else:
+            _, app = _directory_app()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            tree = app.query_one("#file-tree", DirectoryTree)
+            assert tree.styles.display == "block"
+            await _press(pilot, key)
+            assert tree.styles.display == "none", key
+            await _press(pilot, key)
+            assert tree.styles.display == "block", key
 
 
 async def test_undo_multiline_insert_that_removes_scrollbar() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "undo.txt"
     original = "\n".join(f"line {index}" for index in range(35))
-    f.write_text(original)
-    app = _make_app(f)
+    _, _, app = _file_app("undo.txt", original)
     async with app.run_test(size=(180, 51)) as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         editor.move_cursor((34, 0))
         await pilot.pause()
         inserted = "\n" + "\n".join(f"added {index}" for index in range(14)) + " tail"
         editor.insert(inserted, maintain_selection_offset=False)
         await pilot.pause()
         assert editor.document.line_count == 49, editor.document.line_count
-        await pilot.press("ctrl+z")
-        await pilot.pause()
+        await _press(pilot, "ctrl+z")
         assert editor.text == original, repr(editor.text)
         assert editor.cursor_location == (34, 0), editor.cursor_location
 
 
-async def test_alt_backspace_deletes_word_left() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "words.txt"
-    f.write_text("hello world foo")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 15))
-        await pilot.pause()
-        await pilot.press("alt+backspace")
-        await pilot.pause()
-        text = editor.text
-        assert "foo" not in text, repr(text)
-        assert text.startswith("hello world"), repr(text)
-
-
-async def test_cmd_backspace_deletes_to_line_start() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "line-start.txt"
-    f.write_text("hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 6))
-        await pilot.pause()
-        await pilot.press("cmd+backspace")
-        await pilot.pause()
-        assert editor.text == "world", repr(editor.text)
-        assert editor.cursor_location == (0, 0), editor.cursor_location
-
-
-async def test_cmd_backspace_at_line_start_joins_previous_line() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "join.txt"
-    f.write_text("alpha\nbeta")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 0))
-        await pilot.pause()
-        await pilot.press("cmd+backspace")
-        await pilot.pause()
-        assert editor.text == "alphabeta", repr(editor.text)
-        assert editor.cursor_location == (0, 5), editor.cursor_location
-
-
-async def test_ghostty_cmd_backspace_sequence_at_line_start_joins_previous_line() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "ghostty-join.txt"
-    f.write_text("alpha\nbeta")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 0))
-        await pilot.pause()
-        await pilot.press("ctrl+u")
-        await pilot.pause()
-        assert editor.text == "alphabeta", repr(editor.text)
-        assert editor.cursor_location == (0, 5), editor.cursor_location
+async def test_delete_left_shortcuts() -> None:
+    cases = (
+        ("alt+backspace", "hello world foo", (0, 15), "hello world ", None),
+        ("cmd+backspace", "hello world", (0, 6), "world", (0, 0)),
+        ("cmd+backspace", "alpha\nbeta", (1, 0), "alphabeta", (0, 5)),
+        ("ctrl+u", "alpha\nbeta", (1, 0), "alphabeta", (0, 5)),
+    )
+    for key, content, cursor, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key=key,
+            content=content,
+            cursor=cursor,
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
 
 
 async def test_cmd_backspace_deletes_selection() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "selection.txt"
-    f.write_text("hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 6), (0, 11))
-        await pilot.pause()
-        await pilot.press("cmd+backspace")
-        await pilot.pause()
-        assert editor.text == "hello ", repr(editor.text)
-        assert editor.cursor_location == (0, 6), editor.cursor_location
+    await _run_editor_case(
+        key="cmd+backspace",
+        content="hello world",
+        selection=((0, 6), (0, 11)),
+        expected_text="hello ",
+        expected_cursor=(0, 6),
+    )
 
 
-async def test_cmd_z_undoes_edit() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "undo-cmd.txt"
-    f.write_text("alpha")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 5))
-        editor.insert(" beta", maintain_selection_offset=False)
-        await pilot.pause()
-        await pilot.press("cmd+z")
-        await pilot.pause()
-        assert editor.text == "alpha", repr(editor.text)
+async def test_undo_and_redo_shortcuts() -> None:
+    for key, expected in (("cmd+z", "alpha"), ("cmd+shift+z", "alpha beta")):
+        _, _, app = _file_app("undo-cmd.txt", "alpha")
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            editor.move_cursor((0, 5))
+            editor.insert(" beta", maintain_selection_offset=False)
+            await pilot.pause()
+            await _press(pilot, "cmd+z")
+            if key == "cmd+shift+z":
+                await _press(pilot, key)
+            assert editor.text == expected, (key, repr(editor.text))
 
 
-async def test_cmd_shift_z_redoes_edit() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "redo-cmd.txt"
-    f.write_text("alpha")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 5))
-        editor.insert(" beta", maintain_selection_offset=False)
-        await pilot.pause()
-        await pilot.press("cmd+z")
-        await pilot.pause()
-        await pilot.press("cmd+shift+z")
-        await pilot.pause()
-        assert editor.text == "alpha beta", repr(editor.text)
-
-
-async def test_cmd_x_cuts_selected_text() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "cut-selection.txt"
-    f.write_text("alpha beta")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.selection = type(editor.selection)((0, 6), (0, 10))
-        await pilot.pause()
-        await pilot.press("cmd+x")
-        await pilot.pause()
-        assert editor.text == "alpha ", repr(editor.text)
-        assert editor.cursor_location == (0, 6), editor.cursor_location
-
-
-async def test_cmd_x_without_selection_cuts_current_line() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "cut-line.txt"
-    f.write_text("alpha\nbeta\ngamma")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("cmd+x")
-        await pilot.pause()
-        assert editor.text == "alpha\ngamma", repr(editor.text)
-        assert editor.cursor_location == (1, 2), editor.cursor_location
+async def test_cut_shortcuts() -> None:
+    await _run_editor_case(
+        key="cmd+x",
+        content="alpha beta",
+        selection=((0, 6), (0, 10)),
+        expected_text="alpha ",
+        expected_cursor=(0, 6),
+    )
+    await _run_editor_case(
+        key="cmd+x",
+        content="alpha\nbeta\ngamma",
+        cursor=(1, 2),
+        expected_text="alpha\ngamma",
+        expected_cursor=(1, 2),
+    )
 
 
 async def test_alt_shift_arrows_select_word_left_and_right() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "words.txt"
-    f.write_text("alpha beta gamma")
-    app = _make_app(f)
+    _, _, app = _file_app("words.txt", "alpha beta gamma")
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         editor.move_cursor((0, 10))
         await pilot.pause()
-        await pilot.press("alt+shift+left")
-        await pilot.pause()
+        await _press(pilot, "alt+shift+left")
         assert editor.cursor_location == (0, 6), editor.cursor_location
         assert editor.selection.start == (0, 10), editor.selection
         assert editor.selection.end == (0, 6), editor.selection
@@ -574,213 +332,97 @@ async def test_alt_shift_arrows_select_word_left_and_right() -> None:
 
         editor.move_cursor((0, 6))
         await pilot.pause()
-        await pilot.press("alt+shift+right")
-        await pilot.pause()
+        await _press(pilot, "alt+shift+right")
         assert editor.cursor_location == (0, 10), editor.cursor_location
         assert editor.selection.start == (0, 6), editor.selection
         assert editor.selection.end == (0, 10), editor.selection
         assert editor.selected_text == "beta", repr(editor.selected_text)
 
 
-async def test_cmd_l_selects_current_line_with_newline() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma\n")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("cmd+l")
-        await pilot.pause()
-        assert editor.selection.start == (1, 0), editor.selection
-        assert editor.selection.end == (2, 0), editor.selection
-        assert editor.cursor_location == (2, 0), editor.cursor_location
-        assert editor.selected_text == "beta\n", repr(editor.selected_text)
+async def test_line_selection_shortcuts() -> None:
+    cases: tuple[tuple[str, str, tuple[int, int], tuple[int, int], tuple[int, int], str], ...] = (
+        ("cmd+l", "alpha\nbeta\ngamma\n", (1, 2), (1, 0), (2, 0), "beta\n"),
+        ("super+l", "alpha\nbeta\n", (0, 1), (0, 0), (1, 0), "alpha\n"),
+        ("cmd+l", "alpha\nbeta\ngamma", (2, 2), (2, 0), (2, 5), "gamma"),
+    )
+    for key, content, cursor, start, end, selected in cases:
+        _, _, app = _file_app("lines.txt", content)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            editor.move_cursor(cursor)
+            await pilot.pause()
+            await _press(pilot, key)
+            assert editor.selection.start == start, (key, editor.selection)
+            assert editor.selection.end == end, (key, editor.selection)
+            assert editor.cursor_location == end, (key, editor.cursor_location)
+            assert editor.selected_text == selected, (key, repr(editor.selected_text))
 
 
 async def test_cmd_l_repeats_expand_line_selection() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma\n")
-    app = _make_app(f)
+    _, _, app = _file_app("lines.txt", "alpha\nbeta\ngamma\n")
     async with app.run_test() as pilot:
         await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
+        editor = _editor(app)
         editor.move_cursor((0, 3))
         await pilot.pause()
-        await pilot.press("cmd+l")
-        await pilot.pause()
-        await pilot.press("cmd+l")
-        await pilot.pause()
+        await _press_many(pilot, "cmd+l", "cmd+l")
         assert editor.selection.start == (0, 0), editor.selection
         assert editor.selection.end == (2, 0), editor.selection
         assert editor.cursor_location == (2, 0), editor.cursor_location
         assert editor.selected_text == "alpha\nbeta\n", repr(editor.selected_text)
 
 
-async def test_super_l_selects_current_line_alias() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\n")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 1))
-        await pilot.pause()
-        await pilot.press("super+l")
-        await pilot.pause()
-        assert editor.selection.start == (0, 0), editor.selection
-        assert editor.selection.end == (1, 0), editor.selection
-        assert editor.selected_text == "alpha\n", repr(editor.selected_text)
+async def test_delete_current_line_shortcuts() -> None:
+    cases = (
+        ("cmd+shift+k", "alpha\ngamma", (1, 2)),
+        ("super+shift+k", "alpha\ngamma", (1, 2)),
+        ("ctrl+shift+k", "alpha\nbeta\ngamma", (1, 2)),
+    )
+    for key, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key=key,
+            content="alpha\nbeta\ngamma",
+            cursor=(1, 2),
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
 
 
-async def test_cmd_l_selects_final_line_without_newline() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((2, 2))
-        await pilot.pause()
-        await pilot.press("cmd+l")
-        await pilot.pause()
-        assert editor.selection.start == (2, 0), editor.selection
-        assert editor.selection.end == (2, 5), editor.selection
-        assert editor.cursor_location == (2, 5), editor.cursor_location
-        assert editor.selected_text == "gamma", repr(editor.selected_text)
-
-
-async def test_cmd_shift_k_deletes_current_line() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("cmd+shift+k")
-        await pilot.pause()
-        assert editor.text == "alpha\ngamma", repr(editor.text)
-        assert editor.cursor_location == (1, 2), editor.cursor_location
-
-
-async def test_super_shift_k_deletes_current_line_alias() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("super+shift+k")
-        await pilot.pause()
-        assert editor.text == "alpha\ngamma", repr(editor.text)
-        assert editor.cursor_location == (1, 2), editor.cursor_location
-
-
-async def test_ctrl_shift_k_does_not_delete_current_line() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "lines.txt"
-    f.write_text("alpha\nbeta\ngamma")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((1, 2))
-        await pilot.pause()
-        await pilot.press("ctrl+shift+k")
-        await pilot.pause()
-        assert editor.text == "alpha\nbeta\ngamma", repr(editor.text)
-        assert editor.cursor_location == (1, 2), editor.cursor_location
-
-
-async def test_cmd_shift_left_selects_to_line_start() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "select.txt"
-    f.write_text("hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 5))
-        await pilot.pause()
-        await pilot.press("cmd+shift+left")
-        await pilot.pause()
-        assert editor.cursor_location == (0, 0), editor.cursor_location
-        assert editor.selection.start == (0, 5), editor.selection
-        assert editor.selection.end == (0, 0), editor.selection
-
-
-async def test_cmd_shift_right_selects_to_line_end() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "select.txt"
-    f.write_text("hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 5))
-        await pilot.pause()
-        await pilot.press("cmd+shift+right")
-        await pilot.pause()
-        assert editor.cursor_location == (0, 11), editor.cursor_location
-        assert editor.selection.start == (0, 5), editor.selection
-        assert editor.selection.end == (0, 11), editor.selection
-
-
-async def test_super_shift_line_selection_aliases() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "select.txt"
-    f.write_text("hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 5))
-        await pilot.pause()
-        await pilot.press("super+shift+left")
-        await pilot.pause()
-        assert editor.selection.start == (0, 5), editor.selection
-        assert editor.selection.end == (0, 0), editor.selection
-        editor.move_cursor((0, 5))
-        await pilot.pause()
-        await pilot.press("super+shift+right")
-        await pilot.pause()
-        assert editor.selection.start == (0, 5), editor.selection
-        assert editor.selection.end == (0, 11), editor.selection
+async def test_cmd_shift_selects_to_line_boundaries() -> None:
+    cases = (
+        ("cmd+shift+left", (0, 0)),
+        ("cmd+shift+right", (0, 11)),
+        ("super+shift+left", (0, 0)),
+        ("super+shift+right", (0, 11)),
+    )
+    for key, end in cases:
+        _, _, app = _file_app("select.txt", "hello world")
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            editor.move_cursor((0, 5))
+            await pilot.pause()
+            await _press(pilot, key)
+            assert editor.cursor_location == end, (key, editor.cursor_location)
+            assert editor.selection.start == (0, 5), (key, editor.selection)
+            assert editor.selection.end == end, (key, editor.selection)
 
 
 async def test_parser_order_super_shift_line_selection_aliases() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "select.txt"
-    f.write_text("  hello world")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        editor = app.query_one("#editor", TextArea)
-        editor.move_cursor((0, 8))
-        await pilot.pause()
-        await pilot.press("shift+super+left")
-        await pilot.pause()
-        assert editor.cursor_location == (0, 2), editor.cursor_location
-        assert editor.selection.start == (0, 8), editor.selection
-        assert editor.selection.end == (0, 2), editor.selection
-        assert editor.selected_text == "hello ", repr(editor.selected_text)
-
-        editor.move_cursor((0, 5))
-        await pilot.pause()
-        await pilot.press("shift+super+right")
-        await pilot.pause()
-        assert editor.cursor_location == (0, 13), editor.cursor_location
-        assert editor.selection.start == (0, 5), editor.selection
-        assert editor.selection.end == (0, 13), editor.selection
-        assert editor.selected_text == "lo world", repr(editor.selected_text)
+    cases: tuple[tuple[str, tuple[int, int], tuple[int, int], str], ...] = (
+        ("shift+super+left", (0, 8), (0, 2), "hello "),
+        ("shift+super+right", (0, 5), (0, 13), "lo world"),
+    )
+    for key, cursor, end, selected in cases:
+        _, _, app = _file_app("select.txt", "  hello world")
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            editor.move_cursor(cursor)
+            await pilot.pause()
+            await _press(pilot, key)
+            assert editor.cursor_location == end, (key, editor.cursor_location)
+            assert editor.selection.start == cursor, (key, editor.selection)
+            assert editor.selection.end == end, (key, editor.selection)
+            assert editor.selected_text == selected, (key, repr(editor.selected_text))

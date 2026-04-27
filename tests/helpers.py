@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
+
+from textual.widgets import Footer, TextArea
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -31,7 +36,6 @@ mod = SimpleNamespace(
 
 
 def _fresh_env() -> tuple[Path, Path]:
-    """Create an isolated tmpdir + reset globals."""
     tmp = Path(tempfile.mkdtemp(prefix="riched-e2e-"))
     cfg = tmp / "config.yaml"
     syntax_mod.reset_ts_registration()
@@ -44,7 +48,6 @@ def _make_app(
     markdown_preview_hotkey_conflicted: bool | None = None,
     ghostty_app_hotkey_conflicts: set[str] | None = None,
 ):
-    """Replicate `riched.main()`'s dynamic subclass so BINDINGS take effect."""
     cls = type(
         "ConfiguredRichedApp",
         (mod.RichedApp,),
@@ -61,3 +64,74 @@ def _make_app(
             conflicts.discard("toggle_markdown_preview")
         app._ghostty_app_hotkey_conflicts = conflicts
     return app
+
+
+def _file_app(
+    name: str = "test.txt",
+    content: str = "",
+    *,
+    root_is_tmp: bool = False,
+    **app_kwargs,
+) -> tuple[Path, Path, RichedApp]:
+    tmp, _ = _fresh_env()
+    path = tmp / name
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content)
+    root = tmp if root_is_tmp else app_kwargs.pop("root", None)
+    return tmp, path, _make_app(path, root=root, **app_kwargs)
+
+
+def _directory_app(**app_kwargs) -> tuple[Path, RichedApp]:
+    tmp, _ = _fresh_env()
+    return tmp, _make_app(tmp, root=tmp, **app_kwargs)
+
+
+def _editor(app) -> TextArea:
+    return app.query_one("#editor", TextArea)
+
+
+def _select(editor: TextArea, start: tuple[int, int], end: tuple[int, int]) -> None:
+    editor.selection = type(editor.selection)(start, end)
+
+
+async def _press(pilot, key: str) -> None:
+    await pilot.press(key)
+    await pilot.pause()
+
+
+async def _press_many(pilot, *keys: str) -> None:
+    for key in keys:
+        await _press(pilot, key)
+
+
+def _footer_labels(footer: Footer) -> dict[str, str]:
+    return {
+        child.description: child.key_display
+        for child in footer.children
+        if hasattr(child, "key_display")
+    }
+
+
+def _key_help_rows(app) -> list[tuple[str, str]]:
+    return [
+        (row.children[0].content, row.children[1].content)
+        for row in app.screen.query(".binding-row")
+    ]
+
+
+@contextmanager
+def _temporary_env(**updates: str | None) -> Iterator[None]:
+    originals = {name: os.environ.get(name) for name in updates}
+    try:
+        for name, value in updates.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        yield
+    finally:
+        for name, value in originals.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value

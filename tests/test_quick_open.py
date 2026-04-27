@@ -8,7 +8,7 @@ from textual.widgets import Static
 import riched.app as app_mod
 from riched.screens import QuickOpenScreen
 
-from .helpers import _fresh_env, _make_app
+from .helpers import _directory_app, _fresh_env, _make_app
 
 
 async def _wait_for_quick_open_index(app: app_mod.RichedApp, pilot) -> None:
@@ -18,10 +18,39 @@ async def _wait_for_quick_open_index(app: app_mod.RichedApp, pilot) -> None:
         await pilot.pause()
 
 
+def _relative_paths(app: app_mod.RichedApp) -> list[str]:
+    return [entry.relative_path for entry in app._quick_open_entries]
+
+
+async def _index_quick_open(app: app_mod.RichedApp, pilot) -> None:
+    app.action_quick_open()
+    await _wait_for_quick_open_index(app, pilot)
+
+
+async def _assert_index_limit_visible(tmp, *, use_git: bool) -> None:
+    if use_git:
+        subprocess.run(["git", "init"], cwd=tmp, check=True, capture_output=True)
+    for index in range(5):
+        (tmp / f"file-{index}.txt").write_text(str(index))
+
+    old_limit = app_mod.MAX_QUICK_OPEN_INDEX_FILES
+    app_mod.MAX_QUICK_OPEN_INDEX_FILES = 3
+    try:
+        app = _make_app(tmp, root=tmp)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await _index_quick_open(app, pilot)
+            assert isinstance(app.screen, QuickOpenScreen)
+            status = app.screen.query_one("#status", Static)
+            assert len(app._quick_open_entries) == 3
+            assert str(status.content) == "Showing first 3 files; index limit reached."
+    finally:
+        app_mod.MAX_QUICK_OPEN_INDEX_FILES = old_limit
+
+
 async def test_quick_open_screen_opens_before_indexing_completes() -> None:
-    tmp, _ = _fresh_env()
+    tmp, app = _directory_app()
     (tmp / "file.txt").write_text("content")
-    app = _make_app(tmp, root=tmp)
     started = False
 
     def fake_start() -> None:
@@ -66,7 +95,7 @@ async def test_quick_open_fallback_skips_heavy_directories() -> None:
         app.action_quick_open()
         await _wait_for_quick_open_index(app, pilot)
 
-    relative_paths = {entry.relative_path for entry in app._quick_open_entries}
+    relative_paths = set(_relative_paths(app))
     assert "keep.py" in relative_paths
     assert all("hidden.py" not in relative_path for relative_path in relative_paths)
 
@@ -90,7 +119,7 @@ async def test_quick_open_fallback_indexes_by_directory_level() -> None:
         app.action_quick_open()
         await _wait_for_quick_open_index(app, pilot)
 
-    relative_paths = [entry.relative_path for entry in app._quick_open_entries]
+    relative_paths = _relative_paths(app)
     assert relative_paths.index("root.txt") < relative_paths.index("first/first.txt")
     assert relative_paths.index("root.txt") < relative_paths.index("second/second.txt")
     assert relative_paths.index("second/second.txt") < relative_paths.index(
@@ -114,7 +143,7 @@ async def test_quick_open_fallback_follows_symlinks() -> None:
         app.action_quick_open()
         await _wait_for_quick_open_index(app, pilot)
 
-    relative_paths = [entry.relative_path for entry in app._quick_open_entries]
+    relative_paths = _relative_paths(app)
     assert "file-link.txt" in relative_paths
     assert "linked-dir/target.txt" in relative_paths
     assert len(relative_paths) == len(set(relative_paths))
@@ -145,7 +174,7 @@ async def test_quick_open_git_index_includes_ignored_files() -> None:
         app.action_quick_open()
         await _wait_for_quick_open_index(app, pilot)
 
-    relative_paths = {entry.relative_path for entry in app._quick_open_entries}
+    relative_paths = set(_relative_paths(app))
     assert "tracked.py" in relative_paths
     assert "untracked.py" in relative_paths
     assert ".env" in relative_paths
@@ -156,44 +185,12 @@ async def test_quick_open_git_index_includes_ignored_files() -> None:
 
 async def test_quick_open_git_index_limit_is_visible() -> None:
     tmp, _ = _fresh_env()
-    subprocess.run(["git", "init"], cwd=tmp, check=True, capture_output=True)
-    for index in range(5):
-        (tmp / f"file-{index}.txt").write_text(str(index))
-
-    old_limit = app_mod.MAX_QUICK_OPEN_INDEX_FILES
-    app_mod.MAX_QUICK_OPEN_INDEX_FILES = 3
-    try:
-        app = _make_app(tmp, root=tmp)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            app.action_quick_open()
-            await _wait_for_quick_open_index(app, pilot)
-            assert isinstance(app.screen, QuickOpenScreen)
-            status = app.screen.query_one("#status", Static)
-            assert len(app._quick_open_entries) == 3
-            assert str(status.content) == "Showing first 3 files; index limit reached."
-    finally:
-        app_mod.MAX_QUICK_OPEN_INDEX_FILES = old_limit
+    await _assert_index_limit_visible(tmp, use_git=True)
 
 
 async def test_quick_open_fallback_limit_is_visible() -> None:
     tmp, _ = _fresh_env()
-    for index in range(5):
-        (tmp / f"file-{index}.txt").write_text(str(index))
-
-    old_limit = app_mod.MAX_QUICK_OPEN_INDEX_FILES
-    app_mod.MAX_QUICK_OPEN_INDEX_FILES = 3
-    try:
-        app = _make_app(tmp, root=tmp)
-        async with app.run_test() as pilot:
-            await pilot.pause()
-            app.action_quick_open()
-            await _wait_for_quick_open_index(app, pilot)
-            assert isinstance(app.screen, QuickOpenScreen)
-            status = app.screen.query_one("#status", Static)
-            assert str(status.content) == "Showing first 3 files; index limit reached."
-    finally:
-        app_mod.MAX_QUICK_OPEN_INDEX_FILES = old_limit
+    await _assert_index_limit_visible(tmp, use_git=False)
 
 
 async def test_quick_open_exact_hidden_filename_match_wins() -> None:

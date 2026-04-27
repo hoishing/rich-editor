@@ -5,15 +5,20 @@ from inspect import isawaitable
 from textual.command import CommandPalette
 from textual.widgets import MarkdownViewer
 
-from .helpers import _fresh_env, _make_app
+from .helpers import _file_app, _key_help_rows, _press
 from riched.screens import KeysHelpScreen
 
 
+def _palette_app(**kwargs):
+    return _file_app("palette.txt", "palette", **kwargs)[2]
+
+
+def _system_commands(app) -> dict[str, object]:
+    return {command.title: command for command in app.get_system_commands(app.screen)}
+
+
 async def test_command_palette_button_is_hidden() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
+    app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
         header_icon = app.query_one("HeaderIcon")
@@ -22,10 +27,7 @@ async def test_command_palette_button_is_hidden() -> None:
 
 
 async def test_command_palette_omits_maximize() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
+    app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
         titles = {command.title for command in app.get_system_commands(app.screen)}
@@ -34,16 +36,10 @@ async def test_command_palette_omits_maximize() -> None:
 
 
 async def test_command_palette_includes_show_key_bindings() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
+    app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
-        commands = {
-            command.title: command
-            for command in app.get_system_commands(app.screen)
-        }
+        commands = _system_commands(app)
         assert "Show key bindings" in commands
         commands["Show key bindings"].callback()
         await pilot.pause()
@@ -51,16 +47,10 @@ async def test_command_palette_includes_show_key_bindings() -> None:
 
 
 async def test_command_palette_includes_toggle_markdown_preview() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Palette")
-    app = _make_app(f, root=tmp)
+    _, _, app = _file_app("README.md", "# Palette", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        commands = {
-            command.title: command
-            for command in app.get_system_commands(app.screen)
-        }
+        commands = _system_commands(app)
         assert "Toggle Markdown preview" in commands
 
         result = commands["Toggle Markdown preview"].callback()
@@ -74,10 +64,7 @@ async def test_command_palette_includes_toggle_markdown_preview() -> None:
 
 
 async def test_command_palette_items_are_sorted_alphabetically() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
+    app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
         titles = [command.title for command in app.get_system_commands(app.screen)]
@@ -85,20 +72,14 @@ async def test_command_palette_items_are_sorted_alphabetically() -> None:
 
 
 async def test_keys_help_includes_command_palette_binding() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f, ghostty_app_hotkey_conflicts=set())
+    app = _palette_app(ghostty_app_hotkey_conflicts=set())
     async with app.run_test() as pilot:
         await pilot.pause()
 
         app.action_show_keys_popup()
         await pilot.pause()
 
-        rows = [
-            (row.children[0].content, row.children[1].content)
-            for row in app.screen.query(".binding-row")
-        ]
+        rows = _key_help_rows(app)
         assert ("⌘⇧P / F1", "Command palette") in rows
         assert ("⌘Enter", "Insert line below") in rows
         assert ("⌘⇧Enter", "Insert line above") in rows
@@ -111,49 +92,18 @@ async def test_keys_help_includes_command_palette_binding() -> None:
         )
 
 
-async def test_f1_opens_command_palette() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        await pilot.press("f1")
-        await pilot.pause()
-        assert CommandPalette.is_open(app)
-
-
-async def test_cmd_shift_p_opens_command_palette() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        await pilot.press("cmd+shift+p")
-        await pilot.pause()
-        assert CommandPalette.is_open(app)
-
-
-async def test_super_shift_p_opens_command_palette_alias() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        await pilot.press("super+shift+p")
-        await pilot.pause()
-        assert CommandPalette.is_open(app)
+async def test_command_palette_opens_from_declared_keys() -> None:
+    for key in ("f1", "cmd+shift+p", "super+shift+p"):
+        app = _palette_app()
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await _press(pilot, key)
+            assert CommandPalette.is_open(app), key
 
 
 async def test_ctrl_p_does_not_open_command_palette() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "palette.txt"
-    f.write_text("palette")
-    app = _make_app(f)
+    app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
-        await pilot.press("ctrl+p")
-        await pilot.pause()
+        await _press(pilot, "ctrl+p")
         assert not CommandPalette.is_open(app)
