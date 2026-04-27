@@ -27,6 +27,7 @@ from textual.widgets._footer import FooterKey, FooterLabel, KeyGroup
 
 from .editor import RichedTextArea
 from .keybindings import (
+    DEFAULT_BINDINGS,
     app_binding_display_key,
     ghostty_app_hotkey_conflicts,
 )
@@ -62,7 +63,7 @@ MARKDOWN_SUFFIXES = {".md", ".markdown"}
 
 
 class RichedFooter(Footer):
-    """Footer that omits Ghostty-blocked bindings without fallbacks."""
+    """Footer that shows app bindings and omits blocked bindings."""
 
     def _hide_binding(self, binding: Binding) -> bool:
         return (
@@ -77,7 +78,11 @@ class RichedFooter(Footer):
         bindings = [
             (binding, enabled, tooltip)
             for (_, binding, enabled, tooltip) in active_bindings.values()
-            if binding.show and not self._hide_binding(binding)
+            if (
+                binding.show
+                and binding.action in DEFAULT_BINDINGS
+                and not self._hide_binding(binding)
+            )
         ]
         action_to_bindings: defaultdict[str, list[tuple[Binding, bool, str]]]
         action_to_bindings = defaultdict(list)

@@ -9,6 +9,14 @@ from .helpers import _fresh_env, _make_app
 from riched.keybindings import ghostty_app_hotkey_conflicts
 
 
+def _footer_labels(footer: Footer) -> dict[str, str]:
+    return {
+        child.description: child.key_display
+        for child in footer.children
+        if hasattr(child, "key_display")
+    }
+
+
 async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "footer.txt"
@@ -17,13 +25,15 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
+        labels = _footer_labels(footer)
+        assert set(labels) == {
+            "Save",
+            "Command palette",
+            "Toggle file tree",
+            "Quick open",
+            "Toggle Markdown preview",
         }
         assert labels["Save"] == "⌘S"
-        assert "Close buffer" not in labels
         assert labels["Command palette"] == "⌘⇧P"
         assert labels["Toggle file tree"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
@@ -39,11 +49,7 @@ async def test_footer_uses_command_palette_fallback_for_ghostty_conflict() -> No
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
-        }
+        labels = _footer_labels(footer)
         assert labels["Command palette"] == "F1"
 
 
@@ -72,11 +78,7 @@ async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> N
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
-        }
+        labels = _footer_labels(footer)
         assert labels["Command palette"] == "⌘⇧P"
         assert "Toggle Markdown preview" not in labels
 
@@ -89,11 +91,7 @@ async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
-        }
+        labels = _footer_labels(footer)
         assert "Toggle Markdown preview" not in labels
 
 
@@ -120,11 +118,7 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
-        }
+        labels = _footer_labels(footer)
         assert labels["Command palette"] == "F1"
         assert "Toggle Markdown preview" not in labels
 
@@ -154,9 +148,5 @@ async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> 
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
-        labels = {
-            child.description: child.key_display
-            for child in footer.children
-            if hasattr(child, "key_display")
-        }
+        labels = _footer_labels(footer)
         assert labels["Toggle Markdown preview"] == "⌘⇧V"
