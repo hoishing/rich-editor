@@ -25,6 +25,7 @@ from textual.widgets import (
 from textual.widgets._footer import FooterKey, FooterLabel, KeyGroup
 
 from .editor import RichedTextArea
+from .formatting import format_text
 from .keybindings import (
     DEFAULT_BINDINGS,
     app_binding_display_key,
@@ -51,6 +52,14 @@ FILE_TREE_DEFAULT_WIDTH = 30
 FILE_TREE_MIN_WIDTH = 18
 FILE_TREE_MAX_WIDTH = 44
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
+
+
+def _clamp_location(text: str, location: tuple[int, int]) -> tuple[int, int]:
+    lines = text.split("\n")
+    row, column = location
+    row = max(0, min(row, len(lines) - 1))
+    column = max(0, min(column, len(lines[row])))
+    return row, column
 
 
 class RichedFooter(Footer):
@@ -660,6 +669,55 @@ class RichedApp(App):
         self._saved_text = editor.text
         self._invalidate_quick_open_index()
         self.notify(f"Saved {self.path}")
+
+    def action_format_document(self) -> None:
+        if self.path is None:
+            self.notify("No file open", severity="warning")
+            return
+        editor = self._editor_or_none()
+        if editor is None:
+            self.notify("No file open", severity="warning")
+            return
+
+        result = format_text(self.path, editor.text)
+        if result.missing_tool is not None:
+            self.notify(
+                f"`{result.missing_tool}` is required for formatting. "
+                "Install it and ensure it is on PATH.",
+                severity="warning",
+            )
+            return
+        if result.unsupported:
+            self.notify(
+                "Formatting is not supported for this file type.",
+                severity="warning",
+            )
+            return
+        if result.error is not None:
+            self.notify(result.error, severity="error")
+            return
+        if result.text is None or result.text == editor.text:
+            self.notify("Already formatted")
+            return
+
+        cursor_location = editor.cursor_location
+        selection = editor.selection
+        last_row = editor.document.line_count - 1
+        last_location = (last_row, len(editor.document.get_line(last_row)))
+        editor.replace(
+            result.text,
+            (0, 0),
+            last_location,
+            maintain_selection_offset=False,
+        )
+        if selection.is_empty:
+            editor.move_cursor(_clamp_location(result.text, cursor_location))
+        else:
+            editor.selection = type(selection)(
+                _clamp_location(result.text, selection.start),
+                _clamp_location(result.text, selection.end),
+            )
+        self.notify(f"Formatted {self.path}")
 
     def action_quit_check(self) -> None:
         self._after_saved_or_discarded(self.exit)

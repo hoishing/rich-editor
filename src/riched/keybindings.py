@@ -273,7 +273,9 @@ def _ghostty_conflict_triggers() -> dict[str, str]:
             continue
         for candidate in preferred_key.split(","):
             trigger = candidate.strip()
-            if trigger.startswith("super+"):
+            if "cmd" in trigger:
+                continue
+            if "super" in trigger or "alt" in trigger:
                 triggers[trigger] = action
                 break
     return triggers

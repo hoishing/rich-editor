@@ -36,6 +36,10 @@ editor:
     action: copy_line_down
     description: Copy line down
     show: false
+  - key: alt+shift+f,shift+alt+f
+    preferred_key: alt+shift+f,shift+alt+f
+    action: format_document
+    description: Format document
   - key: cmd+enter,super+enter
     preferred_key: cmd+enter,super+enter
     action: insert_line_below

@@ -146,6 +146,9 @@ class RichedTextArea(TextArea):
     def action_toggle_word_wrap(self) -> None:
         self.soft_wrap = not self.soft_wrap
 
+    def action_format_document(self) -> None:
+        self.app.action_format_document()
+
     def action_toggle_line_comment(self) -> None:
         language = self.language
         if language in LINE_COMMENT_MARKERS:

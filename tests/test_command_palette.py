@@ -85,11 +85,24 @@ async def test_keys_help_includes_command_palette_binding() -> None:
         assert ("⌘⇧Enter", "Insert line above") in rows
         assert ("⌘]", "Indent line") in rows
         assert ("⌘[", "Outdent line") in rows
+        assert ("⌥⇧F", "Format document") in rows
         assert not any(
             modifier in key.lower()
             for key, _ in rows
             for modifier in ("cmd", "ctrl", "control", "shift")
         )
+
+
+async def test_keys_help_warns_for_ghostty_conflicted_format_document() -> None:
+    app = _palette_app(ghostty_app_hotkey_conflicts={"format_document"})
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        app.action_show_keys_popup()
+        await pilot.pause()
+
+        rows = _key_help_rows(app)
+        assert ("⚠️ ⌥⇧F", "Format document") in rows
 
 
 async def test_command_palette_opens_from_declared_keys() -> None:

@@ -51,6 +51,7 @@ Editor shortcuts:
 | `⌥↓` | Move line down |
 | `⌥⇧↑` | Copy line up |
 | `⌥⇧↓` | Copy line down |
+| `⌥⇧F` | Format document |
 | `⌘Enter` | Insert line below |
 | `⌘⇧Enter` | Insert line above |
 | `⌘]` | Indent line |
@@ -72,6 +73,22 @@ Editor shortcuts:
 ## Settings
 
 `riched` persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/riched/settings.yaml`
+
+## Formatting
+
+The `⌥⇧F` shortcut formats the current buffer with external formatter CLIs:
+
+- Python files use `ruff`.
+- Other supported source/config formats use `prettier`.
+
+Install both tools and make sure they are on `PATH` before using the shortcut:
+
+```sh
+bun add --global prettier
+uv tool install ruff
+```
+
+Files unsupported by both tools are left unchanged and `riched` shows a warning.
 
 ## Limitations
 
