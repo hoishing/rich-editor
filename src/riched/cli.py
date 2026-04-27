@@ -31,7 +31,7 @@ def main() -> int:
         return 0
 
     path = Path.cwd() if args.filename is None else Path(args.filename).expanduser()
-    root = path if path.is_dir() else Path.cwd()
+    root = path if path.is_dir() else path.parent
 
     class ConfiguredRichedApp(RichedApp):
         BINDINGS = build_bindings()

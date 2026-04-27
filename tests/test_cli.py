@@ -72,3 +72,37 @@ raise SystemExit(cli.main())
     assert result.returncode == 0, result.stderr
     assert result.stdout == f"{cwd}|{cwd}\n", result.stdout
     assert result.stderr == "", result.stderr
+
+
+async def test_filename_opens_containing_folder_as_root() -> None:
+    script = """
+from riched import cli
+
+captured = {}
+
+class StubApp:
+    def __init__(self, path, root):
+        captured["path"] = path
+        captured["root"] = root
+
+    def run(self):
+        print(f"{captured['path']}|{captured['root']}")
+
+cli.RichedApp = StubApp
+raise SystemExit(cli.main())
+"""
+    tmp = Path(tempfile.mkdtemp(prefix="riched-cli-"))
+    folder = tmp / "notes"
+    folder.mkdir()
+    f = folder / "today.txt"
+    f.write_text("today")
+    result = subprocess.run(
+        [sys.executable, "-c", script, str(f)],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=tmp,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout == f"{f}|{folder}\n", result.stdout
+    assert result.stderr == "", result.stderr

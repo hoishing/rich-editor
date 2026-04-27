@@ -17,6 +17,7 @@ from .test_command_palette import (
     test_super_shift_p_opens_command_palette_alias,
 )
 from .test_cli import (
+    test_filename_opens_containing_folder_as_root,
     test_no_filename_opens_current_folder,
     test_version_flag_prints_current_version,
     test_version_flag_rejects_filename,
@@ -129,6 +130,10 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     ("open directory starts with no buffer", test_open_directory_starts_with_no_buffer),
     ("save writes file", test_save_writes_file),
     ("cli: no filename opens current folder", test_no_filename_opens_current_folder),
+    (
+        "cli: filename opens containing folder as root",
+        test_filename_opens_containing_folder_as_root,
+    ),
     ("cli: version flag prints current version", test_version_flag_prints_current_version),
     ("cli: version flag rejects filename", test_version_flag_rejects_filename),
     ("command palette: button hidden", test_command_palette_button_is_hidden),
