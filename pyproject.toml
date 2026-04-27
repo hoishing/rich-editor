@@ -1,6 +1,6 @@
 [project]
 name = "riched"
-version = "0.4.4"
+version = "0.5.0"
 description = "A Rich library powered editor(hence the name riched) that implements VS Code keybindings in TUI"
 readme = "README.md"
 requires-python = ">=3.12"
