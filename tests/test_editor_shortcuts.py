@@ -128,7 +128,12 @@ async def test_insert_line_above_aliases() -> None:
 
 
 async def test_indent_line_aliases() -> None:
-    keys = ("cmd+]", "super+]")
+    keys = (
+        "cmd+]",
+        "super+]",
+        "cmd+right_square_bracket",
+        "super+right_square_bracket",
+    )
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"
@@ -162,7 +167,12 @@ async def test_indent_selected_lines() -> None:
 
 
 async def test_outdent_line_aliases() -> None:
-    keys = ("cmd+[", "super+[")
+    keys = (
+        "cmd+[",
+        "super+[",
+        "cmd+left_square_bracket",
+        "super+left_square_bracket",
+    )
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"
