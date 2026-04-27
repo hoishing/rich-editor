@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual.widgets import MarkdownViewer, TextArea
+from textual.widgets import Markdown, MarkdownViewer, TextArea
 
 from .helpers import _fresh_env, _make_app
 
@@ -120,6 +120,32 @@ async def test_switching_files_exits_markdown_preview() -> None:
         assert editor.styles.display == "block"
         assert editor.text == "# Second"
         assert editor.has_focus
+
+
+async def test_markdown_preview_external_link_opens_without_navigation() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "README.md"
+    f.write_text("[Rich](https://github.com/Textualize/rich)")
+    app = _make_app(f, root=tmp)
+    opened_urls: list[str] = []
+    app.open_url = lambda url, **kwargs: opened_urls.append(url)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        await pilot.press("cmd+shift+v")
+        await pilot.pause()
+
+        preview = app.query_one("#markdown-preview", MarkdownViewer)
+        preview.document.post_message(
+            Markdown.LinkClicked(
+                preview.document,
+                "https://github.com/Textualize/rich",
+            )
+        )
+        await pilot.pause()
+
+        assert opened_urls == ["https://github.com/Textualize/rich"]
+        assert preview.document.source == "[Rich](https://github.com/Textualize/rich)"
 
 
 async def test_keys_help_includes_markdown_preview_binding() -> None:

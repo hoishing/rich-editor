@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from textual import events, work
 from textual.app import App, ComposeResult, SystemCommand
@@ -141,6 +142,18 @@ class FileTreeResizeHandle(Static):
         self.remove_class("dragging")
         event.stop()
         event.prevent_default()
+
+
+class RichedMarkdownViewer(MarkdownViewer):
+    """Markdown preview that opens external URLs without navigating to them."""
+
+    async def go(self, location: str | Any) -> None:
+        href = str(location)
+        parsed = urlparse(href)
+        if parsed.scheme and (parsed.netloc or parsed.scheme not in {"", "file"}):
+            self.app.open_url(href)
+            return
+        await super().go(location)
 
 
 class RichedApp(App):
@@ -538,10 +551,11 @@ class RichedApp(App):
             editor.focus()
             return
 
-        preview = MarkdownViewer(
+        preview = RichedMarkdownViewer(
             editor.text,
             id="markdown-preview",
             show_table_of_contents=False,
+            open_links=False,
         )
         editor.styles.display = "none"
         await self.query_one("#editor-slot", Container).mount(preview)

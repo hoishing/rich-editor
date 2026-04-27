@@ -87,6 +87,7 @@ from .test_markdown_preview import (
     test_ctrl_shift_v_toggles_markdown_preview_fallback,
     test_ctrl_shift_v_warns_for_non_markdown_file,
     test_keys_help_includes_markdown_preview_binding,
+    test_markdown_preview_external_link_opens_without_navigation,
     test_markdown_preview_uses_unsaved_editor_content,
     test_super_shift_v_toggles_markdown_preview_alias,
     test_switching_files_exits_markdown_preview,
@@ -216,6 +217,10 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "markdown preview: switching files exits preview",
         test_switching_files_exits_markdown_preview,
+    ),
+    (
+        "markdown preview: external link opens without navigation",
+        test_markdown_preview_external_link_opens_without_navigation,
     ),
     (
         "markdown preview: keys help includes binding",

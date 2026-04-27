@@ -79,3 +79,27 @@ Editor shortcuts:
 - some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
 - need to unbound these hotkeys in Ghostty config in order to use them, fall back hotkeys are listed below:
   - `⌘⇧V` → `^⇧V`
+
+### Unbind Ghostty default keybindings
+
+Ghostty keybindings can be unbound in the Ghostty config file. On macOS, use one of:
+
+- `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`
+- `~/Library/Application Support/com.mitchellh.ghostty/config`
+- `~/.config/ghostty/config.ghostty`
+- `~/.config/ghostty/config`
+
+Add one `keybind = <trigger>=unbind` line per conflicted shortcut:
+
+```conf
+keybind = super+shift+v=unbind
+keybind = super+[=unbind
+keybind = super+]=unbind
+keybind = super+shift+p=unbind
+```
+
+Then reload Ghostty config with `⌘⇧,` or restart Ghostty. To inspect Ghostty's defaults before changing them:
+
+```sh
+ghostty +list-keybinds --default
+```
