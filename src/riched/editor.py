@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from textual.widgets import TextArea
 
 from .keybindings import build_static_bindings
@@ -75,55 +77,59 @@ class RichedTextArea(TextArea):
         self.selection = type(self.selection)(selection_start, selection_end)
 
     def action_move_line_down(self) -> None:
-        row, col = self.cursor_location
-        if row + 1 >= self.document.line_count:
-            return
-        line_a = self.document.get_line(row)
-        line_b = self.document.get_line(row + 1)
-        self.replace(
-            line_b + "\n" + line_a,
-            (row, 0),
-            (row + 1, len(line_b)),
-            maintain_selection_offset=False,
-        )
-        self.move_cursor((row + 1, col))
+        self._move_line(1)
 
     def action_move_line_up(self) -> None:
+        self._move_line(-1)
+
+    def _move_line(self, direction: int) -> None:
         row, col = self.cursor_location
-        if row == 0:
+        other_row = row + direction
+        if other_row < 0 or other_row >= self.document.line_count:
             return
-        line_a = self.document.get_line(row - 1)
-        line_b = self.document.get_line(row)
+        top_row = min(row, other_row)
+        bottom_row = max(row, other_row)
+        top_line = self.document.get_line(top_row)
+        bottom_line = self.document.get_line(bottom_row)
         self.replace(
-            line_b + "\n" + line_a,
-            (row - 1, 0),
-            (row, len(line_b)),
+            bottom_line + "\n" + top_line,
+            (top_row, 0),
+            (bottom_row, len(bottom_line)),
             maintain_selection_offset=False,
         )
-        self.move_cursor((row - 1, col))
+        self.move_cursor((other_row, col))
 
     def action_copy_line_down(self) -> None:
-        row, col = self.cursor_location
-        line = self.document.get_line(row)
-        self.insert("\n" + line, (row, len(line)), maintain_selection_offset=False)
-        self.move_cursor((row + 1, col))
+        self._copy_line(1)
 
     def action_copy_line_up(self) -> None:
+        self._copy_line(-1)
+
+    def _copy_line(self, direction: int) -> None:
         row, col = self.cursor_location
         line = self.document.get_line(row)
-        self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
-        self.move_cursor((row, col))
+        if direction > 0:
+            self.insert("\n" + line, (row, len(line)), maintain_selection_offset=False)
+            self.move_cursor((row + 1, col))
+        else:
+            self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
+            self.move_cursor((row, col))
 
     def action_insert_line_below(self) -> None:
-        row, _col = self.cursor_location
-        line = self.document.get_line(row)
-        self.insert("\n", (row, len(line)), maintain_selection_offset=False)
-        self.move_cursor((row + 1, 0))
+        self._insert_blank_line(1)
 
     def action_insert_line_above(self) -> None:
+        self._insert_blank_line(-1)
+
+    def _insert_blank_line(self, direction: int) -> None:
         row, _col = self.cursor_location
-        self.insert("\n", (row, 0), maintain_selection_offset=False)
-        self.move_cursor((row, 0))
+        if direction > 0:
+            line = self.document.get_line(row)
+            self.insert("\n", (row, len(line)), maintain_selection_offset=False)
+            self.move_cursor((row + 1, 0))
+        else:
+            self.insert("\n", (row, 0), maintain_selection_offset=False)
+            self.move_cursor((row, 0))
 
     def action_indent_line(self) -> None:
         self._shift_target_line_indent(2)
@@ -212,38 +218,36 @@ class RichedTextArea(TextArea):
         self.move_cursor(target_cursor)
 
     def _toggle_line_comment(self, marker: str) -> None:
-        start_row, end_row, lines = self._target_lines()
-        non_blank = [line for line in lines if line.strip()]
-        if not non_blank:
-            return
-
-        should_uncomment = all(
-            line.lstrip().startswith(marker)
-            for line in non_blank
+        self._toggle_target_lines(
+            lambda line: line.lstrip().startswith(marker),
+            lambda line: _comment_line(line, marker),
+            lambda line: _uncomment_line(line, marker),
         )
-        updated = [
-            _uncomment_line(line, marker)
-            if should_uncomment
-            else _comment_line(line, marker)
-            for line in lines
-        ]
-        self._replace_target_lines(start_row, end_row, updated)
 
     def _toggle_block_comment(self, open_marker: str, close_marker: str) -> None:
+        self._toggle_target_lines(
+            lambda line: (
+                line.lstrip().startswith(open_marker)
+                and line.rstrip().endswith(close_marker)
+            ),
+            lambda line: _comment_block_line(line, open_marker, close_marker),
+            lambda line: _uncomment_block_line(line, open_marker, close_marker),
+        )
+
+    def _toggle_target_lines(
+        self,
+        is_commented: Callable[[str], bool],
+        comment: Callable[[str], str],
+        uncomment: Callable[[str], str],
+    ) -> None:
         start_row, end_row, lines = self._target_lines()
         non_blank = [line for line in lines if line.strip()]
         if not non_blank:
             return
 
-        should_uncomment = all(
-            line.lstrip().startswith(open_marker)
-            and line.rstrip().endswith(close_marker)
-            for line in non_blank
-        )
+        should_uncomment = all(is_commented(line) for line in non_blank)
         updated = [
-            _uncomment_block_line(line, open_marker, close_marker)
-            if should_uncomment
-            else _comment_block_line(line, open_marker, close_marker)
+            uncomment(line) if should_uncomment else comment(line)
             for line in lines
         ]
         self._replace_target_lines(start_row, end_row, updated)

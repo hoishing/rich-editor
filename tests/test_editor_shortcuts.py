@@ -221,6 +221,32 @@ async def test_cmd_slash_toggles_python_line_comment() -> None:
         assert editor.text == "  print('hello')", repr(editor.text)
 
 
+async def test_cmd_slash_normalized_alias_toggles_python_line_comment() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment-normalized.py"
+    f.write_text("print('hello')")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        await pilot.press("cmd+slash")
+        await pilot.pause()
+        assert editor.text == "# print('hello')", repr(editor.text)
+
+
+async def test_super_slash_normalized_alias_toggles_python_line_comment() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "comment-super-normalized.py"
+    f.write_text("print('hello')")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        await pilot.press("super+slash")
+        await pilot.pause()
+        assert editor.text == "# print('hello')", repr(editor.text)
+
+
 async def test_cmd_slash_toggles_selected_typescript_lines() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "comment.ts"

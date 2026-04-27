@@ -40,6 +40,9 @@ def load_binding_spec() -> dict[str, Any]:
 
 BINDING_SPEC = load_binding_spec()
 APP_COMMANDS = BINDING_SPEC["app"]["commands"]
+APP_COMMAND_BY_NAME: dict[str, dict[str, Any]] = {
+    item["name"]: item for item in APP_COMMANDS
+}
 COMMANDS: list[tuple[str, str, str]] = [
     (item["name"], item["description"], item["key"]) for item in APP_COMMANDS
 ]
@@ -55,20 +58,14 @@ def build_bindings() -> list[Binding]:
 
 
 def build_static_bindings(section: str) -> list[Binding]:
-    items = BINDING_SPEC[section]
-    return [
-        Binding(
-            item["key"],
-            item["action"],
-            item.get("description", ""),
-            show=item.get("show", True),
-        )
-        for item in items
-    ]
+    return _build_item_bindings(BINDING_SPEC[section])
 
 
 def build_screen_bindings(screen: str) -> list[Binding]:
-    items = BINDING_SPEC["screens"][screen]
+    return _build_item_bindings(BINDING_SPEC["screens"][screen])
+
+
+def _build_item_bindings(items: list[dict[str, Any]]) -> list[Binding]:
     return [
         Binding(
             item["key"],
@@ -162,10 +159,7 @@ def _help_display_key(item: dict[str, Any]) -> str:
 
 
 def _app_command_or_none(action: str) -> dict[str, Any] | None:
-    for item in APP_COMMANDS:
-        if item["name"] == action:
-            return item
-    return None
+    return APP_COMMAND_BY_NAME.get(action)
 
 
 def display_key(key: str) -> str:

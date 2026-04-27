@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections.abc import Iterable
 from itertools import groupby
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 
 from textual import events, work
@@ -12,7 +12,6 @@ from textual.app import App, ComposeResult, SystemCommand
 from textual.binding import Binding
 from textual.command import CommandPalette
 from textual.containers import Container, Horizontal
-from textual.keys import format_key
 from textual.screen import Screen
 from textual.worker import get_current_worker
 from textual.widgets import (
@@ -29,14 +28,15 @@ from .editor import RichedTextArea
 from .keybindings import (
     DEFAULT_BINDINGS,
     app_binding_display_key,
+    display_key_with_symbols,
     ghostty_app_hotkey_conflicts,
 )
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
     QUICK_OPEN_BATCH_SIZE,
     QuickOpenEntry,
-    git_quick_open_entries,
-    scan_quick_open_entries,
+    QuickOpenIndexUpdate,
+    quick_open_index_updates,
 )
 from .screens import (
     KeysHelpScreen,
@@ -50,15 +50,6 @@ from .syntax import apply_language
 FILE_TREE_DEFAULT_WIDTH = 30
 FILE_TREE_MIN_WIDTH = 18
 FILE_TREE_MAX_WIDTH = 44
-KEY_MODIFIER_SYMBOLS = {
-    "cmd": "⌘",
-    "super": "⌘",
-    "ctrl": "⌃",
-    "control": "⌃",
-    "alt": "⌥",
-    "option": "⌥",
-    "shift": "⇧",
-}
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
 
 
@@ -345,16 +336,7 @@ class RichedApp(App):
             binding.key,
             conflicted_actions=self._ghostty_app_hotkey_conflicts,
         )
-        parts = key.split("+")
-        base_key = format_key(parts[-1])
-        if len(base_key) == 1:
-            base_key = base_key.upper()
-        else:
-            base_key = base_key.title()
-        modifiers = "".join(
-            KEY_MODIFIER_SYMBOLS.get(part, part) for part in parts[:-1]
-        )
-        return f"{modifiers}{base_key}"
+        return display_key_with_symbols(key)
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -390,13 +372,16 @@ class RichedApp(App):
     def _is_file_tree_visible(self) -> bool:
         return self._file_tree().styles.display != "none"
 
+    def _set_file_tree_visible(self, visible: bool) -> None:
+        display = "block" if visible else "none"
+        self._file_tree().styles.display = display
+        self._file_tree_resize_handle().styles.display = display
+
     def _show_file_tree(self) -> None:
-        self._file_tree().styles.display = "block"
-        self._file_tree_resize_handle().styles.display = "block"
+        self._set_file_tree_visible(True)
 
     def _hide_file_tree(self) -> None:
-        self._file_tree().styles.display = "none"
-        self._file_tree_resize_handle().styles.display = "none"
+        self._set_file_tree_visible(False)
 
     def set_file_tree_width(self, width: int) -> None:
         clamped_width = max(FILE_TREE_MIN_WIDTH, min(FILE_TREE_MAX_WIDTH, width))
@@ -456,6 +441,24 @@ class RichedApp(App):
         editor = self._editor_or_none()
         return self.path is not None and editor is not None and editor.text != self._saved_text
 
+    def _after_saved_or_discarded(
+        self,
+        on_clean: Callable[[], None],
+    ) -> None:
+        if not self._is_dirty():
+            on_clean()
+            return
+
+        def handle(choice: str) -> None:
+            if choice == "save":
+                self.action_save()
+                if not self._is_dirty():
+                    on_clean()
+            elif choice == "discard":
+                on_clean()
+
+        self.push_screen(UnsavedChangesScreen(), handle)
+
     def on_directory_tree_file_selected(
         self, event: DirectoryTree.FileSelected
     ) -> None:
@@ -469,19 +472,7 @@ class RichedApp(App):
         self._switch_path(selected)
 
     def _switch_path(self, selected: Path) -> None:
-        if not self._is_dirty():
-            self._open_path(selected)
-            return
-
-        def handle(choice: str) -> None:
-            if choice == "save":
-                self.action_save()
-                if not self._is_dirty():
-                    self._open_path(selected)
-            elif choice == "discard":
-                self._open_path(selected)
-
-        self.push_screen(UnsavedChangesScreen(), handle)
+        self._after_saved_or_discarded(lambda: self._open_path(selected))
 
     def action_quick_open(self) -> None:
         root = self.root.expanduser()
@@ -511,48 +502,46 @@ class RichedApp(App):
     def _build_quick_open_index(self, generation: int) -> None:
         try:
             root = self.root.expanduser()
-            git_result = git_quick_open_entries(root, MAX_QUICK_OPEN_INDEX_FILES)
-            if git_result is not None:
-                git_entries, limited = git_result
-                self.call_from_thread(
-                    self._replace_quick_open_entries,
-                    generation,
-                    git_entries,
-                    True,
-                    limited,
-                )
-                return
-
             worker = get_current_worker()
-            batch: list[QuickOpenEntry] = []
-            count = 0
-            limited = False
-            for entry in scan_quick_open_entries(root):
+            for update in quick_open_index_updates(
+                root,
+                limit=MAX_QUICK_OPEN_INDEX_FILES,
+                batch_size=QUICK_OPEN_BATCH_SIZE,
+            ):
                 if worker.is_cancelled:
                     return
-                if count >= MAX_QUICK_OPEN_INDEX_FILES:
-                    limited = True
-                    break
-                batch.append(entry)
-                count += 1
-                if len(batch) >= QUICK_OPEN_BATCH_SIZE:
-                    self.call_from_thread(
-                        self._append_quick_open_entries,
-                        generation,
-                        batch,
-                        False,
-                        False,
-                    )
-                    batch = []
-
-            if batch:
                 self.call_from_thread(
-                    self._append_quick_open_entries, generation, batch, False, False
+                    self._apply_quick_open_update,
+                    generation,
+                    update,
                 )
-            self.call_from_thread(self._finish_quick_open_index, generation, limited)
         except Exception as exc:
             self.call_from_thread(
                 self._fail_quick_open_index, generation, str(exc) or type(exc).__name__
+            )
+
+    def _apply_quick_open_update(
+        self,
+        generation: int,
+        update: QuickOpenIndexUpdate,
+    ) -> None:
+        if update.error is not None:
+            self._fail_quick_open_index(generation, update.error)
+        elif update.replace:
+            self._replace_quick_open_entries(
+                generation,
+                update.entries,
+                update.complete,
+                update.limited,
+            )
+        elif update.complete and not update.entries:
+            self._finish_quick_open_index(generation, update.limited)
+        else:
+            self._append_quick_open_entries(
+                generation,
+                update.entries,
+                update.complete,
+                update.limited,
             )
 
     def _append_quick_open_entries(
@@ -673,19 +662,7 @@ class RichedApp(App):
         self.notify(f"Saved {self.path}")
 
     def action_quit_check(self) -> None:
-        if not self._is_dirty():
-            self.exit()
-            return
-
-        def handle(choice: str) -> None:
-            if choice == "save":
-                self.action_save()
-                if not self._is_dirty():
-                    self.exit()
-            elif choice == "discard":
-                self.exit()
-
-        self.push_screen(UnsavedChangesScreen(), handle)
+        self._after_saved_or_discarded(self.exit)
 
     def action_file_tree_quit_check(self) -> None:
         if self._is_dirty():
@@ -701,19 +678,7 @@ class RichedApp(App):
     def action_close_buffer(self) -> None:
         if self.path is None:
             return
-        if not self._is_dirty():
-            self._close_buffer()
-            return
-
-        def handle(choice: str) -> None:
-            if choice == "save":
-                self.action_save()
-                if not self._is_dirty():
-                    self._close_buffer()
-            elif choice == "discard":
-                self._close_buffer()
-
-        self.push_screen(UnsavedChangesScreen(), handle)
+        self._after_saved_or_discarded(self._close_buffer)
 
     def action_toggle_file_tree(self) -> None:
         editor = self._editor_or_none()

@@ -76,7 +76,7 @@ editor:
     action: cut
     description: Cut
     show: false
-  - key: cmd+/,super+/
+  - key: cmd+/,super+/,cmd+slash,super+slash
     action: toggle_line_comment
     description: Toggle line comment
     show: false

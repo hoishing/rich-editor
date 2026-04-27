@@ -46,6 +46,7 @@ from .test_editor_shortcuts import (
     test_cmd_l_repeats_expand_line_selection,
     test_cmd_l_selects_current_line_with_newline,
     test_cmd_l_selects_final_line_without_newline,
+    test_cmd_slash_normalized_alias_toggles_python_line_comment,
     test_cmd_slash_toggles_css_block_comments,
     test_cmd_slash_toggles_python_line_comment,
     test_cmd_slash_toggles_selected_typescript_lines,
@@ -68,6 +69,7 @@ from .test_editor_shortcuts import (
     test_move_line_at_boundaries_is_noop,
     test_move_line_down,
     test_move_line_up,
+    test_super_slash_normalized_alias_toggles_python_line_comment,
     test_outdent_line_aliases,
     test_outdent_selected_lines_removes_up_to_two_spaces,
     test_parser_order_super_shift_line_selection_aliases,
@@ -296,6 +298,14 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         test_outdent_selected_lines_removes_up_to_two_spaces,
     ),
     ("editor: cmd+/ toggles Python line comment", test_cmd_slash_toggles_python_line_comment),
+    (
+        "editor: cmd+slash toggles Python line comment",
+        test_cmd_slash_normalized_alias_toggles_python_line_comment,
+    ),
+    (
+        "editor: super+slash toggles Python line comment",
+        test_super_slash_normalized_alias_toggles_python_line_comment,
+    ),
     (
         "editor: cmd+/ toggles selected TypeScript lines",
         test_cmd_slash_toggles_selected_typescript_lines,

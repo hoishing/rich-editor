@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from heapq import nsmallest
 from pathlib import Path
 
 from textual import events
@@ -11,16 +10,56 @@ from textual.widgets import Button, Input, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
 from .keybindings import binding_help_groups, build_screen_bindings
-from .quick_open import QuickOpenEntry
+from .quick_open import QuickOpenEntry, ranked_matches
 
 MAX_QUICK_OPEN_RESULTS = 100
 
 
-class UnsavedChangesScreen(ModalScreen[str]):
+class _DismissOnCloseScreen:
+    def action_close(self) -> None:
+        self.dismiss(None)
+
+
+class _ConfirmationScreen(ModalScreen[str]):
+    """Shared button behavior for simple confirmation dialogs."""
+
+    MESSAGE = ""
+    BUTTONS: tuple[tuple[str, str, str | None], ...] = ()
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label(self.MESSAGE)
+            with Horizontal(id="buttons"):
+                for label, button_id, variant in self.BUTTONS:
+                    if variant is None:
+                        yield Button(label, id=button_id)
+                    else:
+                        yield Button(label, variant=variant, id=button_id)
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        self.dismiss(event.button.id or "cancel")
+
+    def on_key(self, event: events.Key) -> None:
+        focused = self.focused
+        if event.key == "space" and isinstance(focused, Button):
+            event.stop()
+            event.prevent_default()
+            focused.action_press()
+
+    def action_cancel(self) -> None:
+        self.dismiss("cancel")
+
+
+class UnsavedChangesScreen(_ConfirmationScreen):
     """Prompt asking whether to save, discard, or cancel."""
 
     BINDINGS = build_screen_bindings("unsaved_changes")
-
+    MESSAGE = "Unsaved changes.\nSave before continuing?"
+    BUTTONS = (
+        ("Save", "save", "primary"),
+        ("Discard", "discard", "error"),
+        ("Cancel", "cancel", None),
+    )
     CSS = """
     UnsavedChangesScreen {
         align: center middle;
@@ -46,33 +85,16 @@ class UnsavedChangesScreen(ModalScreen[str]):
     }
     """
 
-    def compose(self) -> ComposeResult:
-        with Vertical(id="dialog"):
-            yield Label("Unsaved changes.\nSave before continuing?")
-            with Horizontal(id="buttons"):
-                yield Button("Save", variant="primary", id="save")
-                yield Button("Discard", variant="error", id="discard")
-                yield Button("Cancel", id="cancel")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(event.button.id or "cancel")
-
-    def on_key(self, event: events.Key) -> None:
-        focused = self.focused
-        if event.key == "space" and isinstance(focused, Button):
-            event.stop()
-            event.prevent_default()
-            focused.action_press()
-
-    def action_cancel(self) -> None:
-        self.dismiss("cancel")
-
-
-class QuitConfirmationScreen(ModalScreen[str]):
+class QuitConfirmationScreen(_ConfirmationScreen):
     """Prompt asking whether to quit a clean session."""
 
     BINDINGS = build_screen_bindings("quit_confirmation")
-
+    MESSAGE = "Quit riched?"
+    BUTTONS = (
+        ("Quit", "quit", "error"),
+        ("Cancel", "cancel", None),
+    )
     CSS = """
     QuitConfirmationScreen {
         align: center middle;
@@ -98,28 +120,8 @@ class QuitConfirmationScreen(ModalScreen[str]):
     }
     """
 
-    def compose(self) -> ComposeResult:
-        with Vertical(id="dialog"):
-            yield Label("Quit riched?")
-            with Horizontal(id="buttons"):
-                yield Button("Quit", variant="error", id="quit")
-                yield Button("Cancel", id="cancel")
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        self.dismiss(event.button.id or "cancel")
-
-    def on_key(self, event: events.Key) -> None:
-        focused = self.focused
-        if event.key == "space" and isinstance(focused, Button):
-            event.stop()
-            event.prevent_default()
-            focused.action_press()
-
-    def action_cancel(self) -> None:
-        self.dismiss("cancel")
-
-
-class QuickOpenScreen(ModalScreen[Path | None]):
+class QuickOpenScreen(_DismissOnCloseScreen, ModalScreen[Path | None]):
     """Fuzzy file picker."""
 
     BINDINGS = build_screen_bindings("quick_open")
@@ -203,9 +205,6 @@ class QuickOpenScreen(ModalScreen[Path | None]):
             event.prevent_default()
             self._open_highlighted()
 
-    def action_close(self) -> None:
-        self.dismiss(None)
-
     def append_entries(
         self,
         entries: list[QuickOpenEntry],
@@ -276,21 +275,7 @@ class QuickOpenScreen(ModalScreen[Path | None]):
             status.update("")
 
     def _ranked_matches(self, query: str) -> list[QuickOpenEntry]:
-        stripped_query = query.strip()
-        if not stripped_query:
-            return self.entries[:MAX_QUICK_OPEN_RESULTS]
-
-        scored: list[tuple[tuple[int, int, int, int, str], QuickOpenEntry]] = []
-        for entry in self.entries:
-            score = _fuzzy_score(stripped_query, entry.relative_path)
-            if score is not None:
-                scored.append((score, entry))
-        return [
-            entry
-            for _score, entry in nsmallest(
-                MAX_QUICK_OPEN_RESULTS, scored, key=lambda item: item[0]
-            )
-        ]
+        return ranked_matches(self.entries, query, limit=MAX_QUICK_OPEN_RESULTS)
 
     def _open_highlighted(self) -> None:
         results = self.query_one("#results", OptionList)
@@ -306,7 +291,7 @@ class QuickOpenScreen(ModalScreen[Path | None]):
             self.dismiss(path)
 
 
-class KeysHelpScreen(ModalScreen[None]):
+class KeysHelpScreen(_DismissOnCloseScreen, ModalScreen[None]):
     """Popup key binding help."""
 
     BINDINGS = build_screen_bindings("keys_help")
@@ -397,66 +382,3 @@ class KeysHelpScreen(ModalScreen[None]):
                         "⚠️ Unbind this shortcut in Ghostty config to use it in riched.",
                         classes="binding-legend",
                     )
-
-    def action_close(self) -> None:
-        self.dismiss(None)
-
-
-def _fuzzy_score(query: str, candidate: str) -> tuple[int, int, int, int, str] | None:
-    query_lower = query.lower()
-    candidate_lower = candidate.lower()
-    basename = Path(candidate_lower).name
-    depth = candidate_lower.count("/")
-
-    if candidate_lower == query_lower:
-        return (0, depth, 0, len(candidate_lower), candidate_lower)
-    if basename == query_lower:
-        return (1, depth, 0, len(candidate_lower), candidate_lower)
-    if basename.startswith(query_lower):
-        return (2, depth, 0, len(candidate_lower), candidate_lower)
-    if candidate_lower.startswith(query_lower):
-        return (3, depth, 0, len(candidate_lower), candidate_lower)
-    if query_lower in basename:
-        return (
-            4,
-            depth,
-            basename.index(query_lower),
-            len(candidate_lower),
-            candidate_lower,
-        )
-    if query_lower in candidate_lower:
-        return (
-            5,
-            depth,
-            candidate_lower.index(query_lower),
-            len(candidate_lower),
-            candidate_lower,
-        )
-
-    basename_score = _fuzzy_positions(query_lower, basename)
-    if basename_score is not None:
-        first, gaps = basename_score
-        return (6, depth, gaps, first, candidate_lower)
-
-    path_score = _fuzzy_positions(query_lower, candidate_lower)
-    if path_score is None:
-        return None
-    first, gaps = path_score
-    return (7, depth, gaps, first, candidate_lower)
-
-
-def _fuzzy_positions(query_lower: str, candidate_lower: str) -> tuple[int, int] | None:
-    positions: list[int] = []
-    search_from = 0
-    for char in query_lower:
-        index = candidate_lower.find(char, search_from)
-        if index == -1:
-            return None
-        positions.append(index)
-        search_from = index + 1
-
-    first = positions[0]
-    last = positions[-1]
-    spread = last - first + 1
-    gaps = spread - len(query_lower)
-    return first, gaps
