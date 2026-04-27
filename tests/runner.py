@@ -77,7 +77,20 @@ from .test_file_tree import (
     test_file_tree_is_rooted_at_project_dir,
     test_file_tree_switch_opens_selected_file,
 )
-from .test_footer import test_footer_uses_macos_modifier_symbols
+from .test_footer import (
+    test_footer_defaults_to_markdown_preview_fallback_outside_ghostty,
+    test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview,
+    test_footer_uses_markdown_preview_fallback_for_ghostty_conflict,
+)
+from .test_markdown_preview import (
+    test_cmd_shift_v_toggles_markdown_preview,
+    test_ctrl_shift_v_toggles_markdown_preview_fallback,
+    test_ctrl_shift_v_warns_for_non_markdown_file,
+    test_keys_help_includes_markdown_preview_binding,
+    test_markdown_preview_uses_unsaved_editor_content,
+    test_super_shift_v_toggles_markdown_preview_alias,
+    test_switching_files_exits_markdown_preview,
+)
 from .test_quick_open import (
     test_quick_open_exact_hidden_filename_match_wins,
     test_quick_open_fallback_follows_symlinks,
@@ -168,7 +181,46 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         "quick open: exact hidden filename match wins",
         test_quick_open_exact_hidden_filename_match_wins,
     ),
-    ("footer: macOS modifier symbols", test_footer_uses_macos_modifier_symbols),
+    (
+        "footer: macOS modifier symbols",
+        test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview,
+    ),
+    (
+        "footer: markdown preview fallback for Ghostty conflict",
+        test_footer_uses_markdown_preview_fallback_for_ghostty_conflict,
+    ),
+    (
+        "footer: markdown preview fallback outside Ghostty",
+        test_footer_defaults_to_markdown_preview_fallback_outside_ghostty,
+    ),
+    (
+        "markdown preview: cmd+shift+v toggles",
+        test_cmd_shift_v_toggles_markdown_preview,
+    ),
+    (
+        "markdown preview: super+shift+v alias",
+        test_super_shift_v_toggles_markdown_preview_alias,
+    ),
+    (
+        "markdown preview: ctrl+shift+v fallback",
+        test_ctrl_shift_v_toggles_markdown_preview_fallback,
+    ),
+    (
+        "markdown preview: uses unsaved editor content",
+        test_markdown_preview_uses_unsaved_editor_content,
+    ),
+    (
+        "markdown preview: non-markdown warning",
+        test_ctrl_shift_v_warns_for_non_markdown_file,
+    ),
+    (
+        "markdown preview: switching files exits preview",
+        test_switching_files_exits_markdown_preview,
+    ),
+    (
+        "markdown preview: keys help includes binding",
+        test_keys_help_includes_markdown_preview_binding,
+    ),
     ("syntax: python", test_python_highlight),
     ("syntax: typescript", test_typescript_highlight),
     ("syntax: tsx", test_tsx_highlight),

@@ -12,10 +12,20 @@ from textual.containers import Container, Horizontal
 from textual.keys import format_key
 from textual.screen import Screen
 from textual.worker import get_current_worker
-from textual.widgets import DirectoryTree, Footer, Header, Static, TextArea
+from textual.widgets import (
+    DirectoryTree,
+    Footer,
+    Header,
+    MarkdownViewer,
+    Static,
+    TextArea,
+)
 
 from .editor import RichedTextArea
-from .keybindings import display_key
+from .keybindings import (
+    app_binding_display_key,
+    ghostty_markdown_preview_hotkey_conflicted,
+)
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
     QUICK_OPEN_BATCH_SIZE,
@@ -44,6 +54,7 @@ KEY_MODIFIER_SYMBOLS = {
     "option": "⌥",
     "shift": "⇧",
 }
+MARKDOWN_SUFFIXES = {".md", ".markdown"}
 
 
 class RichedDirectoryTree(DirectoryTree):
@@ -161,6 +172,10 @@ class RichedApp(App):
         height: 1fr;
         width: 1fr;
     }
+    #markdown-preview {
+        height: 1fr;
+        width: 1fr;
+    }
     #editor-slot {
         height: 1fr;
         width: 1fr;
@@ -193,6 +208,9 @@ class RichedApp(App):
         self._quick_open_limited = False
         self._quick_open_generation = 0
         self._quick_open_screen: QuickOpenScreen | None = None
+        self._markdown_preview_hotkey_conflicted = (
+            ghostty_markdown_preview_hotkey_conflicted()
+        )
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -217,7 +235,11 @@ class RichedApp(App):
         if binding.key_display:
             return binding.key_display
 
-        key = display_key(binding.key)
+        key = app_binding_display_key(
+            binding.action,
+            binding.key,
+            prefer_fallback=self._markdown_preview_hotkey_conflicted,
+        )
         parts = key.split("+")
         base_key = format_key(parts[-1])
         if len(base_key) == 1:
@@ -250,6 +272,10 @@ class RichedApp(App):
         editors = list(self.query("#editor"))
         return editors[0] if editors else None
 
+    def _markdown_preview_or_none(self) -> MarkdownViewer | None:
+        previews = list(self.query("#markdown-preview"))
+        return previews[0] if previews else None
+
     def _file_tree(self) -> DirectoryTree:
         return self.query_one("#file-tree", DirectoryTree)
 
@@ -281,6 +307,17 @@ class RichedApp(App):
         self.query_one("#editor-slot", Container).mount(editor)
         return editor
 
+    def _is_markdown_path(self) -> bool:
+        return self.path is not None and self.path.suffix.lower() in MARKDOWN_SUFFIXES
+
+    def _exit_markdown_preview(self) -> None:
+        preview = self._markdown_preview_or_none()
+        if preview is not None:
+            preview.remove()
+        editor = self._editor_or_none()
+        if editor is not None:
+            editor.styles.display = "block"
+
     def _close_buffer(self) -> None:
         self.query_one("#editor-slot", Container).remove_children()
         self.path = None
@@ -290,6 +327,7 @@ class RichedApp(App):
         self._file_tree().focus()
 
     def _open_path(self, path: Path) -> None:
+        self._exit_markdown_preview()
         self.path = path.expanduser()
         self.sub_title = str(self.path)
         editor = self._get_or_create_editor()
@@ -481,6 +519,33 @@ class RichedApp(App):
 
     def action_show_keys_popup(self) -> None:
         self.push_screen(KeysHelpScreen())
+
+    async def action_toggle_markdown_preview(self) -> None:
+        editor = self._editor_or_none()
+        if self.path is None or editor is None:
+            self.notify("No file open", severity="warning")
+            return
+        if not self._is_markdown_path():
+            self.notify(
+                "Markdown preview is only available for Markdown files.",
+                severity="warning",
+            )
+            return
+
+        preview = self._markdown_preview_or_none()
+        if preview is not None:
+            self._exit_markdown_preview()
+            editor.focus()
+            return
+
+        preview = MarkdownViewer(
+            editor.text,
+            id="markdown-preview",
+            show_table_of_contents=False,
+        )
+        editor.styles.display = "none"
+        await self.query_one("#editor-slot", Container).mount(preview)
+        preview.document.focus()
 
     def action_save(self) -> None:
         if self.path is None:

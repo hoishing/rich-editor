@@ -12,6 +12,11 @@ app:
     - name: quick_open
       description: Quick open
       key: cmd+p,super+p
+    - name: toggle_markdown_preview
+      description: Toggle Markdown preview
+      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,ctrl+shift+v,shift+ctrl+v
+      preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
+      fallback_key: ctrl+shift+v,shift+ctrl+v
 
 editor:
   - key: alt+up

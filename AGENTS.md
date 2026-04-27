@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+- check if a hotkey is bounded with Ghostty built-in hotkey before adding new key binding, consult the user if conflict exsit
+
 ## Project Structure & Module Organization
 
 This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/riched/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
@@ -32,4 +34,4 @@ Use concise imperative commit messages, for example `Add file tree` or `Refactor
 ## Agent-Specific Instructions
 
 Prefer `uv` for Python tasks. Keep changes scoped to requested behavior. Update `AGENTS.md` when commands, structure, or testing policy changes.
-Never change Ghostty settings or configuration, even when investigating Command-key behavior; only document suggested user-side settings when explicitly asked.
+Don't change Ghostty settings or configuration unless you are explicitly told to do so. Document the suggested user-side settings in README.md when explicitly asked.

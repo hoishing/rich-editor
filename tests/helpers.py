@@ -41,6 +41,7 @@ def _fresh_env() -> tuple[Path, Path]:
 def _make_app(
     path: Path,
     root: Path | None = None,
+    markdown_preview_hotkey_conflicted: bool | None = None,
 ):
     """Replicate `riched.main()`'s dynamic subclass so BINDINGS take effect."""
     cls = type(
@@ -48,4 +49,7 @@ def _make_app(
         (mod.RichedApp,),
         {"BINDINGS": mod.build_bindings()},
     )
-    return cls(path, root or path.parent)
+    app = cls(path, root or path.parent)
+    if markdown_preview_hotkey_conflicted is not None:
+        app._markdown_preview_hotkey_conflicted = markdown_preview_hotkey_conflicted
+    return app

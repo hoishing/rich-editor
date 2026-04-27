@@ -74,6 +74,8 @@ Editor shortcuts:
   - no multi-cursor editing
   - no chord hotkey sequence such as `⌘K ⌘S` 
 
-- Ghostty conflicts: 
-  - conflicted Ghostty hotkey. eg. `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
-  - won't implement features that require modifying Ghostty default config
+### Ghostty hotkey conflicts
+
+- some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
+- need to unbound these hotkeys in Ghostty config in order to use them, fall back hotkeys are listed below:
+  - `⌘⇧V` → `^⇧V`
