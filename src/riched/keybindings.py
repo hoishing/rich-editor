@@ -84,13 +84,13 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
     groups: list[KeyBindingHelpGroup] = []
 
     app_rows = tuple(
-        (_app_help_display_key(item), item.get("description") or item["name"])
+        (_help_display_key(item), item.get("description") or item["name"])
         for item in BINDING_SPEC["app"]["commands"]
     )
     groups.append(KeyBindingHelpGroup("App", app_rows))
 
     editor_rows = tuple(
-        (_display_key(item["key"]), item.get("description") or item["action"])
+        (_help_display_key(item), item.get("description") or item["action"])
         for item in BINDING_SPEC["editor"]
         if item.get("help", True)
     )
@@ -98,16 +98,12 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
 
     for screen, items in BINDING_SPEC["screens"].items():
         rows = tuple(
-            (_display_key(item["key"]), item.get("description") or item["action"])
+            (_help_display_key(item), item.get("description") or item["action"])
             for item in items
         )
         groups.append(KeyBindingHelpGroup(f"Screens / {screen}", rows))
 
     return groups
-
-
-def _display_key(key: str) -> str:
-    return display_key_with_symbols(display_key(key))
 
 
 def app_binding_display_key(
@@ -126,7 +122,7 @@ def app_binding_display_key(
     return display_key(item.get("preferred_key") or key)
 
 
-def _app_help_display_key(item: dict[str, Any]) -> str:
+def _help_display_key(item: dict[str, Any]) -> str:
     preferred = item.get("preferred_key")
     fallback = item.get("fallback_key")
     if preferred and fallback:
@@ -183,6 +179,8 @@ def display_key_with_symbols(key: str) -> str:
 
 
 def _display_base_key(key: str) -> str:
+    if key == "enter":
+        return "Enter"
     base_key = format_key(key)
     if len(base_key) == 1:
         return base_key.upper()

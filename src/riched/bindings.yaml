@@ -37,6 +37,30 @@ editor:
     action: copy_line_down
     description: Copy line down
     show: false
+  - key: cmd+enter,super+enter,ctrl+enter
+    preferred_key: cmd+enter,super+enter
+    fallback_key: ctrl+enter
+    action: insert_line_below
+    description: Insert line below
+    show: false
+  - key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter,ctrl+shift+enter,shift+ctrl+enter
+    preferred_key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter
+    fallback_key: ctrl+shift+enter,shift+ctrl+enter
+    action: insert_line_above
+    description: Insert line above
+    show: false
+  - key: cmd+],super+],ctrl+],ctrl+right_square_bracket
+    preferred_key: cmd+],super+]
+    fallback_key: ctrl+]
+    action: indent_line
+    description: Indent line
+    show: false
+  - key: cmd+[,super+[,ctrl+o
+    preferred_key: cmd+[,super+[
+    fallback_key: ctrl+o
+    action: outdent_line
+    description: Outdent line
+    show: false
   - key: alt+backspace
     action: delete_word_left
     description: Delete word left

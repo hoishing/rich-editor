@@ -50,6 +50,10 @@ Editor shortcuts:
 | `⌥↓` | Move line down |
 | `⌥⇧↑` | Copy line up |
 | `⌥⇧↓` | Copy line down |
+| `⌘Enter` / `^Enter` | Insert line below |
+| `⌘⇧Enter` / `^⇧Enter` | Insert line above |
+| `⌘]` / `^]` | Indent line |
+| `⌘[` / `^O` | Outdent line |
 | `⌥⌫` | Delete word left |
 | `⌘⌫` | Delete to line start |
 | `⌘Z` | Undo |
@@ -79,8 +83,12 @@ Editor shortcuts:
 - some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
 - `riched` detects conflicted app shortcuts at startup and shows the fallback shortcut in the footer when Ghostty is still intercepting the preferred shortcut.
 - need to unbound these hotkeys in Ghostty config in order to use them, fall back hotkeys are listed below:
+  - `⌘Enter` → `^Enter`
+  - `⌘⇧Enter` → `^⇧Enter`
   - `⌘⇧P` → `F1`
   - `⌘⇧V` → `^⇧V`
+  - `⌘]` → `^]`
+  - `⌘[` → `^O`
 
 ### Unbind Ghostty default keybindings
 
@@ -97,8 +105,12 @@ Add one `keybind = <trigger>=unbind` line per conflicted shortcut:
 keybind = super+shift+v=unbind
 keybind = super+[=unbind
 keybind = super+]=unbind
+keybind = super+enter=unbind
+keybind = super+shift+enter=unbind
 keybind = super+shift+p=unbind
 ```
+
+`^O` is used as the outdent fallback because `^[` is the same terminal input as `Escape`.
 
 Then reload Ghostty config with `⌘⇧,` or restart Ghostty. To inspect Ghostty's defaults before changing them:
 

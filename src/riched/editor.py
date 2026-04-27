@@ -114,6 +114,23 @@ class RichedTextArea(TextArea):
         self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
         self.move_cursor((row, col))
 
+    def action_insert_line_below(self) -> None:
+        row, _col = self.cursor_location
+        line = self.document.get_line(row)
+        self.insert("\n", (row, len(line)), maintain_selection_offset=False)
+        self.move_cursor((row + 1, 0))
+
+    def action_insert_line_above(self) -> None:
+        row, _col = self.cursor_location
+        self.insert("\n", (row, 0), maintain_selection_offset=False)
+        self.move_cursor((row, 0))
+
+    def action_indent_line(self) -> None:
+        self._shift_target_line_indent(2)
+
+    def action_outdent_line(self) -> None:
+        self._shift_target_line_indent(-2)
+
     def action_delete_to_start_of_line_or_delete_left(self) -> None:
         if not self.selection.is_empty or self.cursor_location[1] == 0:
             self.action_delete_left()
@@ -171,6 +188,29 @@ class RichedTextArea(TextArea):
         )
         self.move_cursor((start_row, 0))
 
+    def _shift_target_line_indent(self, spaces: int) -> None:
+        start_row, end_row, lines = self._target_lines()
+        if spaces > 0:
+            updated = [" " * spaces + line for line in lines]
+        else:
+            updated = [_outdent_line(line, -spaces) for line in lines]
+
+        cursor_row, cursor_col = self.cursor_location
+        if start_row <= cursor_row <= end_row:
+            target_line = self.document.get_line(cursor_row)
+            updated_cursor_line = updated[cursor_row - start_row]
+            delta = len(updated_cursor_line) - len(target_line)
+            target_cursor = (cursor_row, max(0, cursor_col + delta))
+        else:
+            target_cursor = (start_row, 0)
+        self.replace(
+            "\n".join(updated),
+            (start_row, 0),
+            (end_row, len(self.document.get_line(end_row))),
+            maintain_selection_offset=False,
+        )
+        self.move_cursor(target_cursor)
+
     def _toggle_line_comment(self, marker: str) -> None:
         start_row, end_row, lines = self._target_lines()
         non_blank = [line for line in lines if line.strip()]
@@ -214,6 +254,11 @@ class RichedTextArea(TextArea):
 
 def _leading_spaces(line: str) -> str:
     return line[: len(line) - len(line.lstrip())]
+
+
+def _outdent_line(line: str, spaces: int) -> str:
+    leading_spaces = len(line) - len(line.lstrip(" "))
+    return line[min(spaces, leading_spaces):]
 
 
 def _comment_line(line: str, marker: str) -> str:

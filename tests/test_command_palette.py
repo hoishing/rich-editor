@@ -63,6 +63,10 @@ async def test_keys_help_includes_command_palette_binding() -> None:
             for row in app.screen.query(".binding-row")
         ]
         assert ("⌘⇧P / F1", "Command palette") in rows
+        assert ("⌘Enter / ⌃Enter", "Insert line below") in rows
+        assert ("⌘⇧Enter / ⌃⇧Enter", "Insert line above") in rows
+        assert ("⌘] / ⌃]", "Indent line") in rows
+        assert ("⌘[ / ⌃O", "Outdent line") in rows
         assert not any(
             modifier in key.lower()
             for key, _ in rows

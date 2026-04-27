@@ -91,6 +91,110 @@ async def test_copy_line_up() -> None:
         assert editor.cursor_location == (1, 2), editor.cursor_location
 
 
+async def test_insert_line_below_aliases() -> None:
+    keys = ("cmd+enter", "super+enter", "ctrl+enter")
+    for key in keys:
+        tmp, _ = _fresh_env()
+        f = tmp / "lines.txt"
+        f.write_text("aaa\nbbb")
+        app = _make_app(f)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = app.query_one("#editor", TextArea)
+            editor.move_cursor((0, 2))
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+            assert editor.text == "aaa\n\nbbb", (key, repr(editor.text))
+            assert editor.cursor_location == (1, 0), (key, editor.cursor_location)
+
+
+async def test_insert_line_above_aliases() -> None:
+    keys = ("cmd+shift+enter", "super+shift+enter", "ctrl+shift+enter")
+    for key in keys:
+        tmp, _ = _fresh_env()
+        f = tmp / "lines.txt"
+        f.write_text("aaa\nbbb")
+        app = _make_app(f)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = app.query_one("#editor", TextArea)
+            editor.move_cursor((1, 2))
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+            assert editor.text == "aaa\n\nbbb", (key, repr(editor.text))
+            assert editor.cursor_location == (1, 0), (key, editor.cursor_location)
+
+
+async def test_indent_line_aliases() -> None:
+    keys = ("cmd+]", "ctrl+]", "ctrl+right_square_bracket")
+    for key in keys:
+        tmp, _ = _fresh_env()
+        f = tmp / "lines.txt"
+        f.write_text("aaa\nbbb")
+        app = _make_app(f)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = app.query_one("#editor", TextArea)
+            editor.move_cursor((1, 1))
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+            assert editor.text == "aaa\n  bbb", (key, repr(editor.text))
+            assert editor.cursor_location == (1, 3), (key, editor.cursor_location)
+
+
+async def test_indent_selected_lines() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("aaa\nbbb\nccc")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 1), (1, 2))
+        await pilot.pause()
+        await pilot.press("cmd+]")
+        await pilot.pause()
+        assert editor.text == "  aaa\n  bbb\nccc", repr(editor.text)
+        assert editor.cursor_location == (1, 4), editor.cursor_location
+
+
+async def test_outdent_line_aliases() -> None:
+    keys = ("cmd+[", "ctrl+o")
+    for key in keys:
+        tmp, _ = _fresh_env()
+        f = tmp / "lines.txt"
+        f.write_text("aaa\n  bbb")
+        app = _make_app(f)
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = app.query_one("#editor", TextArea)
+            editor.move_cursor((1, 3))
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+            assert editor.text == "aaa\nbbb", (key, repr(editor.text))
+            assert editor.cursor_location == (1, 1), (key, editor.cursor_location)
+
+
+async def test_outdent_selected_lines_removes_up_to_two_spaces() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "lines.txt"
+    f.write_text("alpha\n bravo\n  charlie\n\tdelta")
+    app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        editor = app.query_one("#editor", TextArea)
+        editor.selection = type(editor.selection)((0, 0), (3, 3))
+        await pilot.pause()
+        await pilot.press("cmd+[")
+        await pilot.pause()
+        assert editor.text == "alpha\nbravo\ncharlie\n\tdelta", repr(editor.text)
+        assert editor.cursor_location == (3, 3), editor.cursor_location
+
+
 async def test_cmd_slash_toggles_python_line_comment() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "comment.py"

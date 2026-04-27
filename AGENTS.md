@@ -1,6 +1,7 @@
 # Repository Guidelines
 
-- check if a hotkey is bounded with Ghostty built-in hotkey before adding any new key binding, ask user for fallback hotkey in addition to the target hotkey.  Add startup detection for the target hotkey, display fallback if Ghostty does not unbound the target hotkey. 
+- check if a hotkey is bounded with Ghostty built-in hotkey before adding any new key binding, ask user for fallback hotkey in addition to the target hotkey.  Add startup detection for the target hotkey, display fallback if Ghostty does not unbound the target hotkey.
+- riched only supports Ghostty on macOS. For every new hotkey or fallback, verify the real Ghostty/Textual terminal path, not only Textual Pilot's synthetic key name. Use `ghostty +list-keybinds --default` to check Ghostty interception, then inspect Textual's ANSI mapping with `uv run python` when the key uses Ctrl punctuation or other ambiguous terminal sequences. Add e2e coverage for both the requested human spelling and the real Textual key name when they differ, for example `ctrl+right_square_bracket` for real terminal Ctrl+]. Do not use fallbacks that collapse to `escape` or another existing semantic key; Ctrl+[ is Escape in terminal input and must not be used as a distinct fallback.
 
 ## Project Structure & Module Organization
 
@@ -21,11 +22,13 @@ Use Python 3.12-compatible code with type hints, `from __future__ import annotat
 
 Keep key bindings in `src/riched/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays one user-facing key per binding, preferring `cmd` aliases over `super`.
 
-When changing app-level key bindings, test both file-open and no-buffer/directory-start states. For Command-key regressions, verify both Textual names (`cmd+...` and terminal-normalized `super+...`) because Pilot can pass for synthetic keys while a real terminal path or missing app state still breaks. Do not patch Command-key behavior by adding Python-side hardcoded fallbacks; add aliases to `bindings.yaml` and e2e coverage instead.
+When changing app-level key bindings, test both file-open and no-buffer/directory-start states. For Command-key regressions, verify both Textual names (`cmd+...` and terminal-normalized `super+...`) because Pilot can pass for synthetic keys while a real terminal path or missing app state still breaks. For fallback-key regressions, verify the real Ghostty/Textual key name in addition to the displayed fallback label; Pilot can synthesize impossible keys such as `ctrl+[` even though real Ghostty/macOS terminal input arrives as `escape`. Do not patch Command-key behavior by adding Python-side hardcoded fallbacks; add aliases to `bindings.yaml` and e2e coverage instead.
 
 ## Testing Guidelines
 
 Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, quick-open search/indexing, or syntax highlighting. Use temporary files as existing tests do.
+
+For hotkey e2e tests, cover the YAML-declared preferred key, terminal-normalized aliases, and fallback key. If the real terminal key name differs from the user-facing label, cover the real Textual name too. Before accepting a fallback, confirm it can be produced distinctly by Ghostty on macOS; Ctrl punctuation is especially risky because some combinations are control bytes with legacy meanings.
 
 ## Commit & Pull Request Guidelines
 
