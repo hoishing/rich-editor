@@ -38,7 +38,7 @@ App shortcuts:
 | Shortcut | Action |
 | --- | --- |
 | `⌘S` | Save |
-| `F1` | Command palette |
+| `⌘⇧P` / `F1` | Command palette |
 | `⌘B` | Toggle file tree |
 | `⌘P` | Quick open |
 
@@ -77,7 +77,9 @@ Editor shortcuts:
 ### Ghostty hotkey conflicts
 
 - some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
+- `riched` detects conflicted app shortcuts at startup and shows the fallback shortcut in the footer when Ghostty is still intercepting the preferred shortcut.
 - need to unbound these hotkeys in Ghostty config in order to use them, fall back hotkeys are listed below:
+  - `⌘⇧P` → `F1`
   - `⌘⇧V` → `^⇧V`
 
 ### Unbind Ghostty default keybindings

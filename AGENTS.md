@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-- check if a hotkey is bounded with Ghostty built-in hotkey before adding new key binding, consult the user if conflict exsit
+- check if a hotkey is bounded with Ghostty built-in hotkey before adding any new key binding, ask user for fallback hotkey in addition to the target hotkey.  Add startup detection for the target hotkey, display fallback if Ghostty does not unbound the target hotkey. 
 
 ## Project Structure & Module Organization
 

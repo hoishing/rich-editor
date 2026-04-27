@@ -42,6 +42,7 @@ def _make_app(
     path: Path,
     root: Path | None = None,
     markdown_preview_hotkey_conflicted: bool | None = None,
+    ghostty_app_hotkey_conflicts: set[str] | None = None,
 ):
     """Replicate `riched.main()`'s dynamic subclass so BINDINGS take effect."""
     cls = type(
@@ -50,6 +51,13 @@ def _make_app(
         {"BINDINGS": mod.build_bindings()},
     )
     app = cls(path, root or path.parent)
+    if ghostty_app_hotkey_conflicts is not None:
+        app._ghostty_app_hotkey_conflicts = ghostty_app_hotkey_conflicts
     if markdown_preview_hotkey_conflicted is not None:
-        app._markdown_preview_hotkey_conflicted = markdown_preview_hotkey_conflicted
+        conflicts = set(app._ghostty_app_hotkey_conflicts)
+        if markdown_preview_hotkey_conflicted:
+            conflicts.add("toggle_markdown_preview")
+        else:
+            conflicts.discard("toggle_markdown_preview")
+        app._ghostty_app_hotkey_conflicts = conflicts
     return app

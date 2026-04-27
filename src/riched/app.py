@@ -25,7 +25,7 @@ from textual.widgets import (
 from .editor import RichedTextArea
 from .keybindings import (
     app_binding_display_key,
-    ghostty_markdown_preview_hotkey_conflicted,
+    ghostty_app_hotkey_conflicts,
 )
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
@@ -221,9 +221,7 @@ class RichedApp(App):
         self._quick_open_limited = False
         self._quick_open_generation = 0
         self._quick_open_screen: QuickOpenScreen | None = None
-        self._markdown_preview_hotkey_conflicted = (
-            ghostty_markdown_preview_hotkey_conflicted()
-        )
+        self._ghostty_app_hotkey_conflicts = ghostty_app_hotkey_conflicts()
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -251,7 +249,7 @@ class RichedApp(App):
         key = app_binding_display_key(
             binding.action,
             binding.key,
-            prefer_fallback=self._markdown_preview_hotkey_conflicted,
+            conflicted_actions=self._ghostty_app_hotkey_conflicts,
         )
         parts = key.split("+")
         base_key = format_key(parts[-1])

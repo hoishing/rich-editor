@@ -8,8 +8,11 @@ from .test_command_palette import (
     test_command_palette_button_is_hidden,
     test_command_palette_includes_show_key_bindings,
     test_command_palette_omits_maximize,
+    test_cmd_shift_p_opens_command_palette,
     test_ctrl_p_does_not_open_command_palette,
     test_f1_opens_command_palette,
+    test_keys_help_includes_command_palette_binding,
+    test_super_shift_p_opens_command_palette_alias,
 )
 from .test_cli import (
     test_no_filename_opens_current_folder,
@@ -79,6 +82,8 @@ from .test_file_tree import (
 )
 from .test_footer import (
     test_footer_defaults_to_markdown_preview_fallback_outside_ghostty,
+    test_footer_uses_command_palette_preferred_when_ghostty_unbound,
+    test_footer_uses_command_palette_fallback_for_ghostty_conflict,
     test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview,
     test_footer_uses_markdown_preview_fallback_for_ghostty_conflict,
 )
@@ -123,7 +128,19 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         "command palette: includes show key bindings",
         test_command_palette_includes_show_key_bindings,
     ),
+    (
+        "command palette: keys help includes binding",
+        test_keys_help_includes_command_palette_binding,
+    ),
     ("command palette: F1 opens palette", test_f1_opens_command_palette),
+    (
+        "command palette: Cmd+Shift+P opens palette",
+        test_cmd_shift_p_opens_command_palette,
+    ),
+    (
+        "command palette: Super+Shift+P opens palette",
+        test_super_shift_p_opens_command_palette_alias,
+    ),
     (
         "command palette: Ctrl+P does not open palette",
         test_ctrl_p_does_not_open_command_palette,
@@ -185,6 +202,14 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "footer: macOS modifier symbols",
         test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview,
+    ),
+    (
+        "footer: command palette fallback for Ghostty conflict",
+        test_footer_uses_command_palette_fallback_for_ghostty_conflict,
+    ),
+    (
+        "footer: command palette preferred when Ghostty unbound",
+        test_footer_uses_command_palette_preferred_when_ghostty_unbound,
     ),
     (
         "footer: markdown preview fallback for Ghostty conflict",

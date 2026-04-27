@@ -9,10 +9,19 @@ from subprocess import PIPE, CompletedProcess, run
 from typing import Any, Callable, Mapping
 
 from textual.binding import Binding
+from textual.keys import format_key
 import yaml
 
-GHOSTTY_MARKDOWN_PREVIEW_TRIGGER = "super+shift+v"
 GHOSTTY_CONFIG_TIMEOUT_SECONDS = 1.0
+KEY_MODIFIER_SYMBOLS = {
+    "cmd": "⌘",
+    "super": "⌘",
+    "ctrl": "⌃",
+    "control": "⌃",
+    "alt": "⌥",
+    "option": "⌥",
+    "shift": "⇧",
+}
 
 
 @dataclass(frozen=True)
@@ -98,15 +107,22 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
 
 
 def _display_key(key: str) -> str:
-    return display_key(key)
+    return display_key_with_symbols(display_key(key))
 
 
-def app_binding_display_key(action: str, key: str, *, prefer_fallback: bool) -> str:
+def app_binding_display_key(
+    action: str,
+    key: str,
+    *,
+    conflicted_actions: set[str] | None = None,
+) -> str:
     item = _app_command_or_none(action)
     if item is None:
         return display_key(key)
-    if prefer_fallback and item.get("fallback_key"):
-        return display_key(item["fallback_key"])
+    if conflicted_actions is not None and action in conflicted_actions:
+        fallback = item.get("fallback_key")
+        if fallback:
+            return display_key(fallback)
     return display_key(item.get("preferred_key") or key)
 
 
@@ -114,8 +130,11 @@ def _app_help_display_key(item: dict[str, Any]) -> str:
     preferred = item.get("preferred_key")
     fallback = item.get("fallback_key")
     if preferred and fallback:
-        return f"{display_key(preferred)} / {display_key(fallback)}"
-    return display_key(item["key"])
+        return (
+            f"{display_key_with_symbols(display_key(preferred))} / "
+            f"{display_key_with_symbols(display_key(fallback))}"
+        )
+    return display_key_with_symbols(display_key(item["key"]))
 
 
 def _app_command_or_none(action: str) -> dict[str, Any] | None:
@@ -155,18 +174,34 @@ def display_key(key: str) -> str:
     return min(candidates, key=score)
 
 
-def ghostty_markdown_preview_hotkey_conflicted(
+def display_key_with_symbols(key: str) -> str:
+    parts = key.split("+")
+    if len(parts) == 1:
+        return _display_base_key(parts[0])
+    modifiers = "".join(KEY_MODIFIER_SYMBOLS.get(part, part) for part in parts[:-1])
+    return f"{modifiers}{_display_base_key(parts[-1])}"
+
+
+def _display_base_key(key: str) -> str:
+    base_key = format_key(key)
+    if len(base_key) == 1:
+        return base_key.upper()
+    return base_key.title()
+
+
+def ghostty_app_hotkey_conflicts(
     env: Mapping[str, str] | None = None,
     run_command: Callable[..., CompletedProcess[str]] = run,
     find_binary: Callable[[str], str | None] = which,
-) -> bool:
+) -> set[str]:
+    triggers = _ghostty_conflict_triggers()
     env = environ if env is None else env
     if env.get("TERM_PROGRAM") != "ghostty" and env.get("TERM") != "xterm-ghostty":
-        return True
+        return set(triggers.values())
 
     ghostty = _ghostty_binary(find_binary)
     if ghostty is None:
-        return True
+        return set(triggers.values())
 
     try:
         result = run_command(
@@ -178,10 +213,26 @@ def ghostty_markdown_preview_hotkey_conflicted(
             check=False,
         )
     except Exception:
-        return True
+        return set(triggers.values())
     if result.returncode != 0:
-        return True
-    return _ghostty_config_has_conflict(result.stdout)
+        return set(triggers.values())
+    conflicted_triggers = _ghostty_config_conflicted_triggers(
+        result.stdout,
+        set(triggers),
+    )
+    return {triggers[trigger] for trigger in conflicted_triggers}
+
+
+def ghostty_markdown_preview_hotkey_conflicted(
+    env: Mapping[str, str] | None = None,
+    run_command: Callable[..., CompletedProcess[str]] = run,
+    find_binary: Callable[[str], str | None] = which,
+) -> bool:
+    return "toggle_markdown_preview" in ghostty_app_hotkey_conflicts(
+        env,
+        run_command,
+        find_binary,
+    )
 
 
 def _ghostty_binary(find_binary: Callable[[str], str | None]) -> str | None:
@@ -191,8 +242,28 @@ def _ghostty_binary(find_binary: Callable[[str], str | None]) -> str | None:
     return find_binary("ghostty")
 
 
-def _ghostty_config_has_conflict(config: str) -> bool:
+def _ghostty_conflict_triggers() -> dict[str, str]:
+    triggers: dict[str, str] = {}
+    for item in APP_COMMANDS:
+        if not item.get("fallback_key"):
+            continue
+        preferred_key = item.get("preferred_key")
+        if not preferred_key:
+            continue
+        for candidate in preferred_key.split(","):
+            trigger = candidate.strip()
+            if trigger.startswith("super+"):
+                triggers[trigger] = item["name"]
+                break
+    return triggers
+
+
+def _ghostty_config_conflicted_triggers(
+    config: str,
+    triggers: set[str],
+) -> set[str]:
     saw_keybind = False
+    conflicted_triggers: set[str] = set()
     for raw_line in config.splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#") or not line.startswith("keybind"):
@@ -202,7 +273,18 @@ def _ghostty_config_has_conflict(config: str) -> bool:
         if key.strip() != "keybind":
             continue
         trigger, _, action = value.partition("=")
-        if trigger.strip() != GHOSTTY_MARKDOWN_PREVIEW_TRIGGER:
+        trigger = trigger.strip()
+        if trigger not in triggers:
             continue
-        return action.strip() != "unbind"
-    return True if not saw_keybind else False
+        if action.strip() != "unbind":
+            conflicted_triggers.add(trigger)
+    return set(triggers) if not saw_keybind else conflicted_triggers
+
+
+def _ghostty_config_has_conflict(config: str) -> bool:
+    return bool(
+        _ghostty_config_conflicted_triggers(
+            config,
+            {"super+shift+v"},
+        )
+    )

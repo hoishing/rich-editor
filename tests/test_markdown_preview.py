@@ -163,4 +163,4 @@ async def test_keys_help_includes_markdown_preview_binding() -> None:
             (row.children[0].content, row.children[1].content)
             for row in app.screen.query(".binding-row")
         ]
-        assert ("cmd+shift+v / ctrl+shift+v", "Toggle Markdown preview") in rows
+        assert ("⌘⇧V / ⌃⇧V", "Toggle Markdown preview") in rows
