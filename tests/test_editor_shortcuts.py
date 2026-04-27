@@ -188,6 +188,7 @@ async def test_comment_shortcuts() -> None:
             name="comment.py",
             content="print('hello')",
             expected_text="# print('hello')",
+            expected_cursor=(0, 2),
         )
 
     _, _, app = _file_app("comment.py", "  print('hello')")
@@ -196,6 +197,92 @@ async def test_comment_shortcuts() -> None:
         editor = _editor(app)
         await _press_many(pilot, "cmd+/", "cmd+/")
         assert editor.text == "  print('hello')", repr(editor.text)
+
+
+async def test_comment_shortcuts_preserve_cursor_position() -> None:
+    cases = (
+        (
+            "comment.py",
+            "print('hello')",
+            (0, 6),
+            "# print('hello')",
+            (0, 8),
+        ),
+        (
+            "comment.py",
+            "# print('hello')",
+            (0, 8),
+            "print('hello')",
+            (0, 6),
+        ),
+        (
+            "comment.py",
+            "  print('hello')",
+            (0, 1),
+            "  # print('hello')",
+            (0, 1),
+        ),
+        (
+            "comment.py",
+            "  print('hello')",
+            (0, 2),
+            "  # print('hello')",
+            (0, 4),
+        ),
+        (
+            "comment.py",
+            "  # print('hello')",
+            (0, 3),
+            "  print('hello')",
+            (0, 2),
+        ),
+        (
+            "comment.css",
+            "body {",
+            (0, 5),
+            "/* body { */",
+            (0, 8),
+        ),
+        (
+            "comment.css",
+            "/* body { */",
+            (0, 8),
+            "body {",
+            (0, 5),
+        ),
+    )
+    for name, content, cursor, expected_text, expected_cursor in cases:
+        await _run_editor_case(
+            key="cmd+/",
+            name=name,
+            content=content,
+            cursor=cursor,
+            expected_text=expected_text,
+            expected_cursor=expected_cursor,
+        )
+
+
+async def test_comment_shortcuts_preserve_selection_position() -> None:
+    await _run_editor_case(
+        key="cmd+/",
+        name="comment.ts",
+        content="  alpha beta",
+        selection=((0, 2), (0, 7)),
+        expected_text="  // alpha beta",
+        expected_cursor=(0, 10),
+        expected_selection=((0, 5), (0, 10)),
+        expected_selected_text="alpha",
+    )
+    await _run_editor_case(
+        key="cmd+/",
+        name="comment.ts",
+        content="  // alpha beta",
+        selection=((0, 5), (0, 10)),
+        expected_text="  alpha beta",
+        expected_cursor=(0, 7),
+        expected_selection=((0, 2), (0, 7)),
+        expected_selected_text="alpha",
+    )
 
 
 async def test_comment_selection_and_block_comment_cases() -> None:

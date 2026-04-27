@@ -179,21 +179,6 @@ class RichedTextArea(TextArea):
         ]
         return start_row, end_row, lines
 
-    def _replace_target_lines(
-        self,
-        start_row: int,
-        end_row: int,
-        lines: list[str],
-    ) -> None:
-        text = "\n".join(lines)
-        self.replace(
-            text,
-            (start_row, 0),
-            (end_row, len(self.document.get_line(end_row))),
-            maintain_selection_offset=False,
-        )
-        self.move_cursor((start_row, 0))
-
     def _shift_target_line_indent(self, spaces: int) -> None:
         start_row, end_row, lines = self._target_lines()
         if spaces > 0:
@@ -241,6 +226,8 @@ class RichedTextArea(TextArea):
             lambda line: line.lstrip().startswith(marker),
             lambda line: _comment_line(line, marker),
             lambda line: _uncomment_line(line, marker),
+            lambda line, column: _comment_line_column(line, marker, column),
+            lambda line, column: _uncomment_line_column(line, marker, column),
         )
 
     def _toggle_block_comment(self, open_marker: str, close_marker: str) -> None:
@@ -251,6 +238,17 @@ class RichedTextArea(TextArea):
             ),
             lambda line: _comment_block_line(line, open_marker, close_marker),
             lambda line: _uncomment_block_line(line, open_marker, close_marker),
+            lambda line, column: _comment_block_line_column(
+                line,
+                open_marker,
+                column,
+            ),
+            lambda line, column: _uncomment_block_line_column(
+                line,
+                open_marker,
+                close_marker,
+                column,
+            ),
         )
 
     def _toggle_target_lines(
@@ -258,6 +256,8 @@ class RichedTextArea(TextArea):
         is_commented: Callable[[str], bool],
         comment: Callable[[str], str],
         uncomment: Callable[[str], str],
+        comment_column: Callable[[str, int], int],
+        uncomment_column: Callable[[str, int], int],
     ) -> None:
         start_row, end_row, lines = self._target_lines()
         non_blank = [line for line in lines if line.strip()]
@@ -265,11 +265,35 @@ class RichedTextArea(TextArea):
             return
 
         should_uncomment = all(is_commented(line) for line in non_blank)
+        shift_column = uncomment_column if should_uncomment else comment_column
         updated = [
             uncomment(line) if should_uncomment else comment(line)
             for line in lines
         ]
-        self._replace_target_lines(start_row, end_row, updated)
+        original_cursor = self.cursor_location
+        original_selection = self.selection
+        had_selection = not original_selection.is_empty
+        self.replace(
+            "\n".join(updated),
+            (start_row, 0),
+            (end_row, len(self.document.get_line(end_row))),
+            maintain_selection_offset=False,
+        )
+
+        def shift_location(location: tuple[int, int]) -> tuple[int, int]:
+            row, column = location
+            if start_row <= row <= end_row:
+                column = shift_column(lines[row - start_row], column)
+            return self._clamp_location((row, column))
+
+        if not had_selection:
+            self.move_cursor(shift_location(original_cursor))
+            return
+
+        self.selection = type(self.selection)(
+            shift_location(original_selection.start),
+            shift_location(original_selection.end),
+        )
 
     def action_ignore(self) -> None:
         pass
@@ -304,6 +328,23 @@ def _uncomment_line(line: str, marker: str) -> str:
     return f"{indent}{rest}"
 
 
+def _comment_line_column(line: str, marker: str, column: int) -> int:
+    return _insert_prefix_column(line, f"{marker} ", column)
+
+
+def _uncomment_line_column(line: str, marker: str, column: int) -> int:
+    if not line.strip():
+        return column
+    indent = _leading_spaces(line)
+    rest = line[len(indent):]
+    if not rest.startswith(marker):
+        return column
+    removed = len(marker)
+    if rest[removed:].startswith(" "):
+        removed += 1
+    return _remove_prefix_column(len(indent), removed, column)
+
+
 def _comment_block_line(line: str, open_marker: str, close_marker: str) -> str:
     if not line.strip():
         return line
@@ -320,3 +361,55 @@ def _uncomment_block_line(line: str, open_marker: str, close_marker: str) -> str
         return line
     rest = rest[len(open_marker): -len(close_marker)].strip()
     return f"{indent}{rest}"
+
+
+def _comment_block_line_column(line: str, open_marker: str, column: int) -> int:
+    return _insert_prefix_column(line, f"{open_marker} ", column)
+
+
+def _uncomment_block_line_column(
+    line: str,
+    open_marker: str,
+    close_marker: str,
+    column: int,
+) -> int:
+    if not line.strip():
+        return column
+    indent = _leading_spaces(line)
+    indent_len = len(indent)
+    rest = line[indent_len:]
+    if not rest.startswith(open_marker) or not rest.rstrip().endswith(close_marker):
+        return column
+
+    content_start = indent_len + len(open_marker)
+    while content_start < len(line) and line[content_start].isspace():
+        content_start += 1
+
+    content_end = len(line.rstrip()) - len(close_marker)
+    while content_end > content_start and line[content_end - 1].isspace():
+        content_end -= 1
+
+    if column < indent_len:
+        return column
+    if column < content_start:
+        return indent_len
+    if column <= content_end:
+        return indent_len + column - content_start
+    return indent_len + content_end - content_start
+
+
+def _insert_prefix_column(line: str, prefix: str, column: int) -> int:
+    if not line.strip():
+        return column
+    indent_len = len(_leading_spaces(line))
+    if column < indent_len:
+        return column
+    return column + len(prefix)
+
+
+def _remove_prefix_column(indent_len: int, removed: int, column: int) -> int:
+    if column < indent_len:
+        return column
+    if column < indent_len + removed:
+        return indent_len
+    return column - removed
