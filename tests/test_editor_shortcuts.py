@@ -13,6 +13,8 @@ async def _run_editor_case(
     selection: tuple[tuple[int, int], tuple[int, int]] | None = None,
     expected_text: str,
     expected_cursor: tuple[int, int] | None = None,
+    expected_selection: tuple[tuple[int, int], tuple[int, int]] | None = None,
+    expected_selected_text: str | None = None,
     name: str = "lines.txt",
 ) -> None:
     _, _, app = _file_app(name, content)
@@ -28,6 +30,21 @@ async def _run_editor_case(
         assert editor.text == expected_text, (key, repr(editor.text))
         if expected_cursor is not None:
             assert editor.cursor_location == expected_cursor, (key, editor.cursor_location)
+        if expected_selection is not None:
+            assert not editor.selection.is_empty, (key, editor.selection)
+            assert editor.selection.start == expected_selection[0], (
+                key,
+                editor.selection,
+            )
+            assert editor.selection.end == expected_selection[1], (
+                key,
+                editor.selection,
+            )
+        if expected_selected_text is not None:
+            assert editor.selected_text == expected_selected_text, (
+                key,
+                repr(editor.selected_text),
+            )
 
 
 async def test_move_line_shortcuts() -> None:
@@ -122,22 +139,45 @@ async def test_indent_and_outdent_selected_lines() -> None:
             ((0, 1), (1, 2)),
             "  aaa\n  bbb\nccc",
             (1, 4),
+            ((0, 3), (1, 4)),
+            "aa\n  bb",
         ),
         (
             "cmd+[",
             "alpha\n bravo\n  charlie\n\tdelta",
-            ((0, 0), (3, 3)),
+            ((1, 1), (2, 4)),
             "alpha\nbravo\ncharlie\n\tdelta",
-            (3, 3),
+            (2, 2),
+            ((1, 0), (2, 2)),
+            "bravo\nch",
+        ),
+        (
+            "cmd+]",
+            "aaa\nbbb\nccc",
+            ((0, 0), (2, 0)),
+            "  aaa\n  bbb\nccc",
+            (2, 0),
+            ((0, 0), (2, 0)),
+            "  aaa\n  bbb\n",
         ),
     )
-    for key, content, selection, expected_text, expected_cursor in cases:
+    for (
+        key,
+        content,
+        selection,
+        expected_text,
+        expected_cursor,
+        expected_selection,
+        expected_selected_text,
+    ) in cases:
         await _run_editor_case(
             key=key,
             content=content,
             selection=selection,
             expected_text=expected_text,
             expected_cursor=expected_cursor,
+            expected_selection=expected_selection,
+            expected_selected_text=expected_selected_text,
         )
 
 

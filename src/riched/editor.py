@@ -200,22 +200,41 @@ class RichedTextArea(TextArea):
             updated = [" " * spaces + line for line in lines]
         else:
             updated = [_outdent_line(line, -spaces) for line in lines]
+        deltas = [
+            len(updated_line) - len(line)
+            for line, updated_line in zip(lines, updated, strict=True)
+        ]
 
         cursor_row, cursor_col = self.cursor_location
         if start_row <= cursor_row <= end_row:
-            target_line = self.document.get_line(cursor_row)
-            updated_cursor_line = updated[cursor_row - start_row]
-            delta = len(updated_cursor_line) - len(target_line)
+            delta = deltas[cursor_row - start_row]
             target_cursor = (cursor_row, max(0, cursor_col + delta))
         else:
             target_cursor = (start_row, 0)
+        original_selection = self.selection
+        had_selection = not original_selection.is_empty
         self.replace(
             "\n".join(updated),
             (start_row, 0),
             (end_row, len(self.document.get_line(end_row))),
             maintain_selection_offset=False,
         )
-        self.move_cursor(target_cursor)
+        if not had_selection:
+            self.move_cursor(target_cursor)
+            return
+
+        def shift_selection_endpoint(location: tuple[int, int]) -> tuple[int, int]:
+            row, column = location
+            if column == 0:
+                return location
+            if start_row <= row <= end_row:
+                return row, max(0, column + deltas[row - start_row])
+            return location
+
+        self.selection = type(self.selection)(
+            shift_selection_endpoint(original_selection.start),
+            shift_selection_endpoint(original_selection.end),
+        )
 
     def _toggle_line_comment(self, marker: str) -> None:
         self._toggle_target_lines(
