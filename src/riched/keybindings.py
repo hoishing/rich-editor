@@ -27,7 +27,7 @@ KEY_MODIFIER_SYMBOLS = {
 @dataclass(frozen=True)
 class KeyBindingHelpGroup:
     title: str
-    rows: tuple[tuple[str, str], ...]
+    rows: tuple[tuple[str, str, bool], ...]
 
 
 def load_binding_spec() -> dict[str, Any]:
@@ -80,17 +80,28 @@ def build_screen_bindings(screen: str) -> list[Binding]:
     ]
 
 
-def binding_help_groups() -> list[KeyBindingHelpGroup]:
+def binding_help_groups(
+    conflicted_actions: set[str] | None = None,
+) -> list[KeyBindingHelpGroup]:
+    conflicted_actions = conflicted_actions or set()
     groups: list[KeyBindingHelpGroup] = []
 
     app_rows = tuple(
-        (_help_display_key(item), item.get("description") or item["name"])
+        (
+            _help_display_key(item),
+            item.get("description") or item["name"],
+            _help_conflicted(item, conflicted_actions),
+        )
         for item in BINDING_SPEC["app"]["commands"]
     )
     groups.append(KeyBindingHelpGroup("App", app_rows))
 
     editor_rows = tuple(
-        (_help_display_key(item), item.get("description") or item["action"])
+        (
+            _help_display_key(item),
+            item.get("description") or item["action"],
+            _help_conflicted(item, conflicted_actions),
+        )
         for item in BINDING_SPEC["editor"]
         if item.get("help", True)
     )
@@ -98,7 +109,11 @@ def binding_help_groups() -> list[KeyBindingHelpGroup]:
 
     for screen, items in BINDING_SPEC["screens"].items():
         rows = tuple(
-            (_help_display_key(item), item.get("description") or item["action"])
+            (
+                _help_display_key(item),
+                item.get("description") or item["action"],
+                False,
+            )
             for item in items
         )
         groups.append(KeyBindingHelpGroup(f"Screens / {screen}", rows))
@@ -119,7 +134,20 @@ def app_binding_display_key(
         fallback = item.get("fallback_key")
         if fallback:
             return display_key(fallback)
+        return ""
     return display_key(item.get("preferred_key") or key)
+
+
+def _help_conflicted(
+    item: dict[str, Any],
+    conflicted_actions: set[str],
+) -> bool:
+    action = item.get("name") or item.get("action")
+    return bool(
+        action in conflicted_actions
+        and item.get("preferred_key")
+        and not item.get("fallback_key")
+    )
 
 
 def _help_display_key(item: dict[str, Any]) -> str:
@@ -242,16 +270,17 @@ def _ghostty_binary(find_binary: Callable[[str], str | None]) -> str | None:
 
 def _ghostty_conflict_triggers() -> dict[str, str]:
     triggers: dict[str, str] = {}
-    for item in APP_COMMANDS:
-        if not item.get("fallback_key"):
-            continue
+    for item in [*APP_COMMANDS, *BINDING_SPEC["editor"]]:
         preferred_key = item.get("preferred_key")
         if not preferred_key:
+            continue
+        action = item.get("name") or item.get("action")
+        if not action:
             continue
         for candidate in preferred_key.split(","):
             trigger = candidate.strip()
             if trigger.startswith("super+"):
-                triggers[trigger] = item["name"]
+                triggers[trigger] = action
                 break
     return triggers
 

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Iterable
+from itertools import groupby
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -21,6 +23,7 @@ from textual.widgets import (
     Static,
     TextArea,
 )
+from textual.widgets._footer import FooterKey, FooterLabel, KeyGroup
 
 from .editor import RichedTextArea
 from .keybindings import (
@@ -56,6 +59,81 @@ KEY_MODIFIER_SYMBOLS = {
     "shift": "⇧",
 }
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
+
+
+class RichedFooter(Footer):
+    """Footer that omits Ghostty-blocked bindings without fallbacks."""
+
+    def _hide_binding(self, binding: Binding) -> bool:
+        return (
+            not self.app.get_key_display(binding)
+            and binding.action in self.app._ghostty_app_hotkey_conflicts
+        )
+
+    def compose(self) -> ComposeResult:
+        if not self._bindings_ready:
+            return
+        active_bindings = self.screen.active_bindings
+        bindings = [
+            (binding, enabled, tooltip)
+            for (_, binding, enabled, tooltip) in active_bindings.values()
+            if binding.show and not self._hide_binding(binding)
+        ]
+        action_to_bindings: defaultdict[str, list[tuple[Binding, bool, str]]]
+        action_to_bindings = defaultdict(list)
+        for binding, enabled, tooltip in bindings:
+            action_to_bindings[binding.action].append((binding, enabled, tooltip))
+
+        self.styles.grid_size_columns = len(action_to_bindings)
+
+        for group, multi_bindings_iterable in groupby(
+            action_to_bindings.values(),
+            lambda multi_bindings_: multi_bindings_[0][0].group,
+        ):
+            multi_bindings = list(multi_bindings_iterable)
+            if group is not None and len(multi_bindings) > 1:
+                with KeyGroup(classes="-compact" if group.compact else ""):
+                    for multi_bindings in multi_bindings:
+                        binding, enabled, tooltip = multi_bindings[0]
+                        yield FooterKey(
+                            binding.key,
+                            self.app.get_key_display(binding),
+                            "",
+                            binding.action,
+                            disabled=not enabled,
+                            tooltip=tooltip or binding.description,
+                            classes="-grouped",
+                        ).data_bind(compact=Footer.compact)
+                yield FooterLabel(group.description)
+            else:
+                for multi_bindings in multi_bindings:
+                    binding, enabled, tooltip = multi_bindings[0]
+                    yield FooterKey(
+                        binding.key,
+                        self.app.get_key_display(binding),
+                        binding.description,
+                        binding.action,
+                        disabled=not enabled,
+                        tooltip=tooltip,
+                    ).data_bind(compact=Footer.compact)
+        if self.show_command_palette and self.app.ENABLE_COMMAND_PALETTE:
+            try:
+                _node, binding, enabled, tooltip = active_bindings[
+                    self.app.COMMAND_PALETTE_BINDING
+                ]
+            except KeyError:
+                pass
+            else:
+                if not self._hide_binding(binding):
+                    yield FooterKey(
+                        binding.key,
+                        self.app.get_key_display(binding),
+                        binding.description,
+                        binding.action,
+                        classes="-command-palette",
+                        disabled=not enabled,
+                        tooltip=binding.tooltip or binding.description or tooltip,
+                    )
 
 
 class RichedDirectoryTree(DirectoryTree):
@@ -230,17 +308,28 @@ class RichedApp(App):
             self.notify(f"Could not save theme: {exc}", severity="warning")
 
     def get_system_commands(self, screen: Screen) -> Iterable[SystemCommand]:
+        commands: list[SystemCommand] = []
         for command in super().get_system_commands(screen):
             if command.title == "Maximize":
                 continue
             if command.title == "Keys":
                 continue
-            yield command
-        yield SystemCommand(
-            "Show key bindings",
-            "Open the key bindings reference",
-            self.action_show_keys_popup,
+            commands.append(command)
+        commands.extend(
+            [
+                SystemCommand(
+                    "Show key bindings",
+                    "Open the key bindings reference",
+                    self.action_show_keys_popup,
+                ),
+                SystemCommand(
+                    "Toggle Markdown preview",
+                    "Show or hide the current Markdown file preview",
+                    self.action_toggle_markdown_preview,
+                ),
+            ]
         )
+        yield from sorted(commands, key=lambda command: command.title.casefold())
 
     def get_key_display(self, binding: Binding) -> str:
         if binding.key_display:
@@ -268,7 +357,7 @@ class RichedApp(App):
             yield RichedDirectoryTree(str(self.root), id="file-tree")
             yield FileTreeResizeHandle()
             yield Container(id="editor-slot")
-        yield Footer(show_command_palette=False)
+        yield RichedFooter(show_command_palette=False)
 
     def on_mount(self) -> None:
         self.title = "riched"
@@ -529,7 +618,9 @@ class RichedApp(App):
         self.action_command_palette()
 
     def action_show_keys_popup(self) -> None:
-        self.push_screen(KeysHelpScreen())
+        self.push_screen(
+            KeysHelpScreen(conflicted_actions=self._ghostty_app_hotkey_conflicts)
+        )
 
     async def action_toggle_markdown_preview(self) -> None:
         editor = self._editor_or_none()

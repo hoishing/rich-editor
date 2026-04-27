@@ -41,6 +41,7 @@ App shortcuts:
 | `⌘⇧P` / `F1` | Command palette |
 | `⌘B` | Toggle file tree |
 | `⌘P` | Quick open |
+| `⌘⇧V` | Toggle Markdown preview |
 
 Editor shortcuts:
 
@@ -50,10 +51,10 @@ Editor shortcuts:
 | `⌥↓` | Move line down |
 | `⌥⇧↑` | Copy line up |
 | `⌥⇧↓` | Copy line down |
-| `⌘Enter` / `^Enter` | Insert line below |
-| `⌘⇧Enter` / `^⇧Enter` | Insert line above |
-| `⌘]` / `^]` | Indent line |
-| `⌘[` / `^O` | Outdent line |
+| `⌘Enter` | Insert line below |
+| `⌘⇧Enter` | Insert line above |
+| `⌘]` | Indent line |
+| `⌘[` | Outdent line |
 | `⌥⌫` | Delete word left |
 | `⌘⌫` | Delete to line start |
 | `⌘Z` | Undo |
@@ -81,14 +82,10 @@ Editor shortcuts:
 ### Ghostty hotkey conflicts
 
 - some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
-- `riched` detects conflicted app shortcuts at startup and shows the fallback shortcut in the footer when Ghostty is still intercepting the preferred shortcut.
-- need to unbound these hotkeys in Ghostty config in order to use them, fall back hotkeys are listed below:
-  - `⌘Enter` → `^Enter`
-  - `⌘⇧Enter` → `^⇧Enter`
-  - `⌘⇧P` → `F1`
-  - `⌘⇧V` → `^⇧V`
-  - `⌘]` → `^]`
-  - `⌘[` → `^O`
+- `riched` detects conflicted shortcuts at startup.
+- Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config.
+- The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
+- `⌘⇧P` always has the `F1` fallback
 
 ### Unbind Ghostty default keybindings
 
@@ -99,7 +96,7 @@ Ghostty keybindings can be unbound in the Ghostty config file. On macOS, use one
 - `~/.config/ghostty/config.ghostty`
 - `~/.config/ghostty/config`
 
-Add one `keybind = <trigger>=unbind` line per conflicted shortcut:
+Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in `riched`:
 
 ```conf
 keybind = super+shift+v=unbind
@@ -107,13 +104,24 @@ keybind = super+[=unbind
 keybind = super+]=unbind
 keybind = super+enter=unbind
 keybind = super+shift+enter=unbind
-keybind = super+shift+p=unbind
 ```
 
-`^O` is used as the outdent fallback because `^[` is the same terminal input as `Escape`.
+`⌘⇧P` already works through the `F1` fallback. To use `⌘⇧P` directly, also add:
+
+```conf
+keybind = super+shift+p=unbind
+```
 
 Then reload Ghostty config with `⌘⇧,` or restart Ghostty. To inspect Ghostty's defaults before changing them:
 
 ```sh
 ghostty +list-keybinds --default
+```
+
+### Disable Ghostty font ligatures
+
+Textual does not expose an app-side font ligature switch. To disable programming ligatures while using `riched`, add this to the same Ghostty config file:
+
+```conf
+font-feature = -calt
 ```

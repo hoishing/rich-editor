@@ -92,7 +92,7 @@ async def test_copy_line_up() -> None:
 
 
 async def test_insert_line_below_aliases() -> None:
-    keys = ("cmd+enter", "super+enter", "ctrl+enter")
+    keys = ("cmd+enter", "super+enter")
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"
@@ -110,7 +110,7 @@ async def test_insert_line_below_aliases() -> None:
 
 
 async def test_insert_line_above_aliases() -> None:
-    keys = ("cmd+shift+enter", "super+shift+enter", "ctrl+shift+enter")
+    keys = ("cmd+shift+enter", "super+shift+enter")
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"
@@ -128,7 +128,7 @@ async def test_insert_line_above_aliases() -> None:
 
 
 async def test_indent_line_aliases() -> None:
-    keys = ("cmd+]", "ctrl+]", "ctrl+right_square_bracket")
+    keys = ("cmd+]", "super+]")
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"
@@ -162,7 +162,7 @@ async def test_indent_selected_lines() -> None:
 
 
 async def test_outdent_line_aliases() -> None:
-    keys = ("cmd+[", "ctrl+o")
+    keys = ("cmd+[", "super+[")
     for key in keys:
         tmp, _ = _fresh_env()
         f = tmp / "lines.txt"

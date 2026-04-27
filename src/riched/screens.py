@@ -359,19 +359,44 @@ class KeysHelpScreen(ModalScreen[None]):
         height: auto;
         color: $foreground;
     }
+    KeysHelpScreen .binding-warning {
+        color: $warning;
+    }
+    KeysHelpScreen .binding-legend {
+        height: auto;
+        color: $warning;
+        margin-top: 1;
+    }
     """
 
+    def __init__(self, conflicted_actions: set[str] | None = None) -> None:
+        super().__init__()
+        self._conflicted_actions = conflicted_actions or set()
+
     def compose(self) -> ComposeResult:
+        has_warnings = False
         with Vertical(id="dialog"):
             yield Label("Key Bindings")
             with Vertical(id="bindings-list"):
-                for group in binding_help_groups():
+                for group in binding_help_groups(self._conflicted_actions):
                     with Vertical(classes="binding-group"):
                         yield Static(group.title, classes="binding-title")
-                        for key, description in group.rows:
+                        for key, description, conflicted in group.rows:
+                            has_warnings = has_warnings or conflicted
                             with Horizontal(classes="binding-row"):
-                                yield Static(key, classes="binding-key")
+                                display_key = f"⚠️ {key}" if conflicted else key
+                                key_classes = (
+                                    "binding-key binding-warning"
+                                    if conflicted
+                                    else "binding-key"
+                                )
+                                yield Static(display_key, classes=key_classes)
                                 yield Static(description, classes="binding-description")
+                if has_warnings:
+                    yield Static(
+                        "⚠️ Unbind this shortcut in Ghostty config to use it in riched.",
+                        classes="binding-legend",
+                    )
 
     def action_close(self) -> None:
         self.dismiss(None)

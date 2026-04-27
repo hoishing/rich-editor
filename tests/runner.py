@@ -6,7 +6,9 @@ from collections.abc import Awaitable, Callable
 
 from .test_command_palette import (
     test_command_palette_button_is_hidden,
+    test_command_palette_includes_toggle_markdown_preview,
     test_command_palette_includes_show_key_bindings,
+    test_command_palette_items_are_sorted_alphabetically,
     test_command_palette_omits_maximize,
     test_cmd_shift_p_opens_command_palette,
     test_ctrl_p_does_not_open_command_palette,
@@ -87,17 +89,18 @@ from .test_file_tree import (
     test_file_tree_switch_opens_selected_file,
 )
 from .test_footer import (
-    test_footer_defaults_to_markdown_preview_fallback_outside_ghostty,
+    test_footer_hides_markdown_preview_for_ghostty_conflict,
+    test_footer_hides_markdown_preview_outside_ghostty,
     test_footer_uses_command_palette_preferred_when_ghostty_unbound,
     test_footer_uses_command_palette_fallback_for_ghostty_conflict,
     test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview,
-    test_footer_uses_markdown_preview_fallback_for_ghostty_conflict,
+    test_footer_uses_markdown_preview_preferred_when_ghostty_unbound,
 )
 from .test_markdown_preview import (
     test_cmd_shift_v_toggles_markdown_preview,
-    test_ctrl_shift_v_toggles_markdown_preview_fallback,
-    test_ctrl_shift_v_warns_for_non_markdown_file,
+    test_cmd_shift_v_warns_for_non_markdown_file,
     test_keys_help_includes_markdown_preview_binding,
+    test_keys_help_warns_for_ghostty_conflicted_markdown_preview,
     test_markdown_preview_external_link_opens_without_navigation,
     test_markdown_preview_uses_unsaved_editor_content,
     test_super_shift_v_toggles_markdown_preview_alias,
@@ -133,6 +136,14 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "command palette: includes show key bindings",
         test_command_palette_includes_show_key_bindings,
+    ),
+    (
+        "command palette: includes toggle markdown preview",
+        test_command_palette_includes_toggle_markdown_preview,
+    ),
+    (
+        "command palette: items sorted alphabetically",
+        test_command_palette_items_are_sorted_alphabetically,
     ),
     (
         "command palette: keys help includes binding",
@@ -218,12 +229,16 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         test_footer_uses_command_palette_preferred_when_ghostty_unbound,
     ),
     (
-        "footer: markdown preview fallback for Ghostty conflict",
-        test_footer_uses_markdown_preview_fallback_for_ghostty_conflict,
+        "footer: markdown preview hidden for Ghostty conflict",
+        test_footer_hides_markdown_preview_for_ghostty_conflict,
     ),
     (
-        "footer: markdown preview fallback outside Ghostty",
-        test_footer_defaults_to_markdown_preview_fallback_outside_ghostty,
+        "footer: markdown preview hidden outside Ghostty",
+        test_footer_hides_markdown_preview_outside_ghostty,
+    ),
+    (
+        "footer: markdown preview preferred when Ghostty unbound",
+        test_footer_uses_markdown_preview_preferred_when_ghostty_unbound,
     ),
     (
         "markdown preview: cmd+shift+v toggles",
@@ -234,16 +249,12 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
         test_super_shift_v_toggles_markdown_preview_alias,
     ),
     (
-        "markdown preview: ctrl+shift+v fallback",
-        test_ctrl_shift_v_toggles_markdown_preview_fallback,
-    ),
-    (
         "markdown preview: uses unsaved editor content",
         test_markdown_preview_uses_unsaved_editor_content,
     ),
     (
         "markdown preview: non-markdown warning",
-        test_ctrl_shift_v_warns_for_non_markdown_file,
+        test_cmd_shift_v_warns_for_non_markdown_file,
     ),
     (
         "markdown preview: switching files exits preview",
@@ -256,6 +267,10 @@ TESTS: list[tuple[str, Callable[[], Awaitable[None]]]] = [
     (
         "markdown preview: keys help includes binding",
         test_keys_help_includes_markdown_preview_binding,
+    ),
+    (
+        "markdown preview: keys help warns for Ghostty conflict",
+        test_keys_help_warns_for_ghostty_conflicted_markdown_preview,
     ),
     ("syntax: python", test_python_highlight),
     ("syntax: typescript", test_typescript_highlight),

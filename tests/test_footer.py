@@ -78,10 +78,10 @@ async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> N
             if hasattr(child, "key_display")
         }
         assert labels["Command palette"] == "⌘⇧P"
-        assert labels["Toggle Markdown preview"] == "⌃⇧V"
+        assert "Toggle Markdown preview" not in labels
 
 
-async def test_footer_uses_markdown_preview_fallback_for_ghostty_conflict() -> None:
+async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "footer.txt"
     f.write_text("footer")
@@ -94,10 +94,10 @@ async def test_footer_uses_markdown_preview_fallback_for_ghostty_conflict() -> N
             for child in footer.children
             if hasattr(child, "key_display")
         }
-        assert labels["Toggle Markdown preview"] == "⌃⇧V"
+        assert "Toggle Markdown preview" not in labels
 
 
-async def test_footer_defaults_to_markdown_preview_fallback_outside_ghostty() -> None:
+async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "footer.txt"
     f.write_text("footer")
@@ -126,4 +126,37 @@ async def test_footer_defaults_to_markdown_preview_fallback_outside_ghostty() ->
             if hasattr(child, "key_display")
         }
         assert labels["Command palette"] == "F1"
-        assert labels["Toggle Markdown preview"] == "⌃⇧V"
+        assert "Toggle Markdown preview" not in labels
+
+
+async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "footer.txt"
+    f.write_text("footer")
+    config = "\n".join(
+        [
+            "keybind = super+shift+,=reload_config",
+            "keybind = super+shift+v=unbind",
+        ]
+    )
+    conflicts = ghostty_app_hotkey_conflicts(
+        env={"TERM_PROGRAM": "ghostty"},
+        run_command=lambda *args, **kwargs: CompletedProcess(
+            args[0],
+            0,
+            stdout=config,
+            stderr="",
+        ),
+        find_binary=lambda name: name,
+    )
+    app = _make_app(f, ghostty_app_hotkey_conflicts=conflicts)
+
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        footer = app.query_one(Footer)
+        labels = {
+            child.description: child.key_display
+            for child in footer.children
+            if hasattr(child, "key_display")
+        }
+        assert labels["Toggle Markdown preview"] == "⌘⇧V"

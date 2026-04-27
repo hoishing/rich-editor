@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual.widgets import Markdown, MarkdownViewer, TextArea
+from textual.widgets import Markdown, MarkdownViewer, Static, TextArea
 
 from .helpers import _fresh_env, _make_app
 
@@ -43,20 +43,6 @@ async def test_super_shift_v_toggles_markdown_preview_alias() -> None:
         assert app.query_one("#markdown-preview", MarkdownViewer).document.source == "# Title"
 
 
-async def test_ctrl_shift_v_toggles_markdown_preview_fallback() -> None:
-    tmp, _ = _fresh_env()
-    f = tmp / "README.md"
-    f.write_text("# Title")
-    app = _make_app(f, root=tmp)
-    async with app.run_test() as pilot:
-        await pilot.pause()
-
-        await pilot.press("ctrl+shift+v")
-        await pilot.pause()
-
-        assert app.query_one("#markdown-preview", MarkdownViewer).document.source == "# Title"
-
-
 async def test_markdown_preview_uses_unsaved_editor_content() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "README.md"
@@ -75,7 +61,7 @@ async def test_markdown_preview_uses_unsaved_editor_content() -> None:
         assert f.read_text() == "# Saved"
 
 
-async def test_ctrl_shift_v_warns_for_non_markdown_file() -> None:
+async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "notes.txt"
     f.write_text("# Plain text")
@@ -88,7 +74,7 @@ async def test_ctrl_shift_v_warns_for_non_markdown_file() -> None:
         await pilot.pause()
         editor = app.query_one("#editor", TextArea)
 
-        await pilot.press("ctrl+shift+v")
+        await pilot.press("cmd+shift+v")
         await pilot.pause()
 
         assert not list(app.query("#markdown-preview"))
@@ -152,7 +138,7 @@ async def test_keys_help_includes_markdown_preview_binding() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "README.md"
     f.write_text("# Title")
-    app = _make_app(f, root=tmp)
+    app = _make_app(f, root=tmp, ghostty_app_hotkey_conflicts=set())
     async with app.run_test() as pilot:
         await pilot.pause()
 
@@ -163,4 +149,30 @@ async def test_keys_help_includes_markdown_preview_binding() -> None:
             (row.children[0].content, row.children[1].content)
             for row in app.screen.query(".binding-row")
         ]
-        assert ("⌘⇧V / ⌃⇧V", "Toggle Markdown preview") in rows
+        assert ("⌘⇧V", "Toggle Markdown preview") in rows
+
+
+async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "README.md"
+    f.write_text("# Title")
+    app = _make_app(
+        f,
+        root=tmp,
+        ghostty_app_hotkey_conflicts={"toggle_markdown_preview"},
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        app.action_show_keys_popup()
+        await pilot.pause()
+
+        rows = [
+            (row.children[0].content, row.children[1].content)
+            for row in app.screen.query(".binding-row")
+        ]
+        assert ("⚠️ ⌘⇧V", "Toggle Markdown preview") in rows
+        assert (
+            app.screen.query_one(".binding-legend", Static).content
+            == "⚠️ Unbind this shortcut in Ghostty config to use it in riched."
+        )

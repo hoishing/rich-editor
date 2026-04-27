@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from inspect import isawaitable
+
 from textual.command import CommandPalette
+from textual.widgets import MarkdownViewer
 
 from .helpers import _fresh_env, _make_app
 from riched.screens import KeysHelpScreen
@@ -47,11 +50,45 @@ async def test_command_palette_includes_show_key_bindings() -> None:
         assert isinstance(app.screen, KeysHelpScreen)
 
 
-async def test_keys_help_includes_command_palette_binding() -> None:
+async def test_command_palette_includes_toggle_markdown_preview() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "README.md"
+    f.write_text("# Palette")
+    app = _make_app(f, root=tmp)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        commands = {
+            command.title: command
+            for command in app.get_system_commands(app.screen)
+        }
+        assert "Toggle Markdown preview" in commands
+
+        result = commands["Toggle Markdown preview"].callback()
+        if isawaitable(result):
+            await result
+        await pilot.pause()
+
+        assert app.query_one("#markdown-preview", MarkdownViewer).document.source == (
+            "# Palette"
+        )
+
+
+async def test_command_palette_items_are_sorted_alphabetically() -> None:
     tmp, _ = _fresh_env()
     f = tmp / "palette.txt"
     f.write_text("palette")
     app = _make_app(f)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        titles = [command.title for command in app.get_system_commands(app.screen)]
+        assert titles == sorted(titles, key=str.casefold)
+
+
+async def test_keys_help_includes_command_palette_binding() -> None:
+    tmp, _ = _fresh_env()
+    f = tmp / "palette.txt"
+    f.write_text("palette")
+    app = _make_app(f, ghostty_app_hotkey_conflicts=set())
     async with app.run_test() as pilot:
         await pilot.pause()
 
@@ -63,10 +100,10 @@ async def test_keys_help_includes_command_palette_binding() -> None:
             for row in app.screen.query(".binding-row")
         ]
         assert ("⌘⇧P / F1", "Command palette") in rows
-        assert ("⌘Enter / ⌃Enter", "Insert line below") in rows
-        assert ("⌘⇧Enter / ⌃⇧Enter", "Insert line above") in rows
-        assert ("⌘] / ⌃]", "Indent line") in rows
-        assert ("⌘[ / ⌃O", "Outdent line") in rows
+        assert ("⌘Enter", "Insert line below") in rows
+        assert ("⌘⇧Enter", "Insert line above") in rows
+        assert ("⌘]", "Indent line") in rows
+        assert ("⌘[", "Outdent line") in rows
         assert not any(
             modifier in key.lower()
             for key, _ in rows

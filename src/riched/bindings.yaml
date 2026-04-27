@@ -16,9 +16,8 @@ app:
       key: cmd+p,super+p
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
-      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,ctrl+shift+v,shift+ctrl+v
+      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
       preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
-      fallback_key: ctrl+shift+v,shift+ctrl+v
 
 editor:
   - key: alt+up
@@ -37,27 +36,23 @@ editor:
     action: copy_line_down
     description: Copy line down
     show: false
-  - key: cmd+enter,super+enter,ctrl+enter
+  - key: cmd+enter,super+enter
     preferred_key: cmd+enter,super+enter
-    fallback_key: ctrl+enter
     action: insert_line_below
     description: Insert line below
     show: false
-  - key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter,ctrl+shift+enter,shift+ctrl+enter
+  - key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter
     preferred_key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter
-    fallback_key: ctrl+shift+enter,shift+ctrl+enter
     action: insert_line_above
     description: Insert line above
     show: false
-  - key: cmd+],super+],ctrl+],ctrl+right_square_bracket
+  - key: cmd+],super+]
     preferred_key: cmd+],super+]
-    fallback_key: ctrl+]
     action: indent_line
     description: Indent line
     show: false
-  - key: cmd+[,super+[,ctrl+o
+  - key: cmd+[,super+[
     preferred_key: cmd+[,super+[
-    fallback_key: ctrl+o
     action: outdent_line
     description: Outdent line
     show: false
