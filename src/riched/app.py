@@ -227,6 +227,11 @@ class FileTreeResizeHandle(Static):
 class RichedMarkdownViewer(MarkdownViewer):
     """Markdown preview that opens external URLs without navigating to them."""
 
+    BINDINGS = [
+        *MarkdownViewer.BINDINGS,
+        Binding("escape", "focus_file_tree", "Focus file tree", show=False),
+    ]
+
     async def go(self, location: str | Any) -> None:
         href = str(location)
         parsed = urlparse(href)
@@ -234,6 +239,11 @@ class RichedMarkdownViewer(MarkdownViewer):
             self.app.open_url(href)
             return
         await super().go(location)
+
+    def action_focus_file_tree(self) -> None:
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.action_focus_file_tree()
 
 
 class RichedApp(App):
@@ -764,3 +774,8 @@ class RichedApp(App):
                 editor.focus()
             return
         tree.focus()
+
+    def action_focus_file_tree(self) -> None:
+        if not self._is_file_tree_visible():
+            self._show_file_tree()
+        self._file_tree().focus()

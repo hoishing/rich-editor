@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from textual.widgets import Markdown, MarkdownViewer, Static
+from textual.widgets import DirectoryTree, Markdown, MarkdownViewer, Static
 
 from .helpers import _editor, _file_app, _key_help_rows, _press
 
@@ -111,6 +111,22 @@ async def test_markdown_preview_external_link_opens_without_navigation() -> None
 
         assert opened_urls == ["https://github.com/Textualize/rich"]
         assert preview.document.source == "[Rich](https://github.com/Textualize/rich)"
+
+
+async def test_markdown_preview_escape_focuses_file_tree() -> None:
+    _, _, app = _file_app("README.md", "# Title", root_is_tmp=True)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        await _press(pilot, "cmd+shift+v")
+        preview = app.query_one("#markdown-preview", MarkdownViewer)
+        tree = app.query_one("#file-tree", DirectoryTree)
+        assert preview.document.has_focus
+
+        await _press(pilot, "escape")
+
+        assert tree.has_focus
+        assert app.query_one("#markdown-preview", MarkdownViewer)
 
 
 async def test_keys_help_includes_markdown_preview_binding() -> None:

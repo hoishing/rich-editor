@@ -2,6 +2,7 @@
 
 - check if a hotkey is bounded with Ghostty built-in hotkey before adding any new key binding. Add startup detection for Ghostty-conflicted hotkeys and document any alternative hotkeys as alternatives.
 - riched only supports Ghostty on macOS. For every new hotkey or alternative, verify the real Ghostty/Textual terminal path, not only Textual Pilot's synthetic key name. Use `ghostty +list-keybinds --default` to check Ghostty interception, then inspect Textual's ANSI mapping with `uv run python` when the key uses Ctrl punctuation or other ambiguous terminal sequences. Add e2e coverage for both the requested human spelling and the real Textual key name when they differ, for example `ctrl+right_square_bracket` for real terminal Ctrl+]. Do not use alternatives that collapse to `escape` or another existing semantic key; Ctrl+[ is Escape in terminal input and must not be used as a distinct alternative.
+- automatically commit, push, build and publish the package after bumping the package version
 
 ## Project Structure & Module Organization
 
