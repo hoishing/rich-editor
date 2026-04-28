@@ -27,6 +27,7 @@ from textual.widgets import (
     TextArea,
 )
 from textual.widgets._footer import FooterKey, FooterLabel, KeyGroup
+from textual.widgets._header import HeaderClock, HeaderClockSpace, HeaderTitle
 
 from .editor import RichedTextArea
 from .formatting import format_text
@@ -141,6 +142,33 @@ class RichedFooter(Footer):
                         disabled=not enabled,
                         tooltip=binding.tooltip or binding.description or tooltip,
                     )
+
+
+class RefreshButton(Static):
+    """Header control for refreshing the workspace."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("↻", id="refresh-button")
+        self.tooltip = "Refresh"
+
+    async def on_click(self, event: events.Click) -> None:
+        event.stop()
+        await self.run_action("app.refresh_workspace")
+
+
+class RichedHeader(Header):
+    """Header with a compact refresh control on the left."""
+
+    def compose(self) -> ComposeResult:
+        yield RefreshButton()
+        yield HeaderTitle()
+        yield (
+            HeaderClock().data_bind(Header.time_format)
+            if self._show_clock
+            else HeaderClockSpace()
+        )
 
 
 class RichedDirectoryTree(DirectoryTree):
@@ -299,8 +327,15 @@ class RichedApp(App):
         height: 1fr;
         width: 1fr;
     }
-    HeaderIcon {
-        display: none;
+    #refresh-button {
+        dock: left;
+        width: 3;
+        min-width: 3;
+        height: 1;
+        content-align: center middle;
+    }
+    #refresh-button:hover {
+        background: $foreground 10%;
     }
     """
 
@@ -373,7 +408,7 @@ class RichedApp(App):
         return display_key_with_symbols(key)
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield RichedHeader()
         with Horizontal(id="workspace"):
             yield RichedDirectoryTree(str(self.root), id="file-tree")
             yield FileTreeResizeHandle()
@@ -560,6 +595,27 @@ class RichedApp(App):
                 on_clean()
 
         self.push_screen(UnsavedChangesScreen(), handle)
+
+    def _refresh_workspace_clean(self) -> None:
+        self._file_tree().reload()
+        self._invalidate_quick_open_index()
+        if self.path is None:
+            self._show_file_tree()
+            self._file_tree().focus()
+            self.notify("Refreshed")
+            return
+
+        path = self.path.expanduser()
+        if not path.exists():
+            self._close_buffer()
+            self.notify(f"Closed missing file {path}", severity="warning")
+            return
+
+        self._open_path(path)
+        self.notify("Refreshed")
+
+    def action_refresh_workspace(self) -> None:
+        self._after_saved_or_discarded(self._refresh_workspace_clean)
 
     def on_directory_tree_file_selected(
         self, event: DirectoryTree.FileSelected

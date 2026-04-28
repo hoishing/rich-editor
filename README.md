@@ -9,9 +9,12 @@ A [rich](https://github.com/Textualize/rich) library powered editor(hence the na
 
 - vscode text editing key bindings
 - macOS style key bindings work in ssh session to linux host also
+- project file tree with quick refresh and move-to-trash support
+- quick file open with fuzzy search
+- in-terminal Markdown preview
+- document formatting through external formatter CLIs
 - multiple built-in theme(atom, drcula, nordic ...etc)
 - syntax highlighting for major file formats
-- quick file open with fuzzy search
 
 ## Usage
 
@@ -42,6 +45,8 @@ App shortcuts:
 | `⌘B` | Toggle file tree |
 | `⌘P` | Quick open |
 | `⌘⇧V` | Toggle Markdown preview |
+| `⌥⇧F` | Format document |
+| `⌘R` | Refresh |
 
 Editor shortcuts:
 
@@ -51,7 +56,6 @@ Editor shortcuts:
 | `⌥↓` | Move line down |
 | `⌥⇧↑` | Copy line up |
 | `⌥⇧↓` | Copy line down |
-| `⌥⇧F` | Format document |
 | `⌘Enter` | Insert line below |
 | `⌘⇧Enter` | Insert line above |
 | `⌘]` | Indent line |
@@ -69,6 +73,16 @@ Editor shortcuts:
 | `⌘⇧K` | Delete line |
 | `⌘⇧←` | Select to line start |
 | `⌘⇧→` | Select to line end |
+
+File tree shortcuts:
+
+| Shortcut | Action |
+| --- | --- |
+| `←` | Collapse folder |
+| `→` | Expand folder |
+| `Space` | Open file or toggle folder |
+| `⌘⌫` / `⌃U` | Move selected file or folder to Trash |
+| `Esc` | Quit |
 
 ## Settings
 
@@ -91,6 +105,14 @@ brew install ruff taplo
 ```
 
 Files unsupported by these tools are left unchanged and `riched` shows a warning.
+
+## Refresh
+
+Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, `riched` prompts to save, discard, or cancel before reloading.
+
+## Moving Files To Trash
+
+When the file tree is focused, `⌘⌫` moves the selected file or folder to Trash. On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so `riched` binds both forms for the file tree.
 
 ## Limitations
 

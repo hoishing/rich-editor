@@ -20,6 +20,13 @@ app:
       description: Toggle Markdown preview
       key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
       preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
+    - name: format_document
+      description: Format document
+      key: alt+shift+f,shift+alt+f
+      preferred_key: alt+shift+f,shift+alt+f
+    - name: refresh_workspace
+      description: Refresh
+      key: cmd+r,super+r
 
 editor:
   - key: alt+up
@@ -38,11 +45,6 @@ editor:
     action: copy_line_down
     description: Copy line down
     show: false
-  - key: alt+shift+f,shift+alt+f
-    preferred_key: alt+shift+f,shift+alt+f
-    action: format_document
-    description: Format document
-    category: App
   - key: cmd+enter,super+enter
     preferred_key: cmd+enter,super+enter
     action: insert_line_below

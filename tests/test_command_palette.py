@@ -3,7 +3,7 @@ from __future__ import annotations
 from inspect import isawaitable
 
 from textual.command import CommandPalette
-from textual.widgets import MarkdownViewer
+from textual.widgets import MarkdownViewer, Static
 
 from .helpers import _file_app, _key_help_rows, _press
 from riched.screens import KeysHelpScreen
@@ -27,13 +27,12 @@ def _key_help_groups(app) -> dict[str, list[tuple[str, str]]]:
     }
 
 
-async def test_command_palette_button_is_hidden() -> None:
+async def test_header_shows_refresh_button_instead_of_command_palette_icon() -> None:
     app = _palette_app()
     async with app.run_test() as pilot:
         await pilot.pause()
-        header_icon = app.query_one("HeaderIcon")
-        assert header_icon.styles.display == "none"
-        assert header_icon.region.width == 0
+        refresh_button = app.query_one("#refresh-button", Static)
+        assert refresh_button.content == "↻"
 
 
 async def test_command_palette_omits_maximize() -> None:
