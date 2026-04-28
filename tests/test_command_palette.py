@@ -17,6 +17,16 @@ def _system_commands(app) -> dict[str, object]:
     return {command.title: command for command in app.get_system_commands(app.screen)}
 
 
+def _key_help_groups(app) -> dict[str, list[tuple[str, str]]]:
+    return {
+        group.children[0].content: [
+            (row.children[0].content, row.children[1].content)
+            for row in group.query(".binding-row")
+        ]
+        for group in app.screen.query(".binding-group")
+    }
+
+
 async def test_command_palette_button_is_hidden() -> None:
     app = _palette_app()
     async with app.run_test() as pilot:
@@ -91,6 +101,19 @@ async def test_keys_help_includes_command_palette_binding() -> None:
             for key, _ in rows
             for modifier in ("cmd", "ctrl", "control", "shift")
         )
+
+
+async def test_keys_help_shows_format_document_under_app() -> None:
+    app = _palette_app(ghostty_app_hotkey_conflicts=set())
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        app.action_show_keys_popup()
+        await pilot.pause()
+
+        groups = _key_help_groups(app)
+        assert ("⌥⇧F", "Format document") in groups["App"]
+        assert ("⌥⇧F", "Format document") not in groups["Editor"]
 
 
 async def test_keys_help_warns_for_ghostty_conflicted_format_document() -> None:

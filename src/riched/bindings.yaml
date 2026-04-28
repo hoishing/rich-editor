@@ -40,6 +40,7 @@ editor:
     preferred_key: alt+shift+f,shift+alt+f
     action: format_document
     description: Format document
+    category: App
   - key: cmd+enter,super+enter
     preferred_key: cmd+enter,super+enter
     action: insert_line_below

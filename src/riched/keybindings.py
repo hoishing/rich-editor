@@ -83,13 +83,18 @@ def binding_help_groups(
     conflicted_actions = conflicted_actions or set()
     groups: list[KeyBindingHelpGroup] = []
 
+    categorized_app_items = [
+        item
+        for item in BINDING_SPEC["editor"]
+        if item.get("help", True) and item.get("category") == "App"
+    ]
     app_rows = tuple(
         (
             _help_display_key(item),
             item.get("description") or item["name"],
             _help_conflicted(item, conflicted_actions),
         )
-        for item in BINDING_SPEC["app"]["commands"]
+        for item in [*BINDING_SPEC["app"]["commands"], *categorized_app_items]
     )
     groups.append(KeyBindingHelpGroup("App", app_rows))
 
@@ -100,7 +105,7 @@ def binding_help_groups(
             _help_conflicted(item, conflicted_actions),
         )
         for item in BINDING_SPEC["editor"]
-        if item.get("help", True)
+        if item.get("help", True) and item.get("category") != "App"
     )
     groups.append(KeyBindingHelpGroup("Editor", editor_rows))
 
