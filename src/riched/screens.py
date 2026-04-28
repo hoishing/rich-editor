@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 from textual import events
@@ -119,6 +120,98 @@ class QuitConfirmationScreen(_ConfirmationScreen):
         margin: 0 1;
     }
     """
+
+
+class RenamePathScreen(ModalScreen[str | None]):
+    """Prompt for a new file tree item name."""
+
+    BINDINGS = build_screen_bindings("rename_path")
+
+    CSS = """
+    RenamePathScreen {
+        align: center middle;
+    }
+    RenamePathScreen > #dialog {
+        width: 64;
+        height: auto;
+        padding: 1 2;
+        background: $panel;
+        border: tall $accent;
+    }
+    RenamePathScreen Label {
+        width: 100%;
+        content-align: center middle;
+        padding-bottom: 1;
+    }
+    RenamePathScreen Input {
+        margin-bottom: 1;
+    }
+    RenamePathScreen #rename-error {
+        height: auto;
+        min-height: 1;
+        color: $error;
+        padding-bottom: 1;
+    }
+    RenamePathScreen #buttons {
+        height: auto;
+        align: center middle;
+    }
+    RenamePathScreen Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(
+        self,
+        current_name: str,
+        validate_name: Callable[[str], str | None],
+    ) -> None:
+        super().__init__()
+        self._current_name = current_name
+        self._validate_name = validate_name
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Rename")
+            yield Input(value=self._current_name, id="rename-input")
+            yield Static("", id="rename-error")
+            with Horizontal(id="buttons"):
+                yield Button("OK", variant="primary", id="ok")
+                yield Button("Cancel", id="cancel")
+
+    def on_mount(self) -> None:
+        input_widget = self.query_one("#rename-input", Input)
+        input_widget.focus()
+        input_widget.action_select_all()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        event.stop()
+        self._submit()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        if event.button.id == "ok":
+            self._submit()
+            return
+        self.dismiss(None)
+
+    def on_key(self, event: events.Key) -> None:
+        focused = self.focused
+        if event.key == "space" and isinstance(focused, Button):
+            event.stop()
+            event.prevent_default()
+            focused.action_press()
+
+    def action_cancel(self) -> None:
+        self.dismiss(None)
+
+    def _submit(self) -> None:
+        value = self.query_one("#rename-input", Input).value
+        error = self._validate_name(value)
+        if error is not None:
+            self.query_one("#rename-error", Static).update(error)
+            self.query_one("#rename-input", Input).focus()
+            return
+        self.dismiss(value)
 
 
 class QuickOpenScreen(_DismissOnCloseScreen, ModalScreen[Path | None]):

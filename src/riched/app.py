@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 
 from textual import events, work
 from textual.app import App, ComposeResult, SystemCommand
-from textual.binding import Binding
+from textual.binding import Binding, BindingType
 from textual.command import CommandPalette
 from textual.containers import Container, Horizontal
 from textual.screen import Screen
@@ -50,6 +50,7 @@ from .screens import (
     KeysHelpScreen,
     QuickOpenScreen,
     QuitConfirmationScreen,
+    RenamePathScreen,
     UnsavedChangesScreen,
 )
 from .settings import load_theme, save_theme
@@ -59,6 +60,12 @@ FILE_TREE_DEFAULT_WIDTH = 30
 FILE_TREE_MIN_WIDTH = 18
 FILE_TREE_MAX_WIDTH = 44
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
+
+
+def _binding_key(binding: BindingType) -> str:
+    if isinstance(binding, Binding):
+        return binding.key
+    return binding[0]
 
 
 def _clamp_location(text: str, location: tuple[int, int]) -> tuple[int, int]:
@@ -176,10 +183,15 @@ class RichedDirectoryTree(DirectoryTree):
     """Directory tree with editor-style keyboard affordances."""
 
     BINDINGS = [
-        *(binding for binding in DirectoryTree.BINDINGS if binding.key != "space"),
+        *(
+            binding
+            for binding in DirectoryTree.BINDINGS
+            if _binding_key(binding) not in {"enter", "space"}
+        ),
         *build_static_bindings("file_tree"),
         Binding("left", "collapse_cursor", "Collapse folder", show=False),
         Binding("right", "expand_cursor", "Expand folder", show=False),
+        Binding("enter", "rename_cursor", "Rename", show=False),
         Binding("space", "activate_cursor", "Open file or toggle folder", show=False),
         Binding("escape", "quit_check", "Quit", show=False),
     ]
@@ -213,6 +225,16 @@ class RichedDirectoryTree(DirectoryTree):
         app = self.app
         if isinstance(app, RichedApp):
             app.action_file_tree_quit_check()
+
+    def action_rename_cursor(self) -> None:
+        if not self.has_focus:
+            return
+        node = self.cursor_node
+        if node is None or node.data is None:
+            return
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.rename_file_tree_path(Path(node.data.path))
 
     def action_trash_selected(self) -> None:
         if not self.has_focus:
@@ -558,6 +580,109 @@ class RichedApp(App):
         tree.reload()
         self._invalidate_quick_open_index()
         self.notify(f"Moved {selected.name} to Trash")
+
+    def rename_file_tree_path(self, path: Path) -> None:
+        selected = path.expanduser().resolve(strict=False)
+        root = self.root.expanduser().resolve(strict=False)
+        if selected == root:
+            self.notify("Cannot rename the project root.", severity="warning")
+            self._file_tree().focus()
+            return
+
+        source = path.expanduser()
+
+        def validate(new_name: str) -> str | None:
+            return self._validate_file_tree_rename(source, new_name)
+
+        def handle(new_name: str | None) -> None:
+            if new_name is None:
+                self._file_tree().focus()
+                return
+            self._apply_file_tree_rename(source, new_name)
+
+        self.push_screen(RenamePathScreen(source.name, validate), handle)
+
+    def _validate_file_tree_rename(self, source: Path, new_name: str) -> str | None:
+        if not new_name.strip():
+            return "Name cannot be empty."
+        if new_name in {".", ".."}:
+            return "Name cannot be . or ..."
+        if "/" in new_name:
+            return "Name cannot contain /."
+        if new_name == source.name:
+            return "Name is unchanged."
+
+        destination = source.with_name(new_name)
+        if not destination.exists():
+            return None
+        try:
+            if source.samefile(destination):
+                return None
+        except OSError:
+            pass
+        return "An item with that name already exists."
+
+    def _apply_file_tree_rename(self, source: Path, new_name: str) -> None:
+        old_path = source.expanduser().resolve(strict=False)
+        destination = source.with_name(new_name).expanduser()
+        new_path = destination.resolve(strict=False)
+        open_display_path = self.path.expanduser() if self.path else None
+        old_open_path = (
+            open_display_path.resolve(strict=False)
+            if open_display_path is not None
+            else None
+        )
+        old_open_suffix = open_display_path.suffix if open_display_path else ""
+
+        try:
+            source.rename(destination)
+        except Exception as exc:
+            self.notify(f"Rename failed: {exc}", severity="error")
+            self._file_tree().focus()
+            return
+
+        if old_open_path is not None:
+            try:
+                relative_open_path = old_open_path.relative_to(old_path)
+            except ValueError:
+                relative_open_path = None
+            if relative_open_path is not None:
+                assert open_display_path is not None
+                self.path = self._open_path_after_file_tree_rename(
+                    open_display_path,
+                    old_path,
+                    new_name,
+                    new_path / relative_open_path,
+                )
+                self.sub_title = str(self.path)
+                editor = self._editor_or_none()
+                if editor is not None and self.path.suffix != old_open_suffix:
+                    try:
+                        apply_language(editor, self.path.suffix)
+                    except Exception as exc:
+                        self.notify(
+                            f"Syntax highlight off: {exc}",
+                            severity="warning",
+                        )
+
+        self._file_tree().reload()
+        self._invalidate_quick_open_index()
+        self._file_tree().focus()
+        self.notify(f"Renamed {old_path.name} to {new_path.name}")
+
+    def _open_path_after_file_tree_rename(
+        self,
+        open_path: Path,
+        old_path: Path,
+        new_name: str,
+        fallback: Path,
+    ) -> Path:
+        open_path = open_path.expanduser()
+        for ancestor in (open_path, *open_path.parents):
+            if ancestor.expanduser().resolve(strict=False) != old_path:
+                continue
+            return ancestor.with_name(new_name) / open_path.relative_to(ancestor)
+        return fallback
 
     def _open_path(self, path: Path) -> None:
         self._exit_markdown_preview()

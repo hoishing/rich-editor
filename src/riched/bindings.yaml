@@ -141,6 +141,10 @@ screens:
     - key: escape
       action: cancel
       description: Cancel
+  rename_path:
+    - key: escape
+      action: cancel
+      description: Cancel
   quick_open:
     - key: escape
       action: close
