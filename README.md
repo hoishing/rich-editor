@@ -9,7 +9,7 @@ A [rich](https://github.com/Textualize/rich) library powered editor(hence the na
 
 - vscode text editing key bindings
 - macOS style key bindings work in ssh session to linux host also
-- project file tree with quick refresh and move-to-trash support
+- project file tree with create, rename, quick refresh, and move-to-trash support
 - quick file open with fuzzy search
 - in-terminal Markdown preview
 - document formatting through external formatter CLIs
@@ -81,6 +81,7 @@ File tree shortcuts:
 | --- | --- |
 | `←` | Collapse folder |
 | `→` | Expand folder |
+| `Enter` | Rename selected file or folder |
 | `Space` | Open file or toggle folder |
 | `⌘⌫` / `⌃U` | Move selected file or folder to Trash |
 | `Esc` | Quit |
@@ -110,6 +111,20 @@ Files unsupported by these tools are left unchanged and `riched` shows a warning
 ## Refresh
 
 Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, `riched` prompts to save, discard, or cancel before reloading.
+
+## Creating Files
+
+Use `⌥N` to create a file. `riched` prompts for the file name and supports nested relative paths such as `notes/today.md`.
+
+When a folder is highlighted in the file tree, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
+
+If the requested file already exists, `riched` opens it without overwriting its contents.
+
+## Renaming Files And Folders
+
+When the file tree is focused, `Enter` opens a rename prompt for the selected file or folder. Renaming keeps the open buffer connected to the renamed path when the current file, or a folder containing it, is renamed.
+
+The project root cannot be renamed. Empty names, path separators, and duplicate target names are rejected in the prompt.
 
 ## Moving Files To Trash
 
