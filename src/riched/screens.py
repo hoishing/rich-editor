@@ -291,6 +291,43 @@ class QuickOpenScreen(_DismissOnCloseScreen, ModalScreen[Path | None]):
             self.dismiss(path)
 
 
+class CreateFileScreen(_DismissOnCloseScreen, ModalScreen[str | None]):
+    """Prompt for a file path to create."""
+
+    BINDINGS = build_screen_bindings("create_file")
+
+    CSS = """
+    CreateFileScreen {
+        align: center top;
+    }
+    CreateFileScreen > #dialog {
+        offset-y: 2;
+        width: 76;
+        height: auto;
+        padding: 1 2;
+        background: $panel;
+        border: tall $accent;
+    }
+    CreateFileScreen Label {
+        width: 100%;
+        height: auto;
+        margin-bottom: 1;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Create file")
+            yield Input(placeholder="File name", id="filename")
+
+    def on_mount(self) -> None:
+        self.query_one("#filename", Input).focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "filename":
+            self.dismiss(event.value)
+
+
 class KeysHelpScreen(_DismissOnCloseScreen, ModalScreen[None]):
     """Popup key binding help."""
 

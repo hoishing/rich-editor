@@ -16,6 +16,10 @@ app:
     - name: quick_open
       description: Quick open
       key: cmd+p,super+p
+    - name: create_file
+      description: Create file
+      key: alt+n
+      preferred_key: alt+n
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
       key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
@@ -138,6 +142,10 @@ screens:
       action: cancel
       description: Cancel
   quick_open:
+    - key: escape
+      action: close
+      description: Close
+  create_file:
     - key: escape
       action: close
       description: Close

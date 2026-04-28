@@ -46,6 +46,7 @@ from .quick_open import (
     quick_open_index_updates,
 )
 from .screens import (
+    CreateFileScreen,
     KeysHelpScreen,
     QuickOpenScreen,
     QuitConfirmationScreen,
@@ -388,6 +389,11 @@ class RichedApp(App):
                     self.action_show_keys_popup,
                 ),
                 SystemCommand(
+                    "Create file",
+                    "Create a file in the current folder",
+                    self.action_create_file,
+                ),
+                SystemCommand(
                     "Toggle Markdown preview",
                     "Show or hide the current Markdown file preview",
                     self.action_toggle_markdown_preview,
@@ -631,6 +637,85 @@ class RichedApp(App):
 
     def _switch_path(self, selected: Path) -> None:
         self._after_saved_or_discarded(lambda: self._open_path(selected))
+
+    def _create_file_base(self) -> Path:
+        tree = self._file_tree()
+        node = tree.cursor_node
+        root = self.root.expanduser().resolve(strict=False)
+        if (
+            node is not None
+            and node.data is not None
+            and node.allow_expand
+            and (
+                tree.has_focus
+                or Path(node.data.path).expanduser().resolve(strict=False) != root
+            )
+        ):
+            return Path(node.data.path).expanduser()
+        if self.path is not None:
+            return self.path.expanduser().parent
+        return self.root.expanduser()
+
+    def _create_file_target(self, name: str, base: Path) -> Path | None:
+        raw_name = name.strip()
+        if not raw_name:
+            self.notify("Enter a file name.", severity="warning")
+            return None
+        if "\0" in raw_name:
+            self.notify("File name cannot contain null bytes.", severity="warning")
+            return None
+        if raw_name.endswith(("/", "\\")):
+            self.notify("Enter a file path, not a folder.", severity="warning")
+            return None
+
+        relative = Path(raw_name)
+        if relative.is_absolute() or ".." in relative.parts:
+            self.notify(
+                "File name must stay inside the current folder.", severity="warning"
+            )
+            return None
+
+        resolved_base = base.resolve(strict=False)
+        target = (resolved_base / relative).resolve(strict=False)
+        if target == resolved_base or not target.is_relative_to(resolved_base):
+            self.notify(
+                "File name must stay inside the current folder.", severity="warning"
+            )
+            return None
+        return target
+
+    def _create_or_open_file(self, target: Path) -> None:
+        existed = target.exists()
+        if existed and target.is_dir():
+            self.notify(f"Cannot open folder {target}", severity="warning")
+            return
+        if not existed:
+            try:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_text("")
+            except Exception as exc:
+                self.notify(f"Create file failed: {exc}", severity="error")
+                return
+        self._file_tree().reload()
+        self._invalidate_quick_open_index()
+        self._open_path(target)
+        if existed:
+            self.notify(f"Opened existing file {target}")
+        else:
+            self.notify(f"Created {target}")
+
+    def action_create_file(self) -> None:
+        base = self._create_file_base()
+
+        def handle(name: str | None) -> None:
+            if name is None:
+                return
+            target = self._create_file_target(name, base)
+            if target is None:
+                return
+            self._after_saved_or_discarded(lambda: self._create_or_open_file(target))
+
+        self.push_screen(CreateFileScreen(), handle)
 
     def action_quick_open(self) -> None:
         root = self.root.expanduser()
