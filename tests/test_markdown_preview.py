@@ -118,7 +118,7 @@ async def test_keys_help_includes_markdown_preview_binding() -> None:
         "README.md",
         "# Title",
         root_is_tmp=True,
-        ghostty_app_hotkey_conflicts=set(),
+        ghostty_conflicted_hotkey_triggers=set(),
     )
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -135,7 +135,7 @@ async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None
         "README.md",
         "# Title",
         root_is_tmp=True,
-        ghostty_app_hotkey_conflicts={"toggle_markdown_preview"},
+        ghostty_conflicted_hotkey_triggers={"super+shift+v"},
     )
     async with app.run_test() as pilot:
         await pilot.pause()

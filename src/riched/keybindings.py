@@ -22,6 +22,15 @@ KEY_MODIFIER_SYMBOLS = {
     "option": "⌥",
     "shift": "⇧",
 }
+KEY_MODIFIER_ORDER = {
+    "ctrl": 0,
+    "control": 0,
+    "super": 1,
+    "cmd": 1,
+    "alt": 2,
+    "option": 2,
+    "shift": 3,
+}
 
 
 @dataclass(frozen=True)
@@ -78,9 +87,9 @@ def _build_item_bindings(items: list[dict[str, Any]]) -> list[Binding]:
 
 
 def binding_help_groups(
-    conflicted_actions: set[str] | None = None,
+    conflicted_triggers: set[str] | None = None,
 ) -> list[KeyBindingHelpGroup]:
-    conflicted_actions = conflicted_actions or set()
+    conflicted_triggers = conflicted_triggers or set()
     groups: list[KeyBindingHelpGroup] = []
 
     categorized_app_items = [
@@ -92,7 +101,7 @@ def binding_help_groups(
         (
             _help_display_key(item),
             item.get("description") or item["name"],
-            _help_conflicted(item, conflicted_actions),
+            _help_conflicted(item, conflicted_triggers),
         )
         for item in [*BINDING_SPEC["app"]["commands"], *categorized_app_items]
     )
@@ -102,7 +111,7 @@ def binding_help_groups(
         (
             _help_display_key(item),
             item.get("description") or item["action"],
-            _help_conflicted(item, conflicted_actions),
+            _help_conflicted(item, conflicted_triggers),
         )
         for item in BINDING_SPEC["editor"]
         if item.get("help", True) and item.get("category") != "App"
@@ -127,40 +136,45 @@ def app_binding_display_key(
     action: str,
     key: str,
     *,
-    conflicted_actions: set[str] | None = None,
+    conflicted_triggers: set[str] | None = None,
 ) -> str:
+    conflicted_triggers = conflicted_triggers or set()
     item = _app_command_or_none(action)
     if item is None:
         return display_key(key)
-    if conflicted_actions is not None and action in conflicted_actions:
-        fallback = item.get("fallback_key")
-        if fallback:
-            return display_key(fallback)
-        return ""
-    return display_key(item.get("preferred_key") or key)
+    for display_key_candidate in _item_display_keys(item):
+        display = display_key(display_key_candidate)
+        if not _display_key_conflicted(display, conflicted_triggers):
+            return display
+    return ""
 
 
 def _help_conflicted(
     item: dict[str, Any],
-    conflicted_actions: set[str],
+    conflicted_triggers: set[str],
 ) -> bool:
-    action = item.get("name") or item.get("action")
-    return bool(
-        action in conflicted_actions
-        and item.get("preferred_key")
-        and not item.get("fallback_key")
+    return any(
+        _display_key_conflicted(display_key(key), conflicted_triggers)
+        for key in _item_display_keys(item)
     )
 
 
 def _help_display_key(item: dict[str, Any]) -> str:
-    preferred = item.get("preferred_key")
-    fallback = item.get("fallback_key")
-    if preferred and fallback:
-        return (
-            f"{display_key_with_symbols(display_key(preferred))} / "
-            f"{display_key_with_symbols(display_key(fallback))}"
-        )
-    return display_key_with_symbols(display_key(item["key"]))
+    return " / ".join(
+        display_key_with_symbols(display_key(key))
+        for key in _item_display_keys(item)
+    )
+
+
+def _item_display_keys(item: dict[str, Any]) -> list[str]:
+    display_keys = item.get("display_keys")
+    if isinstance(display_keys, list):
+        return [str(key) for key in display_keys]
+    return [str(item.get("preferred_key") or item["key"])]
+
+
+def _display_key_conflicted(key: str, conflicted_triggers: set[str]) -> bool:
+    return bool(_hotkey_conflict_triggers(key) & conflicted_triggers)
 
 
 def _app_command_or_none(action: str) -> dict[str, Any] | None:
@@ -214,7 +228,7 @@ def _display_base_key(key: str) -> str:
     return base_key.title()
 
 
-def ghostty_app_hotkey_conflicts(
+def ghostty_conflicted_hotkey_triggers(
     env: Mapping[str, str] | None = None,
     run_command: Callable[..., CompletedProcess[str]] = run,
     find_binary: Callable[[str], str | None] = which,
@@ -222,11 +236,11 @@ def ghostty_app_hotkey_conflicts(
     triggers = _ghostty_conflict_triggers()
     env = environ if env is None else env
     if env.get("TERM_PROGRAM") != "ghostty" and env.get("TERM") != "xterm-ghostty":
-        return set(triggers.values())
+        return set(triggers)
 
     ghostty = _ghostty_binary(find_binary)
     if ghostty is None:
-        return set(triggers.values())
+        return set(triggers)
 
     try:
         result = run_command(
@@ -238,14 +252,14 @@ def ghostty_app_hotkey_conflicts(
             check=False,
         )
     except Exception:
-        return set(triggers.values())
+        return set(triggers)
     if result.returncode != 0:
-        return set(triggers.values())
+        return set(triggers)
     conflicted_triggers = _ghostty_config_conflicted_triggers(
         result.stdout,
-        set(triggers),
+        triggers,
     )
-    return {triggers[trigger] for trigger in conflicted_triggers}
+    return conflicted_triggers
 
 
 def ghostty_markdown_preview_hotkey_conflicted(
@@ -253,7 +267,7 @@ def ghostty_markdown_preview_hotkey_conflicted(
     run_command: Callable[..., CompletedProcess[str]] = run,
     find_binary: Callable[[str], str | None] = which,
 ) -> bool:
-    return "toggle_markdown_preview" in ghostty_app_hotkey_conflicts(
+    return "super+shift+v" in ghostty_conflicted_hotkey_triggers(
         env,
         run_command,
         find_binary,
@@ -267,23 +281,36 @@ def _ghostty_binary(find_binary: Callable[[str], str | None]) -> str | None:
     return find_binary("ghostty")
 
 
-def _ghostty_conflict_triggers() -> dict[str, str]:
-    triggers: dict[str, str] = {}
+def _ghostty_conflict_triggers() -> set[str]:
+    triggers: set[str] = set()
     for item in [*APP_COMMANDS, *BINDING_SPEC["editor"]]:
         preferred_key = item.get("preferred_key")
         if not preferred_key:
             continue
-        action = item.get("name") or item.get("action")
-        if not action:
-            continue
         for candidate in preferred_key.split(","):
-            trigger = candidate.strip()
-            if "cmd" in trigger:
-                continue
-            if "super" in trigger or "alt" in trigger:
-                triggers[trigger] = action
-                break
+            triggers.update(_hotkey_conflict_triggers(candidate.strip()))
     return triggers
+
+
+def _hotkey_conflict_triggers(key: str) -> set[str]:
+    parts = key.split("+")
+    if "cmd" in parts:
+        return {
+            _canonical_hotkey_trigger(
+                "+".join("super" if part == "cmd" else part for part in parts)
+            )
+        }
+    if "super" in parts or "alt" in parts:
+        return {_canonical_hotkey_trigger(key)}
+    return set()
+
+
+def _canonical_hotkey_trigger(key: str) -> str:
+    parts = key.split("+")
+    modifiers = [part for part in parts[:-1] if part in KEY_MODIFIER_ORDER]
+    base_parts = [part for part in parts if part not in KEY_MODIFIER_ORDER]
+    ordered_modifiers = sorted(modifiers, key=lambda part: KEY_MODIFIER_ORDER[part])
+    return "+".join([*ordered_modifiers, *base_parts])
 
 
 def _ghostty_config_conflicted_triggers(
@@ -301,7 +328,7 @@ def _ghostty_config_conflicted_triggers(
         if key.strip() != "keybind":
             continue
         trigger, _, action = value.partition("=")
-        trigger = trigger.strip()
+        trigger = _canonical_hotkey_trigger(trigger.strip())
         if trigger not in triggers:
             continue
         if action.strip() != "unbind":

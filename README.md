@@ -100,9 +100,9 @@ Files unsupported by both tools are left unchanged and `riched` shows a warning.
 
 - some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
 - `riched` detects conflicted shortcuts at startup.
-- Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config.
+- Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
-- `⌘⇧P` always has the `F1` fallback
+- `⌘⇧P` and `F1` are alternative hotkeys for the command palette.
 
 ### Unbind Ghostty default keybindings
 
@@ -123,7 +123,7 @@ keybind = super+enter=unbind
 keybind = super+shift+enter=unbind
 ```
 
-`⌘⇧P` already works through the `F1` fallback. To use `⌘⇧P` directly, also add:
+The command palette can still be opened with `F1`. To use `⌘⇧P` directly, also add:
 
 ```conf
 keybind = super+shift+p=unbind

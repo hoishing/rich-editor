@@ -354,16 +354,16 @@ class KeysHelpScreen(_DismissOnCloseScreen, ModalScreen[None]):
     }
     """
 
-    def __init__(self, conflicted_actions: set[str] | None = None) -> None:
+    def __init__(self, conflicted_triggers: set[str] | None = None) -> None:
         super().__init__()
-        self._conflicted_actions = conflicted_actions or set()
+        self._conflicted_triggers = conflicted_triggers or set()
 
     def compose(self) -> ComposeResult:
         has_warnings = False
         with Vertical(id="dialog"):
             yield Label("Key Bindings")
             with Vertical(id="bindings-list"):
-                for group in binding_help_groups(self._conflicted_actions):
+                for group in binding_help_groups(self._conflicted_triggers):
                     with Vertical(classes="binding-group"):
                         yield Static(group.title, classes="binding-title")
                         for key, description, conflicted in group.rows:

@@ -5,7 +5,7 @@ from subprocess import CompletedProcess
 from textual.widgets import Footer
 
 from .helpers import _file_app, _footer_labels, _temporary_env
-from riched.keybindings import ghostty_app_hotkey_conflicts
+from riched.keybindings import ghostty_conflicted_hotkey_triggers
 
 
 def _footer_app(**kwargs):
@@ -14,7 +14,7 @@ def _footer_app(**kwargs):
 
 def _conflicts_from_config(*lines: str) -> set[str]:
     config = "\n".join(lines)
-    return ghostty_app_hotkey_conflicts(
+    return ghostty_conflicted_hotkey_triggers(
         env={"TERM_PROGRAM": "ghostty"},
         run_command=lambda *args, **kwargs: CompletedProcess(
             args[0],
@@ -27,7 +27,7 @@ def _conflicts_from_config(*lines: str) -> set[str]:
 
 
 async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview() -> None:
-    app = _footer_app(ghostty_app_hotkey_conflicts=set())
+    app = _footer_app(ghostty_conflicted_hotkey_triggers=set())
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -47,8 +47,8 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert not footer.query(".-command-palette")
 
 
-async def test_footer_uses_command_palette_fallback_for_ghostty_conflict() -> None:
-    app = _footer_app(ghostty_app_hotkey_conflicts={"command_palette"})
+async def test_footer_uses_command_palette_alternative_for_ghostty_conflict() -> None:
+    app = _footer_app(ghostty_conflicted_hotkey_triggers={"super+shift+p"})
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -58,7 +58,7 @@ async def test_footer_uses_command_palette_fallback_for_ghostty_conflict() -> No
 
 async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> None:
     app = _footer_app(
-        ghostty_app_hotkey_conflicts=_conflicts_from_config(
+        ghostty_conflicted_hotkey_triggers=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
             "keybind = super+shift+v=toggle_quick_terminal",
         )
@@ -95,7 +95,7 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
 
 async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> None:
     app = _footer_app(
-        ghostty_app_hotkey_conflicts=_conflicts_from_config(
+        ghostty_conflicted_hotkey_triggers=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
             "keybind = super+shift+v=unbind",
         )

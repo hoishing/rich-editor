@@ -46,7 +46,7 @@ def _make_app(
     path: Path,
     root: Path | None = None,
     markdown_preview_hotkey_conflicted: bool | None = None,
-    ghostty_app_hotkey_conflicts: set[str] | None = None,
+    ghostty_conflicted_hotkey_triggers: set[str] | None = None,
 ):
     cls = type(
         "ConfiguredRichedApp",
@@ -54,15 +54,15 @@ def _make_app(
         {"BINDINGS": mod.build_bindings()},
     )
     app = cls(path, root or path.parent)
-    if ghostty_app_hotkey_conflicts is not None:
-        app._ghostty_app_hotkey_conflicts = ghostty_app_hotkey_conflicts
+    if ghostty_conflicted_hotkey_triggers is not None:
+        app._ghostty_conflicted_hotkey_triggers = ghostty_conflicted_hotkey_triggers
     if markdown_preview_hotkey_conflicted is not None:
-        conflicts = set(app._ghostty_app_hotkey_conflicts)
+        conflicts = set(app._ghostty_conflicted_hotkey_triggers)
         if markdown_preview_hotkey_conflicted:
-            conflicts.add("toggle_markdown_preview")
+            conflicts.add("super+shift+v")
         else:
-            conflicts.discard("toggle_markdown_preview")
-        app._ghostty_app_hotkey_conflicts = conflicts
+            conflicts.discard("super+shift+v")
+        app._ghostty_conflicted_hotkey_triggers = conflicts
     return app
 
 

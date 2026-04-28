@@ -82,7 +82,7 @@ async def test_command_palette_items_are_sorted_alphabetically() -> None:
 
 
 async def test_keys_help_includes_command_palette_binding() -> None:
-    app = _palette_app(ghostty_app_hotkey_conflicts=set())
+    app = _palette_app(ghostty_conflicted_hotkey_triggers=set())
     async with app.run_test() as pilot:
         await pilot.pause()
 
@@ -104,7 +104,7 @@ async def test_keys_help_includes_command_palette_binding() -> None:
 
 
 async def test_keys_help_shows_format_document_under_app() -> None:
-    app = _palette_app(ghostty_app_hotkey_conflicts=set())
+    app = _palette_app(ghostty_conflicted_hotkey_triggers=set())
     async with app.run_test() as pilot:
         await pilot.pause()
 
@@ -116,8 +116,20 @@ async def test_keys_help_shows_format_document_under_app() -> None:
         assert ("⌥⇧F", "Format document") not in groups["Editor"]
 
 
+async def test_keys_help_warns_for_conflicted_command_palette_alternative() -> None:
+    app = _palette_app(ghostty_conflicted_hotkey_triggers={"super+shift+p"})
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        app.action_show_keys_popup()
+        await pilot.pause()
+
+        rows = _key_help_rows(app)
+        assert ("⚠️ ⌘⇧P / F1", "Command palette") in rows
+
+
 async def test_keys_help_warns_for_ghostty_conflicted_format_document() -> None:
-    app = _palette_app(ghostty_app_hotkey_conflicts={"format_document"})
+    app = _palette_app(ghostty_conflicted_hotkey_triggers={"alt+shift+f"})
     async with app.run_test() as pilot:
         await pilot.pause()
 

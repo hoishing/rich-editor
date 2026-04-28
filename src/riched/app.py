@@ -30,7 +30,7 @@ from .keybindings import (
     DEFAULT_BINDINGS,
     app_binding_display_key,
     display_key_with_symbols,
-    ghostty_app_hotkey_conflicts,
+    ghostty_conflicted_hotkey_triggers,
 )
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
@@ -66,10 +66,7 @@ class RichedFooter(Footer):
     """Footer that shows app bindings and omits blocked bindings."""
 
     def _hide_binding(self, binding: Binding) -> bool:
-        return (
-            not self.app.get_key_display(binding)
-            and binding.action in self.app._ghostty_app_hotkey_conflicts
-        )
+        return not self.app.get_key_display(binding)
 
     def compose(self) -> ComposeResult:
         if not self._bindings_ready:
@@ -304,7 +301,9 @@ class RichedApp(App):
         self._quick_open_limited = False
         self._quick_open_generation = 0
         self._quick_open_screen: QuickOpenScreen | None = None
-        self._ghostty_app_hotkey_conflicts = ghostty_app_hotkey_conflicts()
+        self._ghostty_conflicted_hotkey_triggers = (
+            ghostty_conflicted_hotkey_triggers()
+        )
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -343,7 +342,7 @@ class RichedApp(App):
         key = app_binding_display_key(
             binding.action,
             binding.key,
-            conflicted_actions=self._ghostty_app_hotkey_conflicts,
+            conflicted_triggers=self._ghostty_conflicted_hotkey_triggers,
         )
         return display_key_with_symbols(key)
 
@@ -622,7 +621,9 @@ class RichedApp(App):
 
     def action_show_keys_popup(self) -> None:
         self.push_screen(
-            KeysHelpScreen(conflicted_actions=self._ghostty_app_hotkey_conflicts)
+            KeysHelpScreen(
+                conflicted_triggers=self._ghostty_conflicted_hotkey_triggers
+            )
         )
 
     async def action_toggle_markdown_preview(self) -> None:
