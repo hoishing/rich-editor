@@ -3,7 +3,11 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 from itertools import groupby
+import json
 from pathlib import Path
+from shutil import which
+import subprocess
+import sys
 from typing import Any, Callable
 from urllib.parse import urlparse
 
@@ -29,6 +33,7 @@ from .formatting import format_text
 from .keybindings import (
     DEFAULT_BINDINGS,
     app_binding_display_key,
+    build_static_bindings,
     display_key_with_symbols,
     ghostty_conflicted_hotkey_triggers,
 )
@@ -143,6 +148,7 @@ class RichedDirectoryTree(DirectoryTree):
 
     BINDINGS = [
         *(binding for binding in DirectoryTree.BINDINGS if binding.key != "space"),
+        *build_static_bindings("file_tree"),
         Binding("left", "collapse_cursor", "Collapse folder", show=False),
         Binding("right", "expand_cursor", "Expand folder", show=False),
         Binding("space", "activate_cursor", "Open file or toggle folder", show=False),
@@ -178,6 +184,16 @@ class RichedDirectoryTree(DirectoryTree):
         app = self.app
         if isinstance(app, RichedApp):
             app.action_file_tree_quit_check()
+
+    def action_trash_selected(self) -> None:
+        if not self.has_focus:
+            return
+        node = self.cursor_node
+        if node is None or node.data is None:
+            return
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.trash_file_tree_path(Path(node.data.path))
 
 
 class FileTreeResizeHandle(Static):
@@ -433,6 +449,74 @@ class RichedApp(App):
         self._saved_text = ""
         self._show_file_tree()
         self._file_tree().focus()
+
+    def _trash_path(self, path: Path) -> None:
+        if sys.platform == "darwin":
+            result = subprocess.run(
+                [
+                    "osascript",
+                    "-e",
+                    f'tell application "Finder" to delete POSIX file {json.dumps(str(path))}',
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                check=False,
+            )
+            if result.returncode != 0:
+                message = result.stderr.strip() or result.stdout.strip()
+                if not message:
+                    message = f"osascript exited with status {result.returncode}"
+                raise RuntimeError(message)
+            return
+
+        local_script = Path(sys.executable).parent / "trash-put"
+        trash_put = str(local_script) if local_script.exists() else which("trash-put")
+        if trash_put is None:
+            raise FileNotFoundError("trash-put is not available")
+        result = subprocess.run(
+            [trash_put, str(path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0:
+            message = result.stderr.strip() or result.stdout.strip()
+            if not message:
+                message = f"trash-put exited with status {result.returncode}"
+            raise RuntimeError(message)
+
+    def trash_file_tree_path(self, path: Path) -> None:
+        tree = self._file_tree()
+        selected = path.expanduser().resolve(strict=False)
+        root = self.root.expanduser().resolve(strict=False)
+        if selected == root:
+            self.notify("Cannot move the project root to Trash.", severity="warning")
+            return
+        if self.path is not None and self._is_dirty():
+            current = self.path.expanduser().resolve(strict=False)
+            current_inside_selected = current.is_relative_to(selected)
+            if current == selected or current_inside_selected:
+                self.notify(
+                    "Save or discard changes before moving this item to Trash.",
+                    severity="warning",
+                )
+                return
+        try:
+            self._trash_path(selected)
+        except Exception as exc:
+            self.notify(f"Move to Trash failed: {exc}", severity="error")
+            return
+
+        if self.path is not None:
+            current = self.path.expanduser().resolve(strict=False)
+            current_inside_selected = current.is_relative_to(selected)
+            if current == selected or current_inside_selected:
+                self._close_buffer()
+        tree.reload()
+        self._invalidate_quick_open_index()
+        self.notify(f"Moved {selected.name} to Trash")
 
     def _open_path(self, path: Path) -> None:
         self._exit_markdown_preview()

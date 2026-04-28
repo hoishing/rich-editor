@@ -120,6 +120,12 @@ editor:
     description: Select to line end
     show: false
 
+file_tree:
+  - key: cmd+backspace,super+backspace,ctrl+u
+    action: trash_selected
+    description: Move to Trash
+    show: false
+
 screens:
   quit_confirmation:
     - key: escape
