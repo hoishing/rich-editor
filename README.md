@@ -79,16 +79,18 @@ Editor shortcuts:
 The `⌥⇧F` shortcut formats the current buffer with external formatter CLIs:
 
 - Python files use `ruff`.
+- TOML files use `taplo`.
+- XML files use `prettier` with `@prettier/plugin-xml`.
 - Other supported source/config formats use `prettier`.
 
-Install both tools and make sure they are on `PATH` before using the shortcut:
+Install the required tools before using the shortcut:
 
 ```sh
-bun add --global prettier
-uv tool install ruff
+bun add --global prettier @prettier/plugin-xml
+brew install ruff taplo
 ```
 
-Files unsupported by both tools are left unchanged and `riched` shows a warning.
+Files unsupported by these tools are left unchanged and `riched` shows a warning.
 
 ## Limitations
 

@@ -682,9 +682,13 @@ class RichedApp(App):
 
         result = format_text(self.path, editor.text)
         if result.missing_tool is not None:
+            detail = (
+                "Install it and ensure Prettier can load it."
+                if result.missing_tool.startswith("@")
+                else "Install it and ensure it is on PATH."
+            )
             self.notify(
-                f"`{result.missing_tool}` is required for formatting. "
-                "Install it and ensure it is on PATH.",
+                f"`{result.missing_tool}` is required for formatting. {detail}",
                 severity="warning",
             )
             return
