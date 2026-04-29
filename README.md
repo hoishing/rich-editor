@@ -63,8 +63,8 @@ Editor shortcuts:
 | `⌘[` | Outdent line |
 | `⌥⌫` | Delete word left |
 | `⌘⌫` | Delete to line start |
-| `⌘Z` | Undo |
-| `⌘⇧Z` | Redo |
+| `⌘Z` / `⌃Z` | Undo |
+| `⌘⇧Z` / `⌃Y` | Redo |
 | `⌘X` | Cut |
 | `⌘/` | Toggle line comment |
 | `⌥Z` | Toggle word wrap |
@@ -138,7 +138,7 @@ When the file tree is focused, `⌘⌫` moves the selected file or folder to Tra
 
 ### Ghostty hotkey conflicts
 
-- some hotkeys are bounded by Ghostty by default. eg. `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
+- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
 - `riched` detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
@@ -161,6 +161,8 @@ keybind = super+[=unbind
 keybind = super+]=unbind
 keybind = super+enter=unbind
 keybind = super+shift+enter=unbind
+keybind = super+z=unbind
+keybind = super+shift+z=unbind
 ```
 
 The command palette can still be opened with `F1`. To use `⌘⇧P` directly, also add:

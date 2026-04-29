@@ -78,10 +78,12 @@ editor:
     description: Delete to line start
     show: false
   - key: cmd+z,super+z
+    preferred_key: cmd+z,super+z
     action: undo
     description: Undo
     show: false
   - key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z
+    preferred_key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z
     action: redo
     description: Redo
     show: false

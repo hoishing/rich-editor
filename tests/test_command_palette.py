@@ -139,6 +139,21 @@ async def test_keys_help_warns_for_ghostty_conflicted_format_document() -> None:
         assert ("⚠️ ⌥⇧F", "Format document") in rows
 
 
+async def test_keys_help_warns_for_ghostty_conflicted_undo_redo() -> None:
+    app = _palette_app(
+        ghostty_conflicted_hotkey_triggers={"super+z", "super+shift+z"}
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+
+        app.action_show_keys_popup()
+        await pilot.pause()
+
+        rows = _key_help_rows(app)
+        assert ("⚠️ ⌘Z", "Undo") in rows
+        assert ("⚠️ ⌘⇧Z", "Redo") in rows
+
+
 async def test_command_palette_opens_from_declared_keys() -> None:
     for key in ("f1", "cmd+shift+p", "super+shift+p"):
         app = _palette_app()

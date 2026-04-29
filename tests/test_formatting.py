@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from textual.widgets import DirectoryTree
+
 from .helpers import _editor, _file_app, _press, _temporary_env
 
 
@@ -107,6 +109,26 @@ async def test_format_document_uses_ruff_for_python_aliases() -> None:
                 await _press(pilot, key)
                 assert editor.text == 'value = {"b": 1}\n', (key, repr(editor.text))
                 assert path.read_text() == 'value={"b":1}'
+
+
+async def test_format_document_refocuses_editor_so_cmd_z_undoes() -> None:
+    tmp, _, app = _file_app("format.py", "value={\"b\":1}")
+    bin_dir = _formatter_bin(tmp)
+    with _temporary_env(PATH=f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"):
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            editor = _editor(app)
+            _ = app.query_one("#file-tree", DirectoryTree).focus()
+            await pilot.pause()
+
+            await _press(pilot, "alt+shift+f")
+            await pilot.pause()
+
+            assert app.focused is editor
+            assert editor.text == 'value = {"b": 1}\n'
+
+            await _press(pilot, "cmd+z")
+            assert editor.text == 'value={"b":1}'
 
 
 async def test_format_document_uses_prettier_for_supported_files() -> None:

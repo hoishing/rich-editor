@@ -1082,6 +1082,7 @@ class RichedApp(App):
                 _clamp_location(result.text, selection.start),
                 _clamp_location(result.text, selection.end),
             )
+        _ = editor.focus()
         self.notify(f"Formatted {self.path}")
 
     def action_quit_check(self) -> None:
