@@ -38,53 +38,53 @@ Key bindings are generated from the YAML in `src/riched/bindings.yaml`.
 
 App shortcuts:
 
-| Shortcut | Action |
-| --- | --- |
-| `⌘S` | Save |
-| `⌘⇧P` / `F1` | Command palette |
-| `⌘B` | Toggle file tree |
-| `⌘P` | Quick open |
-| `⌥N` | Create file |
-| `⌘⇧V` | Toggle Markdown preview |
-| `⌥⇧F` | Format document |
-| `⌘R` | Refresh |
+| Shortcut     | Action                  |
+| ------------ | ----------------------- |
+| `⌘S`         | Save                    |
+| `⌘⇧P` / `F1` | Command palette         |
+| `⌘B`         | Toggle file tree        |
+| `⌘P`         | Quick open              |
+| `⌥N`         | Create file             |
+| `⌘⇧V`        | Toggle Markdown preview |
+| `⌥⇧F`        | Format document         |
+| `⌘R`         | Refresh                 |
 
 Editor shortcuts:
 
-| Shortcut | Action |
-| --- | --- |
-| `⌥↑` | Move line up |
-| `⌥↓` | Move line down |
-| `⌥⇧↑` | Copy line up |
-| `⌥⇧↓` | Copy line down |
-| `⌘Enter` | Insert line below |
-| `⌘⇧Enter` | Insert line above |
-| `⌘]` | Indent line |
-| `⌘[` | Outdent line |
-| `⌥⌫` | Delete word left |
-| `⌘⌫` | Delete to line start |
-| `⌘Z` / `⌃Z` | Undo |
-| `⌘⇧Z` / `⌃Y` | Redo |
-| `⌘X` | Cut |
-| `⌘/` | Toggle line comment |
-| `⌥Z` | Toggle word wrap |
-| `⌥⇧←` | Select word left |
-| `⌥⇧→` | Select word right |
-| `⌘L` | Select line |
-| `⌘⇧K` | Delete line |
-| `⌘⇧←` | Select to line start |
-| `⌘⇧→` | Select to line end |
+| Shortcut     | Action               |
+| ------------ | -------------------- |
+| `⌥↑`         | Move line up         |
+| `⌥↓`         | Move line down       |
+| `⌥⇧↑`        | Copy line up         |
+| `⌥⇧↓`        | Copy line down       |
+| `⌘Enter`     | Insert line below    |
+| `⌘⇧Enter`    | Insert line above    |
+| `⌘]`         | Indent line          |
+| `⌘[`         | Outdent line         |
+| `⌥⌫`         | Delete word left     |
+| `⌘⌫`         | Delete to line start |
+| `⌘Z` / `⌃Z`  | Undo                 |
+| `⌘⇧Z` / `⌃Y` | Redo                 |
+| `⌘X`         | Cut                  |
+| `⌘/`         | Toggle line comment  |
+| `⌥Z`         | Toggle word wrap     |
+| `⌥⇧←`        | Select word left     |
+| `⌥⇧→`        | Select word right    |
+| `⌘L`         | Select line          |
+| `⌘⇧K`        | Delete line          |
+| `⌘⇧←`        | Select to line start |
+| `⌘⇧→`        | Select to line end   |
 
 File tree shortcuts:
 
-| Shortcut | Action |
-| --- | --- |
-| `←` | Collapse folder |
-| `→` | Expand folder |
-| `Enter` | Rename selected file or folder |
-| `Space` | Open file or toggle folder |
+| Shortcut    | Action                                |
+| ----------- | ------------------------------------- |
+| `←`         | Collapse folder                       |
+| `→`         | Expand folder                         |
+| `Enter`     | Rename selected file or folder        |
+| `Space`     | Open file or toggle folder            |
 | `⌘⌫` / `⌃U` | Move selected file or folder to Trash |
-| `Esc` | Quit |
+| `Esc`       | Quit                                  |
 
 ## Settings
 
@@ -132,9 +132,9 @@ When the file tree is focused, `⌘⌫` moves the selected file or folder to Tra
 
 ## Limitations
 
-- [Textual](https://github.com/textualize/textual) textarea limitation: 
+- [Textual](https://github.com/textualize/textual) textarea limitation:
   - no multi-cursor editing
-  - no chord hotkey sequence such as `⌘K ⌘S` 
+  - no chord hotkey sequence such as `⌘K ⌘S`
 
 ### Ghostty hotkey conflicts
 
