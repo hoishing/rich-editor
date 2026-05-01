@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from textual.widgets import TextArea
 
+PLAIN_TEXT_ID = "plain-text"
+PLAIN_TEXT_LABEL = "Plain text"
+
 EXT_LANGUAGE = {
     ".py": "python",
     ".js": "javascript",
@@ -27,6 +30,25 @@ EXT_LANGUAGE = {
     ".go": "go",
     ".rs": "rust",
 }
+LANGUAGE_LABELS = {
+    "bash": "Bash",
+    "css": "CSS",
+    "go": "Go",
+    "html": "HTML",
+    "java": "Java",
+    "javascript": "JavaScript",
+    "json": "JSON",
+    "markdown": "Markdown",
+    "python": "Python",
+    "regex": "Regex",
+    "rust": "Rust",
+    "sql": "SQL",
+    "toml": "TOML",
+    "tsx": "TSX",
+    "typescript": "TypeScript",
+    "xml": "XML",
+    "yaml": "YAML",
+}
 
 _TS_FAMILY_REGISTERED = False
 
@@ -36,14 +58,32 @@ def reset_ts_registration() -> None:
     _TS_FAMILY_REGISTERED = False
 
 
+def language_for_suffix(suffix: str) -> str | None:
+    return EXT_LANGUAGE.get(suffix.lower())
+
+
 def apply_language(editor: TextArea, suffix: str) -> None:
+    set_language(editor, language_for_suffix(suffix))
+
+
+def set_language(editor: TextArea, lang: str | None) -> None:
     editor.language = None
-    lang = EXT_LANGUAGE.get(suffix.lower())
     if lang is None:
         return
     if lang in ("typescript", "tsx") and not _register_ts_family(editor):
         lang = "javascript"
     editor.language = lang
+
+
+def supported_languages(editor: TextArea) -> list[str]:
+    _register_ts_family(editor)
+    return sorted(editor.available_languages, key=language_label)
+
+
+def language_label(lang: str | None) -> str:
+    if lang is None:
+        return PLAIN_TEXT_LABEL
+    return LANGUAGE_LABELS.get(lang, lang.replace("_", " ").title())
 
 
 def _register_ts_family(editor: TextArea) -> bool:
@@ -238,4 +278,3 @@ _JSX_HIGHLIGHTS = r"""
 
 (jsx_text) @string
 """
-

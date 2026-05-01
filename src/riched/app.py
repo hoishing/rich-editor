@@ -23,11 +23,13 @@ from textual.widgets import (
     Footer,
     Header,
     MarkdownViewer,
+    OptionList,
     Static,
     TextArea,
 )
 from textual.widgets._footer import FooterKey, FooterLabel, KeyGroup
 from textual.widgets._header import HeaderClock, HeaderClockSpace, HeaderTitle
+from textual.widgets.option_list import Option
 
 from .editor import RichedTextArea
 from .formatting import format_text
@@ -54,12 +56,21 @@ from .screens import (
     UnsavedChangesScreen,
 )
 from .settings import load_theme, save_theme
-from .syntax import apply_language
+from .syntax import (
+    PLAIN_TEXT_ID,
+    apply_language,
+    language_label,
+    set_language,
+    supported_languages,
+)
 
 FILE_TREE_DEFAULT_WIDTH = 30
 FILE_TREE_MIN_WIDTH = 18
 FILE_TREE_MAX_WIDTH = 44
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
+FILE_TYPE_PICKER_WIDTH = 24
+FILE_TYPE_PICKER_MAX_HEIGHT = 16
+PLAIN_TEXT_OPTION_ID = f"language:{PLAIN_TEXT_ID}"
 
 
 def _binding_key(binding: BindingType) -> str:
@@ -150,6 +161,37 @@ class RichedFooter(Footer):
                         disabled=not enabled,
                         tooltip=binding.tooltip or binding.description or tooltip,
                     )
+        yield FileTypeButton()
+
+
+class FileTypeButton(Static):
+    """Footer control for the active syntax language."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("No file", id="file-type-button")
+        self.tooltip = "Change file type"
+
+    def on_mount(self) -> None:
+        app = self.app
+        if isinstance(app, RichedApp):
+            self.update(app._current_file_type_label())
+
+    async def on_click(self, event: events.Click) -> None:
+        event.stop()
+        await self.run_action("app.toggle_file_type_picker")
+
+
+class FileTypePicker(OptionList):
+    """Language picker dismissed by Escape."""
+
+    BINDINGS = [Binding("escape", "dismiss", show=False)]
+
+    def action_dismiss(self) -> None:
+        app = self.app
+        if isinstance(app, RichedApp):
+            app.close_file_type_picker(focus_editor=True)
 
 
 class RefreshButton(Static):
@@ -319,6 +361,9 @@ class RichedApp(App):
     COMMAND_PALETTE_BINDING = "f1"
 
     CSS = """
+    RichedApp {
+        layers: default overlay;
+    }
     #workspace {
         height: 1fr;
     }
@@ -360,6 +405,28 @@ class RichedApp(App):
     #refresh-button:hover {
         background: $foreground 10%;
     }
+    #file-type-button {
+        dock: right;
+        width: auto;
+        min-width: 12;
+        height: 1;
+        padding: 0 1;
+        content-align: center middle;
+        border-left: vkey $foreground 20%;
+        background: $footer-item-background;
+    }
+    #file-type-button:hover {
+        background: $block-hover-background;
+    }
+    #file-type-picker {
+        position: absolute;
+        layer: overlay;
+        width: 24;
+        height: auto;
+        max-height: 16;
+        background: $panel;
+        border: tall $accent;
+    }
     """
 
     BINDINGS: list[Binding] = []
@@ -385,6 +452,8 @@ class RichedApp(App):
         self._quick_open_limited = False
         self._quick_open_generation = 0
         self._quick_open_screen: QuickOpenScreen | None = None
+        self._file_type_picker: FileTypePicker | None = None
+        self._file_type_option_languages: dict[str, str | None] = {}
         self._ghostty_conflicted_hotkey_triggers = (
             ghostty_conflicted_hotkey_triggers()
         )
@@ -456,6 +525,10 @@ class RichedApp(App):
         editors = list(self.query("#editor"))
         return editors[0] if editors else None
 
+    def _file_type_button_or_none(self) -> Static | None:
+        buttons = list(self.query("#file-type-button"))
+        return buttons[0] if buttons else None
+
     def _markdown_preview_or_none(self) -> MarkdownViewer | None:
         previews = list(self.query("#markdown-preview"))
         return previews[0] if previews else None
@@ -465,6 +538,17 @@ class RichedApp(App):
 
     def _file_tree_resize_handle(self) -> Static:
         return self.query_one("#file-tree-resize-handle", Static)
+
+    def _current_file_type_label(self) -> str:
+        editor = self._editor_or_none()
+        if editor is None or self.path is None:
+            return "No file"
+        return language_label(editor.language)
+
+    def _update_file_type_button(self) -> None:
+        button = self._file_type_button_or_none()
+        if button is not None:
+            button.update(self._current_file_type_label())
 
     def _is_file_tree_visible(self) -> bool:
         return self._file_tree().styles.display != "none"
@@ -506,12 +590,14 @@ class RichedApp(App):
             editor.styles.display = "block"
 
     def _close_buffer(self) -> None:
+        self.close_file_type_picker()
         self.query_one("#editor-slot", Container).remove_children()
         self.path = None
         self.sub_title = ""
         self._saved_text = ""
         self._show_file_tree()
         self._file_tree().focus()
+        self._update_file_type_button()
 
     def _trash_path(self, path: Path) -> None:
         if sys.platform == "darwin":
@@ -664,6 +750,7 @@ class RichedApp(App):
                             f"Syntax highlight off: {exc}",
                             severity="warning",
                         )
+                    self._update_file_type_button()
 
         self._file_tree().reload()
         self._invalidate_quick_open_index()
@@ -685,6 +772,7 @@ class RichedApp(App):
         return fallback
 
     def _open_path(self, path: Path) -> None:
+        self.close_file_type_picker()
         self._exit_markdown_preview()
         self.path = path.expanduser()
         self.sub_title = str(self.path)
@@ -703,6 +791,7 @@ class RichedApp(App):
             apply_language(editor, self.path.suffix)
         except Exception as exc:
             self.notify(f"Syntax highlight off: {exc}", severity="warning")
+        self._update_file_type_button()
         editor.focus()
 
     def _is_dirty(self) -> bool:
@@ -972,6 +1061,91 @@ class RichedApp(App):
         screen = self._quick_open_screen
         if screen is not None and screen.is_mounted:
             screen.replace_entries([], complete=False, limited=False)
+
+    def _file_type_option_id(self, language: str | None) -> str:
+        if language is None:
+            return PLAIN_TEXT_OPTION_ID
+        return f"language:{language}"
+
+    def _position_file_type_picker(self, picker: FileTypePicker | None = None) -> None:
+        picker = picker or self._file_type_picker
+        if picker is None or not picker.is_mounted:
+            return
+        width = min(FILE_TYPE_PICKER_WIDTH, max(1, self.size.width))
+        height = min(
+            FILE_TYPE_PICKER_MAX_HEIGHT,
+            picker.option_count + 2,
+            max(1, self.size.height - 1),
+        )
+        picker.styles.width = width
+        picker.styles.height = height
+        picker.styles.offset = (
+            max(0, self.size.width - width),
+            max(0, self.size.height - height - 1),
+        )
+
+    async def action_toggle_file_type_picker(self) -> None:
+        if self._file_type_picker is not None:
+            self.close_file_type_picker(focus_editor=True)
+            return
+
+        editor = self._editor_or_none()
+        if editor is None or self.path is None:
+            self.notify("No file open", severity="warning")
+            return
+
+        options = [Option(language_label(None), id=PLAIN_TEXT_OPTION_ID)]
+        option_ids = [PLAIN_TEXT_OPTION_ID]
+        self._file_type_option_languages = {PLAIN_TEXT_OPTION_ID: None}
+        for language in supported_languages(editor):
+            option_id = self._file_type_option_id(language)
+            self._file_type_option_languages[option_id] = language
+            option_ids.append(option_id)
+            options.append(Option(language_label(language), id=option_id))
+
+        picker = FileTypePicker(*options, id="file-type-picker")
+        self._file_type_picker = picker
+        await self.mount(picker)
+        current_id = self._file_type_option_id(editor.language)
+        picker.highlighted = (
+            option_ids.index(current_id) if current_id in option_ids else 0
+        )
+        self._position_file_type_picker(picker)
+        picker.focus()
+
+    def close_file_type_picker(self, *, focus_editor: bool = False) -> None:
+        picker = self._file_type_picker
+        self._file_type_picker = None
+        self._file_type_option_languages.clear()
+        if picker is not None and picker.is_mounted:
+            picker.remove()
+        if focus_editor:
+            editor = self._editor_or_none()
+            if editor is not None:
+                editor.focus()
+
+    def on_option_list_option_selected(
+        self, event: OptionList.OptionSelected
+    ) -> None:
+        if event.option_list.id != "file-type-picker":
+            return
+        event.stop()
+        if event.option_id not in self._file_type_option_languages:
+            return
+        editor = self._editor_or_none()
+        if editor is None:
+            self.close_file_type_picker()
+            return
+        try:
+            set_language(editor, self._file_type_option_languages[event.option_id])
+        except Exception as exc:
+            self.notify(f"Syntax highlight off: {exc}", severity="warning")
+            return
+        self._update_file_type_button()
+        self.close_file_type_picker(focus_editor=True)
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._position_file_type_picker()
 
     def action_toggle_command_palette(self) -> None:
         if CommandPalette.is_open(self):
