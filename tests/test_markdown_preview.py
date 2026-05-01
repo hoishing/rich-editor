@@ -48,6 +48,40 @@ async def test_markdown_preview_uses_unsaved_editor_content() -> None:
         assert f.read_text() == "# Saved"
 
 
+async def test_markdown_preview_toc_button_only_shows_for_preview() -> None:
+    _, _, app = _file_app(
+        "README.md",
+        "# Title\n\n## Section",
+        root_is_tmp=True,
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        toc_button = app.query_one("#markdown-toc-button", Static)
+        assert toc_button.content == "☰"
+        assert toc_button.styles.display == "none"
+
+        await _press(pilot, "cmd+shift+v")
+
+        preview = app.query_one("#markdown-preview", MarkdownViewer)
+        assert toc_button.styles.display == "block"
+        assert preview.show_table_of_contents is False
+
+        await pilot.click("#markdown-toc-button")
+        await pilot.pause()
+
+        assert preview.show_table_of_contents is True
+
+        await pilot.click("#markdown-toc-button")
+        await pilot.pause()
+
+        assert preview.show_table_of_contents is False
+
+        await _press(pilot, "cmd+shift+v")
+
+        assert not list(app.query("#markdown-preview"))
+        assert toc_button.styles.display == "none"
+
+
 async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
     _, _, app = _file_app("notes.txt", "# Plain text", root_is_tmp=True)
     notifications: list[tuple[str, str | None]] = []

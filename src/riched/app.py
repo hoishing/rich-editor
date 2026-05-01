@@ -208,6 +208,20 @@ class RefreshButton(Static):
         await self.run_action("app.refresh_workspace")
 
 
+class MarkdownTocButton(Static):
+    """Header control for the Markdown preview table of contents."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("☰", id="markdown-toc-button")
+        self.tooltip = "Toggle table of contents"
+
+    async def on_click(self, event: events.Click) -> None:
+        event.stop()
+        await self.run_action("app.toggle_markdown_toc")
+
+
 class RichedHeader(Header):
     """Header with a compact refresh control on the left."""
 
@@ -219,6 +233,7 @@ class RichedHeader(Header):
             if self._show_clock
             else HeaderClockSpace()
         )
+        yield MarkdownTocButton()
 
 
 class RichedDirectoryTree(DirectoryTree):
@@ -405,6 +420,17 @@ class RichedApp(App):
     #refresh-button:hover {
         background: $foreground 10%;
     }
+    #markdown-toc-button {
+        dock: right;
+        display: none;
+        width: 3;
+        min-width: 3;
+        height: 1;
+        content-align: center middle;
+    }
+    #markdown-toc-button:hover {
+        background: $foreground 10%;
+    }
     #file-type-button {
         dock: right;
         width: auto;
@@ -529,6 +555,9 @@ class RichedApp(App):
         buttons = list(self.query("#file-type-button"))
         return buttons[0] if buttons else None
 
+    def _markdown_toc_button(self) -> Static:
+        return self.query_one("#markdown-toc-button", Static)
+
     def _markdown_preview_or_none(self) -> MarkdownViewer | None:
         previews = list(self.query("#markdown-preview"))
         return previews[0] if previews else None
@@ -549,6 +578,9 @@ class RichedApp(App):
         button = self._file_type_button_or_none()
         if button is not None:
             button.update(self._current_file_type_label())
+
+    def _set_markdown_toc_button_visible(self, visible: bool) -> None:
+        self._markdown_toc_button().styles.display = "block" if visible else "none"
 
     def _is_file_tree_visible(self) -> bool:
         return self._file_tree().styles.display != "none"
@@ -585,6 +617,7 @@ class RichedApp(App):
         preview = self._markdown_preview_or_none()
         if preview is not None:
             preview.remove()
+        self._set_markdown_toc_button_visible(False)
         editor = self._editor_or_none()
         if editor is not None:
             editor.styles.display = "block"
@@ -1160,6 +1193,12 @@ class RichedApp(App):
             )
         )
 
+    def action_toggle_markdown_toc(self) -> None:
+        preview = self._markdown_preview_or_none()
+        if preview is None:
+            return
+        preview.show_table_of_contents = not preview.show_table_of_contents
+
     async def action_toggle_markdown_preview(self) -> None:
         editor = self._editor_or_none()
         if self.path is None or editor is None:
@@ -1186,6 +1225,7 @@ class RichedApp(App):
         )
         editor.styles.display = "none"
         await self.query_one("#editor-slot", Container).mount(preview)
+        self._set_markdown_toc_button_visible(True)
         preview.document.focus()
 
     def action_save(self) -> None:

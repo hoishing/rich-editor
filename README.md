@@ -11,10 +11,10 @@ A [rich](https://github.com/Textualize/rich) library powered editor(hence the na
 - macOS style key bindings work in ssh session to linux host also
 - project file tree with create, rename, quick refresh, and move-to-trash support
 - quick file open with fuzzy search
-- in-terminal Markdown preview
+- in-terminal Markdown preview with table of contents toggle
 - document formatting through external formatter CLIs
 - multiple built-in theme(atom, drcula, nordic ...etc)
-- syntax highlighting for major file formats
+- syntax highlighting for major file formats with manual file type override
 
 ## Usage
 
@@ -89,6 +89,20 @@ File tree shortcuts:
 ## Settings
 
 `riched` persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/riched/settings.yaml`
+
+## Markdown Preview
+
+Use `⌘⇧V` to toggle an in-terminal rendered preview for Markdown files. The preview uses the current editor buffer, so unsaved edits are shown without writing them to disk.
+
+When Markdown preview is open, the header shows a `☰` button on the right. Click it to show or hide the Markdown table of contents. The button is hidden while editing the text buffer.
+
+## Syntax And File Types
+
+`riched` detects syntax highlighting from the file extension and shows the active file type in the lower-right footer. Unknown extensions are treated as plain text.
+
+Click the file type label to choose another language for the current buffer. Manual selection updates highlighting and language-aware commands such as toggle comment, but reopening or refreshing the file resets the type from the file extension.
+
+Detected extensions include Python, JavaScript, TypeScript, TSX, Bash, HTML, CSS, JSON, Markdown, YAML, TOML, XML, SQL, Java, Go, and Rust.
 
 ## Formatting
 
