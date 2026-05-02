@@ -20,15 +20,15 @@ A [rich](https://github.com/Textualize/rich) library powered editor(hence the na
 
 ```sh
 uv tool install riched
-riched .
-riched --version
+rich .
+rich --version
 ```
 
 ## Dev
 
 ```sh
 uv sync
-uv run riched .
+uv run rich .
 uv run python -m tests.runner
 ```
 
