@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
 from itertools import groupby
 import json
 from pathlib import Path
+import re
 from shutil import which
 import subprocess
 import sys
@@ -53,6 +55,8 @@ from .screens import (
     QuickOpenScreen,
     QuitConfirmationScreen,
     RenamePathScreen,
+    ReplaceScreen,
+    ReplaceTerms,
     UnsavedChangesScreen,
 )
 from .settings import load_theme, save_theme
@@ -71,6 +75,15 @@ MARKDOWN_SUFFIXES = {".md", ".markdown"}
 FILE_TYPE_PICKER_WIDTH = 24
 FILE_TYPE_PICKER_MAX_HEIGHT = 16
 PLAIN_TEXT_OPTION_ID = f"language:{PLAIN_TEXT_ID}"
+
+
+@dataclass(frozen=True)
+class _ReplaceContext:
+    editor: TextArea
+    screen: ReplaceScreen
+    terms: ReplaceTerms
+    pattern: re.Pattern[str]
+    matches: list[re.Match[str]]
 
 
 def _binding_key(binding: BindingType) -> str:
@@ -509,6 +522,11 @@ class RichedApp(App):
                     "Create file",
                     "Create a file in the current folder",
                     self.action_create_file,
+                ),
+                SystemCommand(
+                    "Replace",
+                    "Find and replace text in the current file",
+                    self.action_replace,
                 ),
                 SystemCommand(
                     "Toggle Markdown preview",
@@ -1192,6 +1210,187 @@ class RichedApp(App):
                 conflicted_triggers=self._ghostty_conflicted_hotkey_triggers
             )
         )
+
+    def action_replace(self) -> None:
+        editor = self._editor_or_none()
+        if self.path is None or editor is None:
+            self.notify("No file open", severity="warning")
+            return
+        if self._markdown_preview_or_none() is not None:
+            self._exit_markdown_preview()
+        self.push_screen(ReplaceScreen())
+
+    def action_replace_next(self) -> None:
+        context = self._replace_context()
+        if context is None:
+            return
+        self._select_replace_match(context, self._next_replace_match_index(context))
+
+    def action_replace_previous(self) -> None:
+        context = self._replace_context()
+        if context is None:
+            return
+        self._select_replace_match(context, self._previous_replace_match_index(context))
+
+    def action_replace_current(self) -> None:
+        context = self._replace_context()
+        if context is None:
+            return
+        index = self._selected_replace_match_index(context)
+        if index is None:
+            self._select_replace_match(
+                context,
+                self._next_replace_match_index(context),
+            )
+            return
+
+        match = context.matches[index]
+        replacement = self._replacement_for_match(context.terms, match, context.screen)
+        if replacement is None:
+            return
+        start = context.editor.document.get_location_from_index(match.start())
+        end = context.editor.document.get_location_from_index(match.end())
+        context.editor.replace(
+            replacement,
+            start,
+            end,
+            maintain_selection_offset=False,
+        )
+        next_offset = match.start() + len(replacement)
+        context.editor.move_cursor(
+            context.editor.document.get_location_from_index(next_offset),
+            center=True,
+        )
+
+        next_context = self._replace_context(require_match=False)
+        if next_context is None:
+            return
+        if not next_context.matches:
+            context.screen.set_status("Replaced 1 match. No more matches.")
+            return
+        next_index = self._first_match_at_or_after(next_context.matches, next_offset)
+        self._select_replace_match(next_context, next_index)
+
+    def action_replace_all(self) -> None:
+        context = self._replace_context()
+        if context is None:
+            return
+        if context.terms.regex:
+            try:
+                new_text, count = context.pattern.subn(
+                    context.terms.replace,
+                    context.editor.text,
+                )
+            except re.error as exc:
+                context.screen.set_status(f"Invalid replacement: {exc}", error=True)
+                return
+        else:
+            count = len(context.matches)
+            new_text = context.editor.text.replace(
+                context.terms.find,
+                context.terms.replace,
+            )
+        context.editor.replace(
+            new_text,
+            (0, 0),
+            context.editor.document.end,
+            maintain_selection_offset=False,
+        )
+        context.editor.move_cursor((0, 0), center=True)
+        context.screen.set_status(f"Replaced {count} matches.")
+
+    def _replace_context(self, *, require_match: bool = True) -> _ReplaceContext | None:
+        screen = self.screen if isinstance(self.screen, ReplaceScreen) else None
+        editor = self._editor_or_none()
+        if screen is None or editor is None:
+            return None
+        terms = screen.terms
+        if not terms.find:
+            screen.set_status("Enter a find term.", error=True)
+            return None
+        try:
+            pattern = re.compile(terms.find if terms.regex else re.escape(terms.find))
+        except re.error as exc:
+            screen.set_status(f"Invalid regex: {exc}", error=True)
+            return None
+        matches = list(pattern.finditer(editor.text))
+        if any(match.start() == match.end() for match in matches):
+            screen.set_status(
+                "Find pattern must match at least one character.",
+                error=True,
+            )
+            return None
+        if require_match and not matches:
+            screen.set_status("No matches.", error=True)
+            return None
+        return _ReplaceContext(editor, screen, terms, pattern, matches)
+
+    def _replacement_for_match(
+        self,
+        terms: ReplaceTerms,
+        match: re.Match[str],
+        screen: ReplaceScreen,
+    ) -> str | None:
+        if not terms.regex:
+            return terms.replace
+        try:
+            return match.expand(terms.replace)
+        except re.error as exc:
+            screen.set_status(f"Invalid replacement: {exc}", error=True)
+            return None
+
+    def _selected_replace_match_index(self, context: _ReplaceContext) -> int | None:
+        selection = context.editor.selection
+        if selection.is_empty:
+            return None
+        start, end = sorted((selection.start, selection.end))
+        start_offset = context.editor.document.get_index_from_location(start)
+        end_offset = context.editor.document.get_index_from_location(end)
+        for index, match in enumerate(context.matches):
+            if match.start() == start_offset and match.end() == end_offset:
+                return index
+        return None
+
+    def _next_replace_match_index(self, context: _ReplaceContext) -> int:
+        current = self._selected_replace_match_index(context)
+        if current is not None:
+            anchor = context.matches[current].end()
+        else:
+            anchor = context.editor.document.get_index_from_location(
+                context.editor.cursor_location
+            )
+        return self._first_match_at_or_after(context.matches, anchor)
+
+    def _previous_replace_match_index(self, context: _ReplaceContext) -> int:
+        current = self._selected_replace_match_index(context)
+        if current is not None:
+            anchor = context.matches[current].start()
+        else:
+            anchor = context.editor.document.get_index_from_location(
+                context.editor.cursor_location
+            )
+        for index in range(len(context.matches) - 1, -1, -1):
+            if context.matches[index].end() <= anchor:
+                return index
+        return len(context.matches) - 1
+
+    def _first_match_at_or_after(
+        self,
+        matches: list[re.Match[str]],
+        offset: int,
+    ) -> int:
+        for index, match in enumerate(matches):
+            if match.start() >= offset:
+                return index
+        return 0
+
+    def _select_replace_match(self, context: _ReplaceContext, index: int) -> None:
+        match = context.matches[index]
+        start = context.editor.document.get_location_from_index(match.start())
+        end = context.editor.document.get_location_from_index(match.end())
+        context.editor.selection = type(context.editor.selection)(start, end)
+        context.editor.scroll_cursor_visible(center=True)
+        context.screen.set_status(f"Match {index + 1} of {len(context.matches)}.")
 
     def action_toggle_markdown_toc(self) -> None:
         preview = self._markdown_preview_or_none()

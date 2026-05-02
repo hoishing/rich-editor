@@ -1,19 +1,27 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 from textual import events
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Button, Input, Label, OptionList, Static
+from textual.widgets import Button, Checkbox, Input, Label, OptionList, Static
 from textual.widgets.option_list import Option
 
 from .keybindings import binding_help_groups, build_screen_bindings
 from .quick_open import QuickOpenEntry, ranked_matches
 
 MAX_QUICK_OPEN_RESULTS = 100
+
+
+@dataclass(frozen=True)
+class ReplaceTerms:
+    find: str
+    replace: str
+    regex: bool
 
 
 class _DismissOnCloseScreen:
@@ -382,6 +390,110 @@ class QuickOpenScreen(_DismissOnCloseScreen, ModalScreen[Path | None]):
         path = self._option_paths.get(option.id or "")
         if path is not None:
             self.dismiss(path)
+
+
+class ReplaceScreen(_DismissOnCloseScreen, ModalScreen[None]):
+    """Find and replace popup."""
+
+    BINDINGS = build_screen_bindings("replace")
+
+    CSS = """
+    ReplaceScreen {
+        align: center top;
+    }
+    ReplaceScreen > #dialog {
+        offset-y: 2;
+        width: 76;
+        height: auto;
+        padding: 1 2;
+        background: $panel;
+        border: tall $accent;
+    }
+    ReplaceScreen Label {
+        height: auto;
+        margin-bottom: 1;
+    }
+    ReplaceScreen Input {
+        margin-bottom: 1;
+    }
+    ReplaceScreen #replace-options {
+        height: auto;
+        margin-bottom: 1;
+    }
+    ReplaceScreen #replace-status {
+        min-height: 1;
+        height: auto;
+        margin-bottom: 1;
+        color: $foreground 70%;
+    }
+    ReplaceScreen #replace-status.error {
+        color: $error;
+    }
+    ReplaceScreen #replace-buttons {
+        height: auto;
+        align: center middle;
+    }
+    ReplaceScreen Button {
+        margin: 0 1;
+    }
+    ReplaceScreen .icon-button {
+        min-width: 5;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        with Vertical(id="dialog"):
+            yield Label("Replace")
+            yield Input(placeholder="Find", id="replace-find")
+            yield Input(placeholder="Replace with", id="replace-with")
+            with Horizontal(id="replace-options"):
+                yield Checkbox("Regex", id="replace-regex")
+            yield Static("", id="replace-status")
+            with Horizontal(id="replace-buttons"):
+                yield Button("↑", id="previous", classes="icon-button")
+                yield Button("↓", id="next", classes="icon-button")
+                yield Button("Replace", id="replace")
+                yield Button("Replace all", variant="primary", id="replace-all")
+
+    def on_mount(self) -> None:
+        self.query_one("#replace-find", Input).focus()
+
+    @property
+    def terms(self) -> ReplaceTerms:
+        return ReplaceTerms(
+            find=self.query_one("#replace-find", Input).value,
+            replace=self.query_one("#replace-with", Input).value,
+            regex=self.query_one("#replace-regex", Checkbox).value,
+        )
+
+    def set_status(self, message: str, *, error: bool = False) -> None:
+        status = self.query_one("#replace-status", Static)
+        status.update(message)
+        status.set_class(error, "error")
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id in {"replace-find", "replace-with"}:
+            event.stop()
+            self.app.action_replace_next()
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
+        event.stop()
+        button_id = event.button.id
+        if button_id == "previous":
+            self.app.action_replace_previous()
+        elif button_id == "next":
+            self.app.action_replace_next()
+        elif button_id == "replace":
+            self.app.action_replace_current()
+        elif button_id == "replace-all":
+            self.app.action_replace_all()
+
+    def on_key(self, event: events.Key) -> None:
+        focused = self.focused
+        if event.key == "space" and isinstance(focused, Button):
+            event.stop()
+            event.prevent_default()
+            focused.action_press()
 
 
 class CreateFileScreen(_DismissOnCloseScreen, ModalScreen[str | None]):

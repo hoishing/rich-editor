@@ -44,6 +44,7 @@ App shortcuts:
 | `⌘⇧P` / `F1` | Command palette         |
 | `⌘B`         | Toggle file tree        |
 | `⌘P`         | Quick open              |
+| `⌃H`         | Replace                 |
 | `⌥N`         | Create file             |
 | `⌘⇧V`        | Toggle Markdown preview |
 | `⌥⇧F`        | Format document         |

@@ -16,6 +16,9 @@ app:
     - name: quick_open
       description: Quick open
       key: cmd+p,super+p
+    - name: replace
+      description: Replace
+      key: ctrl+h
     - name: create_file
       description: Create file
       key: alt+n
@@ -148,6 +151,10 @@ screens:
       action: cancel
       description: Cancel
   quick_open:
+    - key: escape
+      action: close
+      description: Close
+  replace:
     - key: escape
       action: close
       description: Close

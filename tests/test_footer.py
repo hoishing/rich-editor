@@ -37,6 +37,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
             "Command palette",
             "Toggle file tree",
             "Quick open",
+            "Replace",
             "Create file",
             "Toggle Markdown preview",
             "Format document",
@@ -46,6 +47,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert labels["Command palette"] == "⌘⇧P"
         assert labels["Toggle file tree"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
+        assert labels["Replace"] == "⌃H"
         assert labels["Create file"] == "⌥N"
         assert labels["Toggle Markdown preview"] == "⌘⇧V"
         assert labels["Format document"] == "⌥⇧F"
