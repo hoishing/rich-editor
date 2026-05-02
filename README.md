@@ -8,24 +8,24 @@ A [rich](https://github.com/Textualize/rich) library powered editor that impleme
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="docs/python-buffer.svg" alt="Python buffer showing tests/test_file_io.py" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/python-buffer.svg" alt="Python buffer showing tests/test_file_io.py" width="400">
       <br>
       <sub>Python buffer: tests/test_file_io.py</sub>
     </td>
     <td align="center" width="50%">
-      <img src="docs/markdown-preview.svg" alt="Markdown preview of README.md" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/markdown-preview.svg" alt="Markdown preview of README.md" width="400">
       <br>
       <sub>Markdown preview: README.md</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="docs/command-palette.svg" alt="Command palette opened with F1" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/command-palette.svg" alt="Command palette opened with F1" width="400">
       <br>
       <sub>Command palette: F1</sub>
     </td>
     <td align="center" width="50%">
-      <img src="docs/search-replace.svg" alt="Search and replace popup in README.md" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/search-replace.svg" alt="Search and replace popup in README.md" width="400">
       <br>
       <sub>Search and replace: README.md</sub>
     </td>
