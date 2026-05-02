@@ -6,7 +6,7 @@ from textual.command import CommandPalette
 from textual.widgets import MarkdownViewer, Static
 
 from .helpers import _file_app, _key_help_rows, _press
-from riched.screens import KeysHelpScreen
+from rich_editor.screens import KeysHelpScreen
 
 
 def _palette_app(**kwargs):

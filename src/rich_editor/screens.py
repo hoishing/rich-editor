@@ -99,7 +99,7 @@ class QuitConfirmationScreen(_ConfirmationScreen):
     """Prompt asking whether to quit a clean session."""
 
     BINDINGS = build_screen_bindings("quit_confirmation")
-    MESSAGE = "Quit riched?"
+    MESSAGE = "Quit Rich Editor?"
     BUTTONS = (
         ("Quit", "quit", "error"),
         ("Cancel", "cancel", None),
@@ -621,6 +621,6 @@ class KeysHelpScreen(_DismissOnCloseScreen, ModalScreen[None]):
                                 yield Static(description, classes="binding-description")
                 if has_warnings:
                     yield Static(
-                        "⚠️ Unbind this shortcut in Ghostty config to use it in riched.",
+                        "⚠️ Unbind this shortcut in Ghostty config to use it in Rich Editor.",
                         classes="binding-legend",
                     )

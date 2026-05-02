@@ -5,7 +5,7 @@ from subprocess import CompletedProcess
 from textual.widgets import Footer
 
 from .helpers import _file_app, _footer_labels, _temporary_env
-from riched.keybindings import ghostty_conflicted_hotkey_triggers
+from rich_editor.keybindings import ghostty_conflicted_hotkey_triggers
 
 
 def _footer_app(**kwargs):

@@ -1,9 +1,9 @@
-# Riched
+# Rich Editor
 
-A [rich](https://github.com/Textualize/rich) library powered editor(hence the name `riched`) that implements VS Code keybindings in TUI
+A [rich](https://github.com/Textualize/rich) library powered editor that implements VS Code keybindings in TUI
 
 > [!NOTE]
-> `riched` is designed to work with [ghostty](https://ghostty.org) in macOS only
+> Rich Editor is designed to work with [ghostty](https://ghostty.org) in macOS only
 
 <table>
   <tr>
@@ -46,7 +46,7 @@ A [rich](https://github.com/Textualize/rich) library powered editor(hence the na
 ## Usage
 
 ```sh
-uv tool install riched
+uv tool install rich-editor
 rich .
 rich --version
 ```
@@ -61,7 +61,7 @@ uv run python -m tests.runner
 
 ## Key Bindings
 
-Key bindings are generated from the YAML in `src/riched/bindings.yaml`.
+Key bindings are generated from the YAML in `src/rich_editor/bindings.yaml`.
 
 App shortcuts:
 
@@ -116,7 +116,7 @@ File tree shortcuts:
 
 ## Settings
 
-`riched` persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/riched/settings.yaml`
+Rich Editor persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/rich-editor/settings.yaml`
 
 ## Markdown Preview
 
@@ -126,7 +126,7 @@ When Markdown preview is open, the header shows a `☰` button on the right. Cli
 
 ## Syntax And File Types
 
-`riched` detects syntax highlighting from the file extension and shows the active file type in the lower-right footer. Unknown extensions are treated as plain text.
+Rich Editor detects syntax highlighting from the file extension and shows the active file type in the lower-right footer. Unknown extensions are treated as plain text.
 
 Click the file type label to choose another language for the current buffer. Manual selection updates highlighting and language-aware commands such as toggle comment, but reopening or refreshing the file resets the type from the file extension.
 
@@ -148,19 +148,19 @@ bun add --global prettier @prettier/plugin-xml
 brew install ruff taplo
 ```
 
-Files unsupported by these tools are left unchanged and `riched` shows a warning.
+Files unsupported by these tools are left unchanged and Rich Editor shows a warning.
 
 ## Refresh
 
-Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, `riched` prompts to save, discard, or cancel before reloading.
+Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, Rich Editor prompts to save, discard, or cancel before reloading.
 
 ## Creating Files
 
-Use `⌥N` to create a file. `riched` prompts for the file name and supports nested relative paths such as `notes/today.md`.
+Use `⌥N` to create a file. Rich Editor prompts for the file name and supports nested relative paths such as `notes/today.md`.
 
 When a folder is highlighted in the file tree, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
 
-If the requested file already exists, `riched` opens it without overwriting its contents.
+If the requested file already exists, Rich Editor opens it without overwriting its contents.
 
 ## Renaming Files And Folders
 
@@ -170,7 +170,7 @@ The project root cannot be renamed. Empty names, path separators, and duplicate 
 
 ## Moving Files To Trash
 
-When the file tree is focused, `⌘⌫` moves the selected file or folder to Trash. On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so `riched` binds both forms for the file tree.
+When the file tree is focused, `⌘⌫` moves the selected file or folder to Trash. On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Editor binds both forms for the file tree.
 
 ## Limitations
 
@@ -181,7 +181,7 @@ When the file tree is focused, `⌘⌫` moves the selected file or folder to Tra
 ### Ghostty hotkey conflicts
 
 - some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
-- `riched` detects conflicted shortcuts at startup.
+- Rich Editor detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
 - `⌘⇧P` and `F1` are alternative hotkeys for the command palette.
@@ -195,7 +195,7 @@ Ghostty keybindings can be unbound in the Ghostty config file. On macOS, use one
 - `~/.config/ghostty/config.ghostty`
 - `~/.config/ghostty/config`
 
-Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in `riched`:
+Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in Rich Editor:
 
 ```conf
 keybind = super+shift+v=unbind
@@ -221,7 +221,7 @@ ghostty +list-keybinds --default
 
 ### Disable Ghostty font ligatures
 
-Textual does not expose an app-side font ligature switch. To disable programming ligatures while using `riched`, add this to the same Ghostty config file:
+Textual does not expose an app-side font ligature switch. To disable programming ligatures while using Rich Editor, add this to the same Ghostty config file:
 
 ```conf
 font-feature = -calt

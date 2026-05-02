@@ -5,8 +5,8 @@ from time import monotonic
 
 from textual.widgets import Static
 
-import riched.app as app_mod
-from riched.screens import QuickOpenScreen
+import rich_editor.app as app_mod
+from rich_editor.screens import QuickOpenScreen
 
 from .helpers import _directory_app, _fresh_env, _make_app
 

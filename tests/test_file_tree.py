@@ -6,7 +6,7 @@ from typing import Any
 
 from textual.widgets import DirectoryTree, Input, Static
 
-from riched.screens import RenamePathScreen
+from rich_editor.screens import RenamePathScreen
 
 from .helpers import _editor, _file_app, mod
 

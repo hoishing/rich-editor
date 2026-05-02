@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 STUB_APP_SCRIPT = """
-from riched import cli
+from rich_editor import cli
 
 captured = {}
 
@@ -30,7 +30,7 @@ def _run_cli(*args: str, cwd: Path | None = None, script: str | None = None):
         [
             sys.executable,
             "-c",
-            script or "from riched.cli import main; raise SystemExit(main())",
+            script or "from rich_editor.cli import main; raise SystemExit(main())",
             *args,
         ],
         check=False,
@@ -43,7 +43,7 @@ def _run_cli(*args: str, cwd: Path | None = None, script: str | None = None):
 async def test_version_flag_prints_current_version() -> None:
     result = _run_cli("--version")
     assert result.returncode == 0, result.stderr
-    assert result.stdout == f"rich {version('riched')}\n", result.stdout
+    assert result.stdout == f"rich {version('rich-editor')}\n", result.stdout
     assert result.stderr == "", result.stderr
 
 
@@ -55,7 +55,7 @@ async def test_version_flag_rejects_filename() -> None:
 
 
 async def test_no_filename_opens_current_folder() -> None:
-    tmp = Path(tempfile.mkdtemp(prefix="riched-cli-"))
+    tmp = Path(tempfile.mkdtemp(prefix="rich_editor-cli-"))
     result = _run_cli(cwd=tmp, script=STUB_APP_SCRIPT)
     cwd = tmp.resolve()
     assert result.returncode == 0, result.stderr
@@ -64,7 +64,7 @@ async def test_no_filename_opens_current_folder() -> None:
 
 
 async def test_filename_opens_containing_folder_as_root() -> None:
-    tmp = Path(tempfile.mkdtemp(prefix="riched-cli-"))
+    tmp = Path(tempfile.mkdtemp(prefix="rich_editor-cli-"))
     folder = tmp / "notes"
     folder.mkdir()
     f = folder / "today.txt"

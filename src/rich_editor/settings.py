@@ -8,23 +8,39 @@ from typing import Any
 import yaml
 
 SETTINGS_FILENAME = "settings.yaml"
+APP_CONFIG_DIR_NAME = "rich-editor"
+LEGACY_CONFIG_DIR_NAME = "riched"
+
+
+def _config_dir(name: str) -> Path:
+    if sys.platform == "darwin":
+        return Path("~/Library/Application Support").expanduser() / name
+    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
+    if xdg_config_home:
+        return Path(xdg_config_home).expanduser() / name
+    return Path("~/.config").expanduser() / name
 
 
 def config_dir() -> Path:
-    if sys.platform == "darwin":
-        return Path("~/Library/Application Support/riched").expanduser()
-    xdg_config_home = os.environ.get("XDG_CONFIG_HOME")
-    if xdg_config_home:
-        return Path(xdg_config_home).expanduser() / "riched"
-    return Path("~/.config/riched").expanduser()
+    return _config_dir(APP_CONFIG_DIR_NAME)
+
+
+def legacy_config_dir() -> Path:
+    return _config_dir(LEGACY_CONFIG_DIR_NAME)
 
 
 def settings_path() -> Path:
     return config_dir() / SETTINGS_FILENAME
 
 
+def legacy_settings_path() -> Path:
+    return legacy_config_dir() / SETTINGS_FILENAME
+
+
 def load_settings() -> dict[str, Any]:
     path = settings_path()
+    if not path.exists():
+        path = legacy_settings_path()
     try:
         data = yaml.safe_load(path.read_text())
     except Exception:

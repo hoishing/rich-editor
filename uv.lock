@@ -186,8 +186,8 @@ wheels = [
 ]
 
 [[package]]
-name = "riched"
-version = "0.10.0"
+name = "rich-editor"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "pyyaml" },

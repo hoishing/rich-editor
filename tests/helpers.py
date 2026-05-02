@@ -13,14 +13,14 @@ from textual.widgets import Footer, TextArea
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from riched import syntax as syntax_mod  # noqa: E402
-from riched.app import RichedApp  # noqa: E402
-from riched.keybindings import (  # noqa: E402
+from rich_editor import syntax as syntax_mod  # noqa: E402
+from rich_editor.app import RichedApp  # noqa: E402
+from rich_editor.keybindings import (  # noqa: E402
     COMMANDS,
     DEFAULT_BINDINGS,
     build_bindings,
 )
-from riched.screens import (  # noqa: E402
+from rich_editor.screens import (  # noqa: E402
     CreateFileScreen,
     QuitConfirmationScreen,
     ReplaceScreen,
@@ -40,7 +40,7 @@ mod = SimpleNamespace(
 
 
 def _fresh_env() -> tuple[Path, Path]:
-    tmp = Path(tempfile.mkdtemp(prefix="riched-e2e-"))
+    tmp = Path(tempfile.mkdtemp(prefix="rich_editor-e2e-"))
     cfg = tmp / "config.yaml"
     syntax_mod.reset_ts_registration()
     return tmp, cfg
@@ -53,7 +53,7 @@ def _make_app(
     ghostty_conflicted_hotkey_triggers: set[str] | None = None,
 ):
     cls = type(
-        "ConfiguredRichedApp",
+        "ConfiguredRichEditorApp",
         (mod.RichedApp,),
         {"BINDINGS": mod.build_bindings()},
     )

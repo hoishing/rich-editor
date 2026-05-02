@@ -11,7 +11,7 @@ from .helpers import (
     _key_help_rows,
     _press,
 )
-from riched.screens import ReplaceScreen
+from rich_editor.screens import ReplaceScreen
 
 
 async def _open_replace(app, pilot) -> ReplaceScreen:

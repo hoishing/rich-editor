@@ -27,14 +27,14 @@ def main() -> int:
     if args.version:
         if args.filename is not None:
             parser.error("rich --version does not take arguments")
-        print(f"rich {version('riched')}")
+        print(f"rich {version('rich-editor')}")
         return 0
 
     path = Path.cwd() if args.filename is None else Path(args.filename).expanduser()
     root = path if path.is_dir() else path.parent
 
-    class ConfiguredRichedApp(RichedApp):
+    class ConfiguredRichEditorApp(RichedApp):
         BINDINGS = build_bindings()
 
-    ConfiguredRichedApp(path, root).run()
+    ConfiguredRichEditorApp(path, root).run()
     return 0

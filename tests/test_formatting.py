@@ -72,7 +72,7 @@ exit 2
         """#!/bin/sh
 if [ "$1" = "format" ]; then
   cat >/dev/null
-  printf 'name = "riched"\\n'
+  printf 'name = "rich-editor"\\n'
   exit 0
 fi
 exit 2
@@ -144,15 +144,15 @@ async def test_format_document_uses_prettier_for_supported_files() -> None:
 
 
 async def test_format_document_uses_taplo_for_toml() -> None:
-    tmp, path, app = _file_app("config.toml", 'name="riched"')
+    tmp, path, app = _file_app("config.toml", 'name="rich-editor"')
     bin_dir = _formatter_bin(tmp)
     with _temporary_env(PATH=f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}"):
         async with app.run_test() as pilot:
             await pilot.pause()
             editor = _editor(app)
             await _press(pilot, "alt+shift+f")
-            assert editor.text == 'name = "riched"\n'
-            assert path.read_text() == 'name="riched"'
+            assert editor.text == 'name = "rich-editor"\n'
+            assert path.read_text() == 'name="rich-editor"'
 
 
 async def test_format_document_uses_prettier_xml_plugin_for_xml() -> None:
@@ -208,7 +208,7 @@ async def test_format_document_missing_formatter_notifies_without_change() -> No
 
 
 async def test_format_document_missing_taplo_notifies_without_change() -> None:
-    tmp, _, app = _file_app("config.toml", 'name="riched"')
+    tmp, _, app = _file_app("config.toml", 'name="rich-editor"')
     empty_bin = tmp / "empty-bin"
     empty_bin.mkdir()
     notifications: list[tuple[str, str | None]] = []
@@ -220,7 +220,7 @@ async def test_format_document_missing_taplo_notifies_without_change() -> None:
             await pilot.pause()
             editor = _editor(app)
             await _press(pilot, "alt+shift+f")
-            assert editor.text == 'name="riched"'
+            assert editor.text == 'name="rich-editor"'
             assert notifications == [
                 (
                     "`taplo` is required for formatting. Install it and ensure it is on PATH.",

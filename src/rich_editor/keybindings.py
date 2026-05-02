@@ -40,7 +40,7 @@ class KeyBindingHelpGroup:
 
 
 def load_binding_spec() -> dict[str, Any]:
-    text = resources.files("riched").joinpath("bindings.yaml").read_text()
+    text = resources.files("rich_editor").joinpath("bindings.yaml").read_text()
     data = yaml.safe_load(text)
     if not isinstance(data, dict):
         raise ValueError("bindings.yaml must contain a mapping")
