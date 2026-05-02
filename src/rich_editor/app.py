@@ -57,6 +57,7 @@ from .screens import (
     RenamePathScreen,
     ReplaceScreen,
     ReplaceTerms,
+    TrashPathConfirmationScreen,
     UnsavedChangesScreen,
 )
 from .settings import load_theme, save_theme
@@ -535,6 +536,15 @@ class RichedApp(App):
                 ),
             ]
         )
+        selected = self._selected_file_tree_path()
+        if selected is not None and not self._is_project_root_path(selected):
+            commands.append(
+                SystemCommand(
+                    f'Move "{selected.name}" to Trash',
+                    "Move the selected file tree item to Trash",
+                    lambda path=selected: self.trash_file_tree_path(path),
+                )
+            )
         yield from sorted(commands, key=lambda command: command.title.casefold())
 
     def get_key_display(self, binding: Binding) -> str:
@@ -650,6 +660,18 @@ class RichedApp(App):
         self._file_tree().focus()
         self._update_file_type_button()
 
+    def _selected_file_tree_path(self) -> Path | None:
+        tree = self._file_tree()
+        node = tree.cursor_node
+        if node is None or node.data is None:
+            return None
+        return Path(node.data.path)
+
+    def _is_project_root_path(self, path: Path) -> bool:
+        selected = path.expanduser().resolve(strict=False)
+        root = self.root.expanduser().resolve(strict=False)
+        return selected == root
+
     def _trash_path(self, path: Path) -> None:
         if sys.platform == "darwin":
             result = subprocess.run(
@@ -688,10 +710,8 @@ class RichedApp(App):
             raise RuntimeError(message)
 
     def trash_file_tree_path(self, path: Path) -> None:
-        tree = self._file_tree()
         selected = path.expanduser().resolve(strict=False)
-        root = self.root.expanduser().resolve(strict=False)
-        if selected == root:
+        if self._is_project_root_path(selected):
             self.notify("Cannot move the project root to Trash.", severity="warning")
             return
         if self.path is not None and self._is_dirty():
@@ -703,6 +723,23 @@ class RichedApp(App):
                     severity="warning",
                 )
                 return
+
+        source = path.expanduser()
+
+        def handle(choice: str) -> None:
+            if choice == "trash":
+                self._apply_trash_file_tree_path(source)
+                return
+            self._file_tree().focus()
+
+        self.push_screen(
+            TrashPathConfirmationScreen(source.name, source.is_dir()),
+            handle,
+        )
+
+    def _apply_trash_file_tree_path(self, path: Path) -> None:
+        tree = self._file_tree()
+        selected = path.expanduser().resolve(strict=False)
         try:
             self._trash_path(selected)
         except Exception as exc:

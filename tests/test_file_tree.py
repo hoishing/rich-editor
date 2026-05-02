@@ -6,7 +6,7 @@ from typing import Any
 
 from textual.widgets import DirectoryTree, Input, Static
 
-from rich_editor.screens import RenamePathScreen
+from rich_editor.screens import RenamePathScreen, TrashPathConfirmationScreen
 
 from .helpers import _editor, _file_app, mod
 
@@ -266,6 +266,10 @@ async def test_file_tree_cmd_backspace_moves_selected_file_to_trash() -> None:
         await _select_tree_path(pilot, app, selected)
         await pilot.press("cmd+backspace")
         await pilot.pause()
+        assert isinstance(app.screen, TrashPathConfirmationScreen)
+        assert trashed == []
+        await pilot.click("#trash")
+        await pilot.pause()
         assert trashed == [selected.resolve(strict=False)]
     assert not selected.exists()
 
@@ -280,8 +284,54 @@ async def test_file_tree_ctrl_u_moves_selected_file_to_trash() -> None:
         await _select_tree_path(pilot, app, selected)
         await pilot.press("ctrl+u")
         await pilot.pause()
+        assert isinstance(app.screen, TrashPathConfirmationScreen)
+        assert trashed == []
+        await pilot.click("#trash")
+        await pilot.pause()
         assert trashed == [selected.resolve(strict=False)]
     assert not selected.exists()
+
+
+async def test_file_tree_trash_confirmation_cancel_keeps_selected_file() -> None:
+    tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
+    selected = tmp / "second.txt"
+    selected.write_text("second")
+    trashed = _stub_trash(app)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _select_tree_path(pilot, app, selected)
+        await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert isinstance(app.screen, TrashPathConfirmationScreen)
+        await pilot.click("#cancel")
+        await pilot.pause()
+        assert trashed == []
+    assert selected.read_text() == "second"
+
+
+async def test_file_tree_trash_dirty_open_file_warns_without_confirmation() -> None:
+    tmp, child, app = _file_app("folder/child.txt", "child", root_is_tmp=True)
+    selected = tmp / "folder"
+    trashed = _stub_trash(app)
+    notifications: list[tuple[str, str | None]] = []
+    app.notify = lambda message, **kwargs: notifications.append(
+        (str(message), kwargs.get("severity"))
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.query_one("#editor").load_text("dirty")
+        await _select_tree_path(pilot, app, selected)
+        await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert not isinstance(app.screen, TrashPathConfirmationScreen)
+        assert trashed == []
+        assert notifications == [
+            (
+                "Save or discard changes before moving this item to Trash.",
+                "warning",
+            )
+        ]
+    assert child.exists()
 
 
 async def test_editor_cmd_backspace_does_not_trash_file_tree_selection() -> None:
@@ -309,6 +359,9 @@ async def test_trashing_open_file_closes_buffer_and_focuses_file_tree() -> None:
         await pilot.pause()
         tree = await _select_tree_path(pilot, app, path)
         await pilot.press("cmd+backspace")
+        await pilot.pause()
+        assert isinstance(app.screen, TrashPathConfirmationScreen)
+        await pilot.click("#trash")
         await pilot.pause()
         assert trashed == [path.resolve(strict=False)]
         assert app.path is None

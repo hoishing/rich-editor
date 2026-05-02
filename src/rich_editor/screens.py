@@ -130,6 +130,45 @@ class QuitConfirmationScreen(_ConfirmationScreen):
     """
 
 
+class TrashPathConfirmationScreen(_ConfirmationScreen):
+    """Prompt asking whether to move a file tree item to Trash."""
+
+    BINDINGS = build_screen_bindings("trash_path_confirmation")
+    BUTTONS = (
+        ("Move to Trash", "trash", "error"),
+        ("Cancel", "cancel", None),
+    )
+    CSS = """
+    TrashPathConfirmationScreen {
+        align: center middle;
+    }
+    TrashPathConfirmationScreen > #dialog {
+        width: 64;
+        height: auto;
+        padding: 1 2;
+        background: $panel;
+        border: tall $accent;
+    }
+    TrashPathConfirmationScreen Label {
+        width: 100%;
+        content-align: center middle;
+        padding-bottom: 1;
+    }
+    TrashPathConfirmationScreen #buttons {
+        height: auto;
+        align: center middle;
+    }
+    TrashPathConfirmationScreen Button {
+        margin: 0 1;
+    }
+    """
+
+    def __init__(self, name: str, is_dir: bool) -> None:
+        super().__init__()
+        item_type = "folder" if is_dir else "file"
+        self.MESSAGE = f'Move {item_type} "{name}" to Trash?'
+
+
 class RenamePathScreen(ModalScreen[str | None]):
     """Prompt for a new file tree item name."""
 

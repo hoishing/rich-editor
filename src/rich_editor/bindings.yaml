@@ -150,6 +150,10 @@ screens:
     - key: escape
       action: cancel
       description: Cancel
+  trash_path_confirmation:
+    - key: escape
+      action: cancel
+      description: Cancel
   quick_open:
     - key: escape
       action: close

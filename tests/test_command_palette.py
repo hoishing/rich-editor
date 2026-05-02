@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from inspect import isawaitable
+from pathlib import Path
+import shutil
+from typing import Any
 
 from textual.command import CommandPalette
-from textual.widgets import MarkdownViewer, Static
+from textual.widgets import DirectoryTree, MarkdownViewer, Static
 
-from .helpers import _file_app, _key_help_rows, _press
+from .helpers import _file_app, _key_help_rows, _press, mod
 from rich_editor.screens import KeysHelpScreen
 
 
@@ -25,6 +28,43 @@ def _key_help_groups(app) -> dict[str, list[tuple[str, str]]]:
         ]
         for group in app.screen.query(".binding-group")
     }
+
+
+def _find_tree_node(node: Any, path: Path) -> Any:
+    target = path.resolve(strict=False)
+    data = getattr(node, "data", None)
+    if data is not None and Path(data.path).resolve(strict=False) == target:
+        return node
+    for child in node.children:
+        try:
+            return _find_tree_node(child, path)
+        except LookupError:
+            pass
+    raise LookupError(path)
+
+
+async def _select_tree_path(pilot: Any, app: Any, path: Path) -> DirectoryTree:
+    tree = app.query_one("#file-tree", DirectoryTree)
+    await tree.reload()
+    await pilot.pause()
+    tree.focus()
+    tree.move_cursor(_find_tree_node(tree.root, path))
+    await pilot.pause()
+    return tree
+
+
+def _stub_trash(app: Any) -> list[Path]:
+    trashed: list[Path] = []
+
+    def trash_path(path: Path) -> None:
+        trashed.append(path)
+        if path.is_dir():
+            shutil.rmtree(path)
+        else:
+            path.unlink()
+
+    app._trash_path = trash_path
+    return trashed
 
 
 async def test_header_shows_refresh_button_instead_of_command_palette_icon() -> None:
@@ -70,6 +110,32 @@ async def test_command_palette_includes_toggle_markdown_preview() -> None:
         assert app.query_one("#markdown-preview", MarkdownViewer).document.source == (
             "# Palette"
         )
+
+
+async def test_command_palette_includes_selected_file_tree_item_trash_command() -> None:
+    tmp, _, app = _file_app("palette.txt", "palette", root_is_tmp=True)
+    selected = tmp / "archive"
+    selected.mkdir()
+    (selected / "note.txt").write_text("note")
+    trashed = _stub_trash(app)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _select_tree_path(pilot, app, selected)
+        commands = _system_commands(app)
+        title = 'Move "archive" to Trash'
+        assert title in commands
+
+        result = commands[title].callback()
+        if isawaitable(result):
+            await result
+        await pilot.pause()
+
+        assert isinstance(app.screen, mod.TrashPathConfirmationScreen)
+        assert trashed == []
+        await pilot.click("#trash")
+        await pilot.pause()
+        assert trashed == [selected.resolve(strict=False)]
+    assert not selected.exists()
 
 
 async def test_command_palette_items_are_sorted_alphabetically() -> None:

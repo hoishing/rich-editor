@@ -24,6 +24,7 @@ from rich_editor.screens import (  # noqa: E402
     CreateFileScreen,
     QuitConfirmationScreen,
     ReplaceScreen,
+    TrashPathConfirmationScreen,
     UnsavedChangesScreen,
 )
 
@@ -34,6 +35,7 @@ mod = SimpleNamespace(
     CreateFileScreen=CreateFileScreen,
     QuitConfirmationScreen=QuitConfirmationScreen,
     ReplaceScreen=ReplaceScreen,
+    TrashPathConfirmationScreen=TrashPathConfirmationScreen,
     UnsavedChangesScreen=UnsavedChangesScreen,
     build_bindings=build_bindings,
 )

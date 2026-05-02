@@ -111,7 +111,7 @@ File tree shortcuts:
 | `→`         | Expand folder                         |
 | `Enter`     | Rename selected file or folder        |
 | `Space`     | Open file or toggle folder            |
-| `⌘⌫` / `⌃U` | Move selected file or folder to Trash |
+| `⌘⌫` / `⌃U` | Remove selected file or folder          |
 | `Esc`       | Quit                                  |
 
 ## Settings
@@ -170,7 +170,9 @@ The project root cannot be renamed. Empty names, path separators, and duplicate 
 
 ## Moving Files To Trash
 
-When the file tree is focused, `⌘⌫` moves the selected file or folder to Trash. On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Editor binds both forms for the file tree.
+When the file tree is focused, `⌘⌫` removes the selected file or folder by moving it to Trash. The command palette also shows `Move "<name>" to Trash` for the selected file-tree item. Both paths ask for confirmation before moving the item.
+
+On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Editor binds both forms for the file tree.
 
 ## Limitations
 
