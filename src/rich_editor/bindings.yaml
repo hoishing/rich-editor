@@ -5,10 +5,8 @@ app:
       key: cmd+s,super+s
     - name: command_palette
       description: Command palette
-      key: cmd+shift+p,shift+cmd+p,super+shift+p,shift+super+p,f1
-      preferred_key: cmd+shift+p,shift+cmd+p,super+shift+p,shift+super+p
+      key: f1
       display_keys:
-        - cmd+shift+p
         - f1
     - name: toggle_file_tree
       description: Toggle file tree

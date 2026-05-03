@@ -20,7 +20,7 @@ This repository is a uv-managed Python project for `rich-editor`, a Textual TUI 
 
 Use Python 3.12-compatible code with type hints, `from __future__ import annotations`, `Path`, and small focused helpers. Use 4-space indentation. Keep constants in `UPPER_SNAKE_CASE`, classes in `PascalCase`, functions and methods in `snake_case`, and private helpers prefixed with `_`. Prefer Textual widgets and events over manual terminal control. Keep comments brief and only for non-obvious behavior.
 
-Keep key bindings in `src/rich_editor/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays user-facing keys from the binding metadata, preferring `cmd` aliases over `super`.
+Keep key bindings in `src/rich_editor/bindings.yaml`, not hardcoded in Python. The F1 hotkey popup is generated from this YAML and displays user-facing keys from the binding metadata, preferring `cmd` aliases over `super`. The command palette is F1-only; do not reintroduce `Cmd+Shift+P` as an app binding or documented alternative unless explicitly requested.
 
 When changing app-level key bindings, test both file-open and no-buffer/directory-start states. For Command-key regressions, verify both Textual names (`cmd+...` and terminal-normalized `super+...`) because Pilot can pass for synthetic keys while a real terminal path or missing app state still breaks. For alternative-key regressions, verify the real Ghostty/Textual key name in addition to the displayed alternative label; Pilot can synthesize impossible keys such as `ctrl+[` even though real Ghostty/macOS terminal input arrives as `escape`. Do not patch Command-key behavior by adding Python-side hardcoded alternatives; add aliases to `bindings.yaml` and e2e coverage instead.
 

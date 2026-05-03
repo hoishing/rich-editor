@@ -44,7 +44,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
             "Refresh",
         }
         assert labels["Save"] == "⌘S"
-        assert labels["Command palette"] == "⌘⇧P"
+        assert labels["Command palette"] == "F1"
         assert labels["Toggle file tree"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
         assert labels["Replace"] == "⌃H"
@@ -55,16 +55,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert not footer.query(".-command-palette")
 
 
-async def test_footer_uses_command_palette_alternative_for_ghostty_conflict() -> None:
-    app = _footer_app(ghostty_conflicted_hotkey_triggers={"super+shift+p"})
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        footer = app.query_one(Footer)
-        labels = _footer_labels(footer)
-        assert labels["Command palette"] == "F1"
-
-
-async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> None:
+async def test_footer_keeps_command_palette_f1_when_ghostty_has_no_cmd_shift_p_conflict() -> None:
     app = _footer_app(
         ghostty_conflicted_hotkey_triggers=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
@@ -76,7 +67,7 @@ async def test_footer_uses_command_palette_preferred_when_ghostty_unbound() -> N
         await pilot.pause()
         footer = app.query_one(Footer)
         labels = _footer_labels(footer)
-        assert labels["Command palette"] == "⌘⇧P"
+        assert labels["Command palette"] == "F1"
         assert "Toggle Markdown preview" not in labels
 
 

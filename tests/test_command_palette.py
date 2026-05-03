@@ -155,7 +155,7 @@ async def test_keys_help_includes_command_palette_binding() -> None:
         await pilot.pause()
 
         rows = _key_help_rows(app)
-        assert ("⌘⇧P / F1", "Command palette") in rows
+        assert ("F1", "Command palette") in rows
         assert ("⌘Enter", "Insert line below") in rows
         assert ("⌘⇧Enter", "Insert line above") in rows
         assert ("⌘]", "Indent line") in rows
@@ -179,18 +179,6 @@ async def test_keys_help_shows_format_document_under_app() -> None:
         groups = _key_help_groups(app)
         assert ("⌥⇧F", "Format document") in groups["App"]
         assert ("⌥⇧F", "Format document") not in groups["Editor"]
-
-
-async def test_keys_help_warns_for_conflicted_command_palette_alternative() -> None:
-    app = _palette_app(ghostty_conflicted_hotkey_triggers={"super+shift+p"})
-    async with app.run_test() as pilot:
-        await pilot.pause()
-
-        app.action_show_keys_popup()
-        await pilot.pause()
-
-        rows = _key_help_rows(app)
-        assert ("⚠️ ⌘⇧P / F1", "Command palette") in rows
 
 
 async def test_keys_help_warns_for_ghostty_conflicted_format_document() -> None:
@@ -221,12 +209,20 @@ async def test_keys_help_warns_for_ghostty_conflicted_undo_redo() -> None:
 
 
 async def test_command_palette_opens_from_declared_keys() -> None:
-    for key in ("f1", "cmd+shift+p", "super+shift+p"):
+    app = _palette_app()
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _press(pilot, "f1")
+        assert CommandPalette.is_open(app)
+
+
+async def test_command_palette_does_not_open_from_removed_cmd_shift_p_keys() -> None:
+    for key in ("cmd+shift+p", "shift+cmd+p", "super+shift+p", "shift+super+p"):
         app = _palette_app()
         async with app.run_test() as pilot:
             await pilot.pause()
             await _press(pilot, key)
-            assert CommandPalette.is_open(app), key
+            assert not CommandPalette.is_open(app), key
 
 
 async def test_ctrl_p_does_not_open_command_palette() -> None:

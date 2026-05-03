@@ -68,7 +68,7 @@ App shortcuts:
 | Shortcut     | Action                  |
 | ------------ | ----------------------- |
 | `⌘S`         | Save                    |
-| `⌘⇧P` / `F1` | Command palette         |
+| `F1`         | Command palette         |
 | `⌘B`         | Toggle file tree        |
 | `⌘P`         | Quick open              |
 | `⌃H`         | Replace                 |
@@ -182,11 +182,11 @@ On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Edit
 
 ### Ghostty hotkey conflicts
 
-- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘⇧P`, `⌘W`, `⌘Q`...etc
+- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
 - Rich Editor detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
-- `⌘⇧P` and `F1` are alternative hotkeys for the command palette.
+- `F1` is the command palette hotkey. `⌘⇧P` is intentionally not bound.
 
 ### Unbind Ghostty default keybindings
 
@@ -207,12 +207,6 @@ keybind = super+enter=unbind
 keybind = super+shift+enter=unbind
 keybind = super+z=unbind
 keybind = super+shift+z=unbind
-```
-
-The command palette can still be opened with `F1`. To use `⌘⇧P` directly, also add:
-
-```conf
-keybind = super+shift+p=unbind
 ```
 
 Then reload Ghostty config with `⌘⇧,` or restart Ghostty. To inspect Ghostty's defaults before changing them:
