@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import re
+from typing import Protocol, cast
 
 from textual.widgets import TextArea
 
 from .keybindings import build_static_bindings
+from .syntax import active_file_type_id
 
 LINE_COMMENT_MARKERS = {
     "bash": "#",
+    "dockerfile": "#",
     "go": "//",
     "java": "//",
     "javascript": "//",
+    "makefile": "#",
     "python": "#",
     "rust": "//",
     "toml": "#",
@@ -24,6 +29,24 @@ BLOCK_COMMENT_MARKERS = {
     "markdown": ("<!--", "-->"),
     "xml": ("<!--", "-->"),
 }
+FILE_TYPE_LINE_COMMENT_MARKERS = {
+    "environment": "#",
+    "dockerfile": "#",
+    "ini": ";",
+    "jsonc": "//",
+    "makefile": "#",
+}
+LOG_HIGHLIGHT_PATTERNS = (
+    (re.compile(r"\b(?:TRACE|DEBUG|INFO|WARN|WARNING|ERROR|FATAL|CRITICAL)\b"), "keyword"),
+    (re.compile(r"\b\d{4}-\d{2}-\d{2}[T ][0-9:.+-]+Z?\b"), "number"),
+    (re.compile(r"\bhttps?://[^\s]+"), "string.special"),
+    (re.compile(r"(?<!\w)(?:/[\w.\-]+)+"), "string"),
+    (re.compile(r"[{}[\]:,]"), "punctuation.delimiter"),
+)
+
+
+class _FormattingApp(Protocol):
+    def action_format_document(self) -> None: ...
 
 
 class RichedTextArea(TextArea):
@@ -147,9 +170,13 @@ class RichedTextArea(TextArea):
         self.soft_wrap = not self.soft_wrap
 
     def action_format_document(self) -> None:
-        self.app.action_format_document()
+        cast(_FormattingApp, cast(object, self.app)).action_format_document()
 
     def action_toggle_line_comment(self) -> None:
+        file_type_id = active_file_type_id(self)
+        if file_type_id in FILE_TYPE_LINE_COMMENT_MARKERS:
+            self._toggle_line_comment(FILE_TYPE_LINE_COMMENT_MARKERS[file_type_id])
+            return
         language = self.language
         if language in LINE_COMMENT_MARKERS:
             self._toggle_line_comment(LINE_COMMENT_MARKERS[language])
@@ -161,6 +188,26 @@ class RichedTextArea(TextArea):
             "Line comments are not supported for this file type.",
             severity="warning",
         )
+
+    def _build_highlight_map(self) -> None:
+        super()._build_highlight_map()
+        if active_file_type_id(self) == "log":
+            self._build_log_highlight_map()
+
+    def _build_log_highlight_map(self) -> None:
+        highlights = self._highlights  # type: ignore[attr-defined]
+        for row in range(self.document.line_count):
+            line = self.document.get_line(row)
+            for pattern, highlight_name in LOG_HIGHLIGHT_PATTERNS:
+                for match in pattern.finditer(line):
+                    start, end = match.span()
+                    highlights[row].append(
+                        (
+                            _utf8_column(line, start),
+                            _utf8_column(line, end),
+                            highlight_name,
+                        )
+                    )
 
     def _selected_row_range(self) -> tuple[int, int]:
         if self.selection.is_empty:
@@ -416,3 +463,7 @@ def _remove_prefix_column(indent_len: int, removed: int, column: int) -> int:
     if column < indent_len + removed:
         return indent_len
     return column - removed
+
+
+def _utf8_column(text: str, column: int) -> int:
+    return len(text[:column].encode())

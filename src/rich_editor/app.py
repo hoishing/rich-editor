@@ -63,10 +63,12 @@ from .screens import (
 from .settings import load_theme, save_theme
 from .syntax import (
     PLAIN_TEXT_ID,
+    active_file_type_id,
+    active_file_type_label,
     apply_language,
     language_label,
-    set_language,
-    supported_languages,
+    set_file_type,
+    supported_file_types,
 )
 
 FILE_TREE_DEFAULT_WIDTH = 30
@@ -600,7 +602,7 @@ class RichedApp(App):
         editor = self._editor_or_none()
         if editor is None or self.path is None:
             return "No file"
-        return language_label(editor.language)
+        return active_file_type_label(editor)
 
     def _update_file_type_button(self) -> None:
         button = self._file_type_button_or_none()
@@ -806,7 +808,6 @@ class RichedApp(App):
             if open_display_path is not None
             else None
         )
-        old_open_suffix = open_display_path.suffix if open_display_path else ""
 
         try:
             source.rename(destination)
@@ -830,9 +831,9 @@ class RichedApp(App):
                 )
                 self.sub_title = str(self.path)
                 editor = self._editor_or_none()
-                if editor is not None and self.path.suffix != old_open_suffix:
+                if editor is not None:
                     try:
-                        apply_language(editor, self.path.suffix)
+                        apply_language(editor, self.path)
                     except Exception as exc:
                         self.notify(
                             f"Syntax highlight off: {exc}",
@@ -876,7 +877,7 @@ class RichedApp(App):
         editor.load_text(content)
         self._saved_text = content
         try:
-            apply_language(editor, self.path.suffix)
+            apply_language(editor, self.path)
         except Exception as exc:
             self.notify(f"Syntax highlight off: {exc}", severity="warning")
         self._update_file_type_button()
@@ -1185,16 +1186,16 @@ class RichedApp(App):
         options = [Option(language_label(None), id=PLAIN_TEXT_OPTION_ID)]
         option_ids = [PLAIN_TEXT_OPTION_ID]
         self._file_type_option_languages = {PLAIN_TEXT_OPTION_ID: None}
-        for language in supported_languages(editor):
-            option_id = self._file_type_option_id(language)
-            self._file_type_option_languages[option_id] = language
+        for file_type in supported_file_types(editor):
+            option_id = self._file_type_option_id(file_type.id)
+            self._file_type_option_languages[option_id] = file_type.id
             option_ids.append(option_id)
-            options.append(Option(language_label(language), id=option_id))
+            options.append(Option(file_type.label, id=option_id))
 
         picker = FileTypePicker(*options, id="file-type-picker")
         self._file_type_picker = picker
         await self.mount(picker)
-        current_id = self._file_type_option_id(editor.language)
+        current_id = self._file_type_option_id(active_file_type_id(editor))
         picker.highlighted = (
             option_ids.index(current_id) if current_id in option_ids else 0
         )
@@ -1225,7 +1226,7 @@ class RichedApp(App):
             self.close_file_type_picker()
             return
         try:
-            set_language(editor, self._file_type_option_languages[event.option_id])
+            set_file_type(editor, self._file_type_option_languages[event.option_id])
         except Exception as exc:
             self.notify(f"Syntax highlight off: {exc}", severity="warning")
             return

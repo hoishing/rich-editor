@@ -130,7 +130,7 @@ Rich Editor detects syntax highlighting from the file extension and shows the ac
 
 Click the file type label to choose another language for the current buffer. Manual selection updates highlighting and language-aware commands such as toggle comment, but reopening or refreshing the file resets the type from the file extension.
 
-Detected extensions include Python, JavaScript, TypeScript, TSX, Bash, HTML, CSS, JSON, Markdown, YAML, TOML, XML, SQL, Java, Go, and Rust.
+Detected extensions include Python, JavaScript, TypeScript, TSX, Bash, environment files, HTML, CSS, JSON, JSONC, JSON Lines, Markdown, YAML, TOML, INI-style config files, XML, SQL, Java, Go, Rust, Dockerfile, Makefile, and logs.
 
 ## Formatting
 
