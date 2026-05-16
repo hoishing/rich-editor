@@ -1,9 +1,11 @@
 # Riched
 
-A [rich](https://github.com/Textualize/rich) library powered editor that implements VS Code keybindings in TUI
+Terminal Editor with VS Code Keybindings Powered by [Rich](https://github.com/Textualize/rich)
 
 > [!NOTE]
-> Riched is designed to work with [ghostty](https://ghostty.org) in macOS only
+> Riched is designed to work with Ghostty based terminal, eg. [ghostty](https://ghostty.org), [cmux](https://cmux.com/) on macOS only.
+> 
+> Other terminal / OS are not planned.
 
 <table>
   <tr>
