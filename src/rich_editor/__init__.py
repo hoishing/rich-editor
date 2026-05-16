@@ -1,1 +1,1 @@
-"""Rich Editor package."""
+"""Riched package."""

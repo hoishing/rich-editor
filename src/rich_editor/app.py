@@ -569,7 +569,7 @@ class RichedApp(App):
         yield RichedFooter(show_command_palette=False)
 
     def on_mount(self) -> None:
-        self.title = "Rich Editor"
+        self.title = "Riched"
         self.set_file_tree_width(FILE_TREE_DEFAULT_WIDTH)
         if self._initial_path is None:
             self.sub_title = ""

@@ -197,5 +197,5 @@ async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None
         assert ("⚠️ ⌘⇧V", "Toggle Markdown preview") in rows
         assert (
             app.screen.query_one(".binding-legend", Static).content
-            == "⚠️ Unbind this shortcut in Ghostty config to use it in Rich Editor."
+            == "⚠️ Unbind this shortcut in Ghostty config to use it in Riched."
         )

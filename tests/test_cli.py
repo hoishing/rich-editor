@@ -43,7 +43,7 @@ def _run_cli(*args: str, cwd: Path | None = None, script: str | None = None):
 async def test_version_flag_prints_current_version() -> None:
     result = _run_cli("--version")
     assert result.returncode == 0, result.stderr
-    assert result.stdout == f"rich {version('rich-editor')}\n", result.stdout
+    assert result.stdout == f"riched {version('riched')}\n", result.stdout
     assert result.stderr == "", result.stderr
 
 
@@ -51,7 +51,7 @@ async def test_version_flag_rejects_filename() -> None:
     result = _run_cli("--version", "notes.txt")
     assert result.returncode == 2, result.stdout
     assert result.stdout == "", result.stdout
-    assert "rich --version does not take arguments" in result.stderr, result.stderr
+    assert "riched --version does not take arguments" in result.stderr, result.stderr
 
 
 async def test_no_filename_opens_current_folder() -> None:

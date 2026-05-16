@@ -1,5 +1,5 @@
 [project]
-name = "rich-editor"
+name = "riched"
 version = "1.2.0"
 description = "A Rich library powered editor that implements VS Code keybindings in TUI"
 readme = "README.md"
@@ -14,10 +14,10 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/hoishing/rich-editor"
+Repository = "https://github.com/hoishing/riched"
 
 [project.scripts]
-rich = "rich_editor.cli:main"
+riched = "rich_editor.cli:main"
 
 [build-system]
 requires = ["hatchling"]

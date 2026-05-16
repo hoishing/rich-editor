@@ -1,16 +1,16 @@
 # Repository Guidelines
 
 - check if a hotkey is bounded with Ghostty built-in hotkey before adding any new key binding. Add startup detection for Ghostty-conflicted hotkeys and document any alternative hotkeys as alternatives.
-- Rich Editor only supports Ghostty on macOS. For every new hotkey or alternative, verify the real Ghostty/Textual terminal path, not only Textual Pilot's synthetic key name. Use `ghostty +list-keybinds --default` to check Ghostty interception, then inspect Textual's ANSI mapping with `uv run python` when the key uses Ctrl punctuation or other ambiguous terminal sequences. Add e2e coverage for both the requested human spelling and the real Textual key name when they differ, for example `ctrl+right_square_bracket` for real terminal Ctrl+]. Do not use alternatives that collapse to `escape` or another existing semantic key; Ctrl+[ is Escape in terminal input and must not be used as a distinct alternative.
+- Riched only supports Ghostty on macOS. For every new hotkey or alternative, verify the real Ghostty/Textual terminal path, not only Textual Pilot's synthetic key name. Use `ghostty +list-keybinds --default` to check Ghostty interception, then inspect Textual's ANSI mapping with `uv run python` when the key uses Ctrl punctuation or other ambiguous terminal sequences. Add e2e coverage for both the requested human spelling and the real Textual key name when they differ, for example `ctrl+right_square_bracket` for real terminal Ctrl+]. Do not use alternatives that collapse to `escape` or another existing semantic key; Ctrl+[ is Escape in terminal input and must not be used as a distinct alternative.
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `rich-editor`, a Textual TUI editor. Application code lives in `src/rich_editor/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/rich_editor/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
 - `uv sync`: install project dependencies from `pyproject.toml` and `uv.lock`.
-- `uv run rich path/to/file.txt`: open or create a file in the editor.
+- `uv run riched path/to/file.txt`: open or create a file in the editor.
 - `uv run python -m tests.runner`: run the Textual Pilot end-to-end suite.
 - `rm -rf dist && uv build`: clear stale artifacts, then build the source distribution and wheel in `dist/`.
 - `set -a; source .env; set +a; uv publish --token "$PYPI_API"`: publish built distributions for a release using the PyPI API key from `.env`.

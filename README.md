@@ -1,31 +1,31 @@
-# Rich Editor
+# Riched
 
 A [rich](https://github.com/Textualize/rich) library powered editor that implements VS Code keybindings in TUI
 
 > [!NOTE]
-> Rich Editor is designed to work with [ghostty](https://ghostty.org) in macOS only
+> Riched is designed to work with [ghostty](https://ghostty.org) in macOS only
 
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/python-buffer.svg" alt="Python buffer showing tests/test_file_io.py" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/riched/main/docs/python-buffer.svg" alt="Python buffer showing tests/test_file_io.py" width="400">
       <br>
       <sub>Python buffer: tests/test_file_io.py</sub>
     </td>
     <td align="center" width="50%">
-      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/markdown-preview.svg" alt="Markdown preview of README.md" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/riched/main/docs/markdown-preview.svg" alt="Markdown preview of README.md" width="400">
       <br>
       <sub>Markdown preview: README.md</sub>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%">
-      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/command-palette.svg" alt="Command palette opened with F1" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/riched/main/docs/command-palette.svg" alt="Command palette opened with F1" width="400">
       <br>
       <sub>Command palette: F1</sub>
     </td>
     <td align="center" width="50%">
-      <img src="https://raw.githubusercontent.com/hoishing/rich-editor/main/docs/search-replace.svg" alt="Search and replace popup in README.md" width="400">
+      <img src="https://raw.githubusercontent.com/hoishing/riched/main/docs/search-replace.svg" alt="Search and replace popup in README.md" width="400">
       <br>
       <sub>Search and replace: README.md</sub>
     </td>
@@ -46,16 +46,16 @@ A [rich](https://github.com/Textualize/rich) library powered editor that impleme
 ## Usage
 
 ```sh
-uv tool install rich-editor
-rich .
-rich --version
+uv tool install riched
+riched .
+riched --version
 ```
 
 ## Dev
 
 ```sh
 uv sync
-uv run rich .
+uv run riched .
 uv run python -m tests.runner
 ```
 
@@ -116,7 +116,7 @@ File tree shortcuts:
 
 ## Settings
 
-Rich Editor persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/rich-editor/settings.yaml`
+Riched persists the selected Textual theme in `settings.yaml` under the user config directory: `~/Library/Application Support/riched/settings.yaml`
 
 ## Markdown Preview
 
@@ -126,7 +126,7 @@ When Markdown preview is open, the header shows a `☰` button on the right. Cli
 
 ## Syntax And File Types
 
-Rich Editor detects syntax highlighting from the file extension and shows the active file type in the lower-right footer. Unknown extensions are treated as plain text.
+Riched detects syntax highlighting from the file extension and shows the active file type in the lower-right footer. Unknown extensions are treated as plain text.
 
 Click the file type label to choose another language for the current buffer. Manual selection updates highlighting and language-aware commands such as toggle comment, but reopening or refreshing the file resets the type from the file extension.
 
@@ -148,19 +148,19 @@ bun add --global prettier @prettier/plugin-xml
 brew install ruff taplo
 ```
 
-Files unsupported by these tools are left unchanged and Rich Editor shows a warning.
+Files unsupported by these tools are left unchanged and Riched shows a warning.
 
 ## Refresh
 
-Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, Rich Editor prompts to save, discard, or cancel before reloading.
+Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, Riched prompts to save, discard, or cancel before reloading.
 
 ## Creating Files
 
-Use `⌥N` to create a file. Rich Editor prompts for the file name and supports nested relative paths such as `notes/today.md`.
+Use `⌥N` to create a file. Riched prompts for the file name and supports nested relative paths such as `notes/today.md`.
 
 When a folder is highlighted in the file tree, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
 
-If the requested file already exists, Rich Editor opens it without overwriting its contents.
+If the requested file already exists, Riched opens it without overwriting its contents.
 
 ## Renaming Files And Folders
 
@@ -172,7 +172,7 @@ The project root cannot be renamed. Empty names, path separators, and duplicate 
 
 When the file tree is focused, `⌘⌫` removes the selected file or folder by moving it to Trash. The command palette also shows `Move "<name>" to Trash` for the selected file-tree item. Both paths ask for confirmation before moving the item.
 
-On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Editor binds both forms for the file tree.
+On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Riched binds both forms for the file tree.
 
 ## Limitations
 
@@ -183,7 +183,7 @@ On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Rich Edit
 ### Ghostty hotkey conflicts
 
 - some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
-- Rich Editor detects conflicted shortcuts at startup.
+- Riched detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
 - `F1` is the command palette hotkey. `⌘⇧P` is intentionally not bound.
@@ -197,7 +197,7 @@ Ghostty keybindings can be unbound in the Ghostty config file. On macOS, use one
 - `~/.config/ghostty/config.ghostty`
 - `~/.config/ghostty/config`
 
-Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in Rich Editor:
+Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in Riched:
 
 ```conf
 keybind = super+shift+v=unbind
@@ -217,7 +217,7 @@ ghostty +list-keybinds --default
 
 ### Disable Ghostty font ligatures
 
-Textual does not expose an app-side font ligature switch. To disable programming ligatures while using Rich Editor, add this to the same Ghostty config file:
+Textual does not expose an app-side font ligature switch. To disable programming ligatures while using Riched, add this to the same Ghostty config file:
 
 ```conf
 font-feature = -calt

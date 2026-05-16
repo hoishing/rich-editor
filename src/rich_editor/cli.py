@@ -10,7 +10,7 @@ from .keybindings import build_bindings
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        prog="rich", description="A minimal Textual TUI text editor."
+        prog="riched", description="A minimal Textual TUI text editor."
     )
     parser.add_argument(
         "--version",
@@ -26,8 +26,8 @@ def main() -> int:
 
     if args.version:
         if args.filename is not None:
-            parser.error("rich --version does not take arguments")
-        print(f"rich {version('rich-editor')}")
+            parser.error("riched --version does not take arguments")
+        print(f"riched {version('riched')}")
         return 0
 
     path = Path.cwd() if args.filename is None else Path(args.filename).expanduser()

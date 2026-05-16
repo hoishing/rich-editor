@@ -186,7 +186,7 @@ wheels = [
 ]
 
 [[package]]
-name = "rich-editor"
+name = "riched"
 version = "1.2.0"
 source = { editable = "." }
 dependencies = [

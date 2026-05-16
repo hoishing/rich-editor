@@ -8,8 +8,8 @@ from typing import Any
 import yaml
 
 SETTINGS_FILENAME = "settings.yaml"
-APP_CONFIG_DIR_NAME = "rich-editor"
-LEGACY_CONFIG_DIR_NAME = "riched"
+APP_CONFIG_DIR_NAME = "riched"
+LEGACY_CONFIG_DIR_NAME = "rich-editor"
 
 
 def _config_dir(name: str) -> Path:
