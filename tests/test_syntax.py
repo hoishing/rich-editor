@@ -42,6 +42,13 @@ async def test_extension_language_detection() -> None:
         ("app.log", "2026-05-14 INFO started\n", None, "Log"),
         ("Dockerfile", "FROM python:3.12\n", "dockerfile", "Dockerfile"),
         ("Makefile", "run:\n\tuv run rich\n", "makefile", "Makefile"),
+        (".zshrc", "alias ll='ls -la'\n", "bash", "Bash"),
+        (".bashrc", "export PATH=$PATH:/bin\n", "bash", "Bash"),
+        (".profile", "export EDITOR=vim\n", "bash", "Bash"),
+        (".gitignore", "node_modules/\n*.log\n", "bash", "Ignore"),
+        (".dockerignore", "**/*.log\n", "bash", "Ignore"),
+        (".npmrc", "registry=https://registry.npmjs.org\n", "toml", "INI"),
+        ("Pipfile", "[packages]\nrequests = '*'\n", "toml", "TOML"),
         ("notes.xyz", "plain text", None, "Plain text"),
     )
     for name, content, expected_language, expected_label in cases:
@@ -140,6 +147,9 @@ async def test_added_file_types_comment_behavior() -> None:
         ("app.jsonc", '"debug": true', '// "debug": true'),
         ("Dockerfile", "FROM python:3.12", "# FROM python:3.12"),
         ("Makefile", "run:", "# run:"),
+        (".zshrc", "alias ll='ls -la'", "# alias ll='ls -la'"),
+        (".gitignore", "node_modules/", "# node_modules/"),
+        (".npmrc", "registry=foo", "; registry=foo"),
     )
     for name, content, expected in cases:
         _, _, app = _file_app(name, content)
