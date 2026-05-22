@@ -134,6 +134,8 @@ Click the file type label to choose another language for the current buffer. Man
 
 Detected extensions include Python, JavaScript, TypeScript, TSX, Bash, environment files, HTML, CSS, JSON, JSONC, JSON Lines, Markdown, YAML, TOML, INI-style config files, XML, SQL, Java, Go, Rust, Dockerfile, Makefile, and logs.
 
+Dockerfile syntax highlighting uses the optional `tree-sitter-dockerfile` package. If that package is unavailable for your platform, Riched still opens Dockerfiles and supports Dockerfile comment toggling, but leaves Dockerfile tree-sitter highlighting disabled. Install `riched[dockerfile]` on supported platforms to enable it.
+
 ## Formatting
 
 The `⌥⇧F` shortcut formats the current buffer with external formatter CLIs:

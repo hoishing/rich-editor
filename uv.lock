@@ -187,15 +187,19 @@ wheels = [
 
 [[package]]
 name = "riched"
-version = "1.3.1"
+version = "1.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "pyyaml" },
     { name = "textual", extra = ["syntax"] },
     { name = "trash-cli" },
-    { name = "tree-sitter-dockerfile" },
     { name = "tree-sitter-make" },
     { name = "tree-sitter-typescript" },
+]
+
+[package.optional-dependencies]
+dockerfile = [
+    { name = "tree-sitter-dockerfile" },
 ]
 
 [package.dev-dependencies]
@@ -209,10 +213,11 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "textual", extras = ["syntax"], specifier = ">=8.2.4" },
     { name = "trash-cli", specifier = ">=0.24.5.26" },
-    { name = "tree-sitter-dockerfile", specifier = ">=0.2.0" },
+    { name = "tree-sitter-dockerfile", marker = "extra == 'dockerfile'", specifier = ">=0.2.0" },
     { name = "tree-sitter-make", specifier = ">=1.1.1" },
     { name = "tree-sitter-typescript", specifier = ">=0.23.2" },
 ]
+provides-extras = ["dockerfile"]
 
 [package.metadata.requires-dev]
 dev = [
