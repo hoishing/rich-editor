@@ -68,6 +68,36 @@ async def test_quit_dirty_discard_keeps_file() -> None:
     assert f.read_text() == "orig"
 
 
+async def test_editor_escape_visible_tree_does_nothing() -> None:
+    _, f, app = _file_app("editor-escape-visible.txt", "foo", root_is_tmp=True)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _press(pilot, "escape")
+        assert app.path == f, app.path
+        assert list(app.query("#editor"))
+
+
+async def test_editor_escape_hidden_tree_clean_shows_quit_confirmation() -> None:
+    _, f, app = _file_app("editor-escape-clean.txt", "foo", root_is_tmp=True)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _press(pilot, "super+b")
+        await pilot.pause()
+        await _press(pilot, "escape")
+        assert isinstance(app.screen, mod.QuitConfirmationScreen)
+
+
+async def test_editor_escape_hidden_tree_dirty_shows_unsaved_changes() -> None:
+    _, f, app = _file_app("editor-escape-dirty.txt", "orig", root_is_tmp=True)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        await _make_dirty(app, pilot)
+        await _press(pilot, "super+b")
+        await pilot.pause()
+        await _press(pilot, "escape")
+        assert isinstance(app.screen, mod.UnsavedChangesScreen)
+
+
 async def test_file_tree_escape_clean_shows_quit_confirmation_then_cancel() -> None:
     _, f, app = _file_app("tree-escape-clean.txt", "foo", root_is_tmp=True)
     async with app.run_test() as pilot:

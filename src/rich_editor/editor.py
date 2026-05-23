@@ -4,6 +4,7 @@ from collections.abc import Callable
 import re
 from typing import Protocol, cast
 
+from textual import events
 from textual.widgets import TextArea
 
 from .keybindings import build_static_bindings
@@ -53,6 +54,18 @@ class RichedTextArea(TextArea):
     """TextArea with VS Code-style line-edit shortcuts."""
 
     BINDINGS = build_static_bindings("editor")
+
+    async def _on_key(self, event: events.Key) -> None:
+        if event.key == "escape":
+            from .app import RichedApp
+
+            app = self.app
+            if isinstance(app, RichedApp) and not app._is_file_tree_visible():
+                app.action_file_tree_quit_check()
+                event.stop()
+                event.prevent_default()
+                return
+        await super()._on_key(event)  # type: ignore[misc]
 
     def _clamp_location(self, location: tuple[int, int]) -> tuple[int, int]:
         row, column = location
