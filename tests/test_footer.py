@@ -35,7 +35,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert set(labels) == {
             "Save",
             "Command palette",
-            "Toggle file tree",
+            "Toggle sidebar",
             "Quick open",
             "Replace",
             "Create file",
@@ -45,7 +45,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         }
         assert labels["Save"] == "⌘S"
         assert labels["Command palette"] == "F1"
-        assert labels["Toggle file tree"] == "⌘B"
+        assert labels["Toggle sidebar"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
         assert labels["Replace"] == "⌃H"
         assert labels["Create file"] == "⌥N"

@@ -71,7 +71,7 @@ async def test_create_file_uses_open_file_folder() -> None:
     assert not (tmp / "new.txt").exists()
 
 
-async def test_create_file_uses_highlighted_file_tree_folder() -> None:
+async def test_create_file_uses_highlighted_sidebar_folder() -> None:
     tmp, current, app = _file_app("folder/current.txt", "current", root_is_tmp=True)
     selected = tmp / "selected"
     selected.mkdir()
@@ -79,7 +79,8 @@ async def test_create_file_uses_highlighted_file_tree_folder() -> None:
     fallback = current.parent / "new.txt"
     async with app.run_test() as pilot:
         await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
+        app._show_sidebar()
+        tree = app.query_one("#sidebar", DirectoryTree)
         await tree.reload()
         await pilot.pause()
         tree.focus()
@@ -121,7 +122,7 @@ async def test_create_file_without_open_buffer_uses_project_root() -> None:
         assert target.exists()
         assert app.path == target.resolve(strict=False)
         assert _editor(app).text == ""
-        tree = app.query_one("#file-tree", DirectoryTree)
+        tree = app.query_one("#sidebar", DirectoryTree)
         assert _tree_has_path(tree.root, target)
 
 

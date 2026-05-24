@@ -147,14 +147,16 @@ async def test_markdown_preview_external_link_opens_without_navigation() -> None
         assert preview.document.source == "[Rich](https://github.com/Textualize/rich)"
 
 
-async def test_markdown_preview_escape_focuses_file_tree() -> None:
+async def test_markdown_preview_escape_focuses_sidebar() -> None:
     _, _, app = _file_app("README.md", "# Title", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
 
         await _press(pilot, "cmd+shift+v")
         preview = app.query_one("#markdown-preview", MarkdownViewer)
-        tree = app.query_one("#file-tree", DirectoryTree)
+        app._show_sidebar()
+        tree = app.query_one("#sidebar", DirectoryTree)
+        await pilot.pause()
         assert preview.document.has_focus
 
         await _press(pilot, "escape")

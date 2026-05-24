@@ -5,7 +5,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/rich_editor/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and file tree, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
+This repository is a uv-managed Python project for `riched`, a Textual TUI editor. Application code lives in `src/rich_editor/`: `cli.py` owns argument parsing, `app.py` owns the Textual app and sidebar, `editor.py` customizes text editing, `screens.py` contains modal screens, `quick_open.py` indexes quick-open candidates, `keybindings.py` loads shipped shortcut config and popup display rows, `bindings.yaml` defines shipped bindings, `settings.py` persists user settings such as theme, and `syntax.py` handles language detection/highlighting. End-to-end tests live in `tests/`. Avoid committing generated files such as `.venv/`, `__pycache__/`, `keys.log`, `dist/`, or build artifacts.
 
 ## Build, Test, and Development Commands
 
@@ -26,13 +26,13 @@ When changing app-level key bindings, test both file-open and no-buffer/director
 
 ## Testing Guidelines
 
-Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, file tree switching, quick-open search/indexing, or syntax highlighting. Use temporary files as existing tests do.
+Only add end-to-end tests in `tests/`; do not create unit tests. Tests use Textual's Pilot harness and should be named `test_<behavior>`. Keep each test focused on user-visible behavior such as file open/save, dirty prompts, sidebar switching, quick-open search/indexing, or syntax highlighting. Use temporary files as existing tests do.
 
 For hotkey e2e tests, cover the YAML-declared preferred key, terminal-normalized aliases, and any alternative keys. If the real terminal key name differs from the user-facing label, cover the real Textual name too. Before accepting an alternative, confirm it can be produced distinctly by Ghostty on macOS; Ctrl punctuation is especially risky because some combinations are control bytes with legacy meanings.
 
 ## Commit & Pull Request Guidelines
 
-Use concise imperative commit messages, for example `Add file tree` or `Refactor editor package`. Pull requests should include a short summary, manual/e2e verification steps, related issue links if any, and terminal screenshots or recordings for visible TUI changes. When merging pull requests, use rebase and merge.
+Use concise imperative commit messages, for example `Add sidebar` or `Refactor editor package`. Pull requests should include a short summary, manual/e2e verification steps, related issue links if any, and terminal screenshots or recordings for visible TUI changes. When merging pull requests, use rebase and merge.
 
 ## Agent-Specific Instructions
 

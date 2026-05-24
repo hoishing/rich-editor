@@ -131,7 +131,7 @@ class QuitConfirmationScreen(_ConfirmationScreen):
 
 
 class TrashPathConfirmationScreen(_ConfirmationScreen):
-    """Prompt asking whether to move a file tree item to Trash."""
+    """Prompt asking whether to move a sidebar item to Trash."""
 
     BINDINGS = build_screen_bindings("trash_path_confirmation")
     BUTTONS = (
@@ -170,7 +170,7 @@ class TrashPathConfirmationScreen(_ConfirmationScreen):
 
 
 class RenamePathScreen(ModalScreen[str | None]):
-    """Prompt for a new file tree item name."""
+    """Prompt for a new sidebar item name."""
 
     BINDINGS = build_screen_bindings("rename_path")
 

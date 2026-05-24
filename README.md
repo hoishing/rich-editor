@@ -38,7 +38,7 @@ Terminal Editor with VS Code Keybindings Powered by [Rich](https://github.com/Te
 
 - vscode text editing key bindings
 - macOS style key bindings work in ssh session to linux host also
-- project file tree with create, rename, quick refresh, and move-to-trash support
+- project sidebar with create, rename, quick refresh, and move-to-trash support
 - quick file open with fuzzy search
 - in-terminal Markdown preview with table of contents toggle
 - document formatting through external formatter CLIs
@@ -71,7 +71,7 @@ App shortcuts:
 | ------------ | ----------------------- |
 | `⌘S`         | Save                    |
 | `F1`         | Command palette         |
-| `⌘B`         | Toggle file tree        |
+| `⌘B`         | Toggle sidebar         |
 | `⌘P`         | Quick open              |
 | `⌃H`         | Replace                 |
 | `⌥N`         | Create file             |
@@ -105,7 +105,7 @@ Editor shortcuts:
 | `⌘⇧←`        | Select to line start |
 | `⌘⇧→`        | Select to line end   |
 
-File tree shortcuts:
+Sidebar shortcuts:
 
 | Shortcut    | Action                                |
 | ----------- | ------------------------------------- |
@@ -156,27 +156,27 @@ Files unsupported by these tools are left unchanged and Riched shows a warning.
 
 ## Refresh
 
-Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the file tree and reloads the current buffer from disk. If the buffer has unsaved edits, Riched prompts to save, discard, or cancel before reloading.
+Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloads the sidebar and reloads the current buffer from disk. If the buffer has unsaved edits, Riched prompts to save, discard, or cancel before reloading.
 
 ## Creating Files
 
 Use `⌥N` to create a file. Riched prompts for the file name and supports nested relative paths such as `notes/today.md`.
 
-When a folder is highlighted in the file tree, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
+When a folder is highlighted in the sidebar, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
 
 If the requested file already exists, Riched opens it without overwriting its contents.
 
 ## Renaming Files And Folders
 
-When the file tree is focused, `Enter` opens a rename prompt for the selected file or folder. Renaming keeps the open buffer connected to the renamed path when the current file, or a folder containing it, is renamed.
+When the sidebar is focused, `Enter` opens a rename prompt for the selected file or folder. Renaming keeps the open buffer connected to the renamed path when the current file, or a folder containing it, is renamed.
 
 The project root cannot be renamed. Empty names, path separators, and duplicate target names are rejected in the prompt.
 
 ## Moving Files To Trash
 
-When the file tree is focused, `⌘⌫` removes the selected file or folder by moving it to Trash. The command palette also shows `Move "<name>" to Trash` for the selected file-tree item. Both paths ask for confirmation before moving the item.
+When the sidebar is focused, `⌘⌫` removes the selected file or folder by moving it to Trash. The command palette also shows `Move "<name>" to Trash` for the selected sidebar item. Both paths ask for confirmation before moving the item.
 
-On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Riched binds both forms for the file tree.
+On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Riched binds both forms for the sidebar.
 
 ## Limitations
 

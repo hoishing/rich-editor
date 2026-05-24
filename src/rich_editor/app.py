@@ -71,9 +71,9 @@ from .syntax import (
     supported_file_types,
 )
 
-FILE_TREE_DEFAULT_WIDTH = 30
-FILE_TREE_MIN_WIDTH = 18
-FILE_TREE_MAX_WIDTH = 44
+SIDEBAR_DEFAULT_WIDTH = 30
+SIDEBAR_MIN_WIDTH = 18
+SIDEBAR_MAX_WIDTH = 44
 MARKDOWN_SUFFIXES = {".md", ".markdown"}
 FILE_TYPE_PICKER_WIDTH = 24
 FILE_TYPE_PICKER_MAX_HEIGHT = 16
@@ -261,7 +261,7 @@ class RichedDirectoryTree(DirectoryTree):
             for binding in DirectoryTree.BINDINGS
             if _binding_key(binding) not in {"enter", "space"}
         ),
-        *build_static_bindings("file_tree"),
+        *build_static_bindings("sidebar"),
         Binding("left", "collapse_cursor", "Collapse folder", show=False),
         Binding("right", "expand_cursor", "Expand folder", show=False),
         Binding("enter", "rename_cursor", "Rename", show=False),
@@ -297,7 +297,7 @@ class RichedDirectoryTree(DirectoryTree):
     def action_quit_check(self) -> None:
         app = self.app
         if isinstance(app, RichedApp):
-            app.action_file_tree_quit_check()
+            app.action_sidebar_quit_check()
 
     def action_rename_cursor(self) -> None:
         if not self.has_focus:
@@ -307,7 +307,7 @@ class RichedDirectoryTree(DirectoryTree):
             return
         app = self.app
         if isinstance(app, RichedApp):
-            app.rename_file_tree_path(Path(node.data.path))
+            app.rename_sidebar_path(Path(node.data.path))
 
     def action_trash_selected(self) -> None:
         if not self.has_focus:
@@ -317,23 +317,23 @@ class RichedDirectoryTree(DirectoryTree):
             return
         app = self.app
         if isinstance(app, RichedApp):
-            app.trash_file_tree_path(Path(node.data.path))
+            app.trash_sidebar_path(Path(node.data.path))
 
 
-class FileTreeResizeHandle(Static):
-    """Mouse handle for resizing the file tree."""
+class SidebarResizeHandle(Static):
+    """Mouse handle for resizing the sidebar."""
 
     can_focus = False
 
     def __init__(self) -> None:
-        super().__init__("", id="file-tree-resize-handle")
+        super().__init__("", id="sidebar-resize-handle")
         self._drag_start_x: int | None = None
         self._drag_start_width: int | None = None
 
     def on_mouse_down(self, event: events.MouseDown) -> None:
         if event.button != 1 or event.screen_x is None:
             return
-        tree = self.app.query_one("#file-tree", DirectoryTree)
+        tree = self.app.query_one("#sidebar", DirectoryTree)
         self._drag_start_x = int(event.screen_x)
         self._drag_start_width = tree.region.width
         self.capture_mouse()
@@ -349,7 +349,7 @@ class FileTreeResizeHandle(Static):
         delta = int(event.screen_x) - self._drag_start_x
         app = self.app
         if isinstance(app, RichedApp):
-            app.set_file_tree_width(self._drag_start_width + delta)
+            app.set_sidebar_width(self._drag_start_width + delta)
         event.stop()
         event.prevent_default()
 
@@ -369,7 +369,7 @@ class RichedMarkdownViewer(MarkdownViewer):
 
     BINDINGS = [
         *MarkdownViewer.BINDINGS,
-        Binding("escape", "focus_file_tree", "Focus file tree", show=False),
+        Binding("escape", "focus_sidebar", "Focus sidebar", show=False),
     ]
 
     async def go(self, location: str | Any) -> None:
@@ -380,14 +380,14 @@ class RichedMarkdownViewer(MarkdownViewer):
             return
         await super().go(location)
 
-    def action_focus_file_tree(self) -> None:
+    def action_focus_sidebar(self) -> None:
         app = self.app
         if isinstance(app, RichedApp):
-            app.action_focus_file_tree()
+            app.action_focus_sidebar()
 
 
 class RichedApp(App):
-    """TUI text editor with a project file tree."""
+    """TUI text editor with a sidebar."""
 
     COMMAND_PALETTE_BINDING = "f1"
 
@@ -398,20 +398,20 @@ class RichedApp(App):
     #workspace {
         height: 1fr;
     }
-    #file-tree {
+    #sidebar {
         width: 30;
         min-width: 18;
         max-width: 44;
     }
-    #file-tree-resize-handle {
+    #sidebar-resize-handle {
         width: 1;
         min-width: 1;
         max-width: 1;
         height: 1fr;
         background: $panel;
     }
-    #file-tree-resize-handle:hover,
-    #file-tree-resize-handle.dragging {
+    #sidebar-resize-handle:hover,
+    #sidebar-resize-handle.dragging {
         background: $accent;
     }
     #editor {
@@ -477,6 +477,7 @@ class RichedApp(App):
         self,
         path: Path,
         root: Path | None = None,
+        show_sidebar: bool = False,
     ) -> None:
         super().__init__()
         saved_theme = load_theme()
@@ -487,6 +488,7 @@ class RichedApp(App):
         self._initial_path = None if initial_path.is_dir() else initial_path
         self.path: Path | None = self._initial_path
         self.root = root or Path.cwd()
+        self._show_sidebar_on_startup = show_sidebar
         self._saved_text = ""
         self._quick_open_entries: list[QuickOpenEntry] = []
         self._quick_open_complete = False
@@ -538,13 +540,13 @@ class RichedApp(App):
                 ),
             ]
         )
-        selected = self._selected_file_tree_path()
+        selected = self._selected_sidebar_path()
         if selected is not None and not self._is_project_root_path(selected):
             commands.append(
                 SystemCommand(
                     f'Move "{selected.name}" to Trash',
-                    "Move the selected file tree item to Trash",
-                    lambda path=selected: self.trash_file_tree_path(path),
+                    "Move the selected sidebar item to Trash",
+                    lambda path=selected: self.trash_sidebar_path(path),
                 )
             )
         yield from sorted(commands, key=lambda command: command.title.casefold())
@@ -563,19 +565,25 @@ class RichedApp(App):
     def compose(self) -> ComposeResult:
         yield RichedHeader()
         with Horizontal(id="workspace"):
-            yield RichedDirectoryTree(str(self.root), id="file-tree")
-            yield FileTreeResizeHandle()
+            yield RichedDirectoryTree(str(self.root), id="sidebar")
+            yield SidebarResizeHandle()
             yield Container(id="editor-slot")
         yield RichedFooter(show_command_palette=False)
 
     def on_mount(self) -> None:
         self.title = "Riched"
-        self.set_file_tree_width(FILE_TREE_DEFAULT_WIDTH)
-        if self._initial_path is None:
+        self.set_sidebar_width(SIDEBAR_DEFAULT_WIDTH)
+        self._hide_sidebar()
+        if self._show_sidebar_on_startup:
+            self._show_sidebar()
+            if self._initial_path is None:
+                self.sub_title = ""
+                self._sidebar().focus()
+                return
+        if self._initial_path is not None:
+            self._open_path(self._initial_path)
+        else:
             self.sub_title = ""
-            self.query_one("#file-tree", DirectoryTree).focus()
-            return
-        self._open_path(self._initial_path)
 
     def _editor_or_none(self) -> TextArea | None:
         editors = list(self.query("#editor"))
@@ -592,11 +600,11 @@ class RichedApp(App):
         previews = list(self.query("#markdown-preview"))
         return previews[0] if previews else None
 
-    def _file_tree(self) -> DirectoryTree:
-        return self.query_one("#file-tree", DirectoryTree)
+    def _sidebar(self) -> DirectoryTree:
+        return self.query_one("#sidebar", DirectoryTree)
 
-    def _file_tree_resize_handle(self) -> Static:
-        return self.query_one("#file-tree-resize-handle", Static)
+    def _sidebar_resize_handle(self) -> Static:
+        return self.query_one("#sidebar-resize-handle", Static)
 
     def _current_file_type_label(self) -> str:
         editor = self._editor_or_none()
@@ -612,23 +620,23 @@ class RichedApp(App):
     def _set_markdown_toc_button_visible(self, visible: bool) -> None:
         self._markdown_toc_button().styles.display = "block" if visible else "none"
 
-    def _is_file_tree_visible(self) -> bool:
-        return self._file_tree().styles.display != "none"
+    def _is_sidebar_visible(self) -> bool:
+        return self._sidebar().styles.display != "none"
 
-    def _set_file_tree_visible(self, visible: bool) -> None:
+    def _set_sidebar_visible(self, visible: bool) -> None:
         display = "block" if visible else "none"
-        self._file_tree().styles.display = display
-        self._file_tree_resize_handle().styles.display = display
+        self._sidebar().styles.display = display
+        self._sidebar_resize_handle().styles.display = display
 
-    def _show_file_tree(self) -> None:
-        self._set_file_tree_visible(True)
+    def _show_sidebar(self) -> None:
+        self._set_sidebar_visible(True)
 
-    def _hide_file_tree(self) -> None:
-        self._set_file_tree_visible(False)
+    def _hide_sidebar(self) -> None:
+        self._set_sidebar_visible(False)
 
-    def set_file_tree_width(self, width: int) -> None:
-        clamped_width = max(FILE_TREE_MIN_WIDTH, min(FILE_TREE_MAX_WIDTH, width))
-        tree = self._file_tree()
+    def set_sidebar_width(self, width: int) -> None:
+        clamped_width = max(SIDEBAR_MIN_WIDTH, min(SIDEBAR_MAX_WIDTH, width))
+        tree = self._sidebar()
         tree.styles.width = clamped_width
         tree.refresh(layout=True)
 
@@ -658,12 +666,12 @@ class RichedApp(App):
         self.path = None
         self.sub_title = ""
         self._saved_text = ""
-        self._show_file_tree()
-        self._file_tree().focus()
+        self._show_sidebar()
+        self._sidebar().focus()
         self._update_file_type_button()
 
-    def _selected_file_tree_path(self) -> Path | None:
-        tree = self._file_tree()
+    def _selected_sidebar_path(self) -> Path | None:
+        tree = self._sidebar()
         node = tree.cursor_node
         if node is None or node.data is None:
             return None
@@ -711,7 +719,7 @@ class RichedApp(App):
                 message = f"trash-put exited with status {result.returncode}"
             raise RuntimeError(message)
 
-    def trash_file_tree_path(self, path: Path) -> None:
+    def trash_sidebar_path(self, path: Path) -> None:
         selected = path.expanduser().resolve(strict=False)
         if self._is_project_root_path(selected):
             self.notify("Cannot move the project root to Trash.", severity="warning")
@@ -730,17 +738,17 @@ class RichedApp(App):
 
         def handle(choice: str) -> None:
             if choice == "trash":
-                self._apply_trash_file_tree_path(source)
+                self._apply_trash_sidebar_path(source)
                 return
-            self._file_tree().focus()
+            self._sidebar().focus()
 
         self.push_screen(
             TrashPathConfirmationScreen(source.name, source.is_dir()),
             handle,
         )
 
-    def _apply_trash_file_tree_path(self, path: Path) -> None:
-        tree = self._file_tree()
+    def _apply_trash_sidebar_path(self, path: Path) -> None:
+        tree = self._sidebar()
         selected = path.expanduser().resolve(strict=False)
         try:
             self._trash_path(selected)
@@ -757,28 +765,28 @@ class RichedApp(App):
         self._invalidate_quick_open_index()
         self.notify(f"Moved {selected.name} to Trash")
 
-    def rename_file_tree_path(self, path: Path) -> None:
+    def rename_sidebar_path(self, path: Path) -> None:
         selected = path.expanduser().resolve(strict=False)
         root = self.root.expanduser().resolve(strict=False)
         if selected == root:
             self.notify("Cannot rename the project root.", severity="warning")
-            self._file_tree().focus()
+            self._sidebar().focus()
             return
 
         source = path.expanduser()
 
         def validate(new_name: str) -> str | None:
-            return self._validate_file_tree_rename(source, new_name)
+            return self._validate_sidebar_rename(source, new_name)
 
         def handle(new_name: str | None) -> None:
             if new_name is None:
-                self._file_tree().focus()
+                self._sidebar().focus()
                 return
-            self._apply_file_tree_rename(source, new_name)
+            self._apply_sidebar_rename(source, new_name)
 
         self.push_screen(RenamePathScreen(source.name, validate), handle)
 
-    def _validate_file_tree_rename(self, source: Path, new_name: str) -> str | None:
+    def _validate_sidebar_rename(self, source: Path, new_name: str) -> str | None:
         if not new_name.strip():
             return "Name cannot be empty."
         if new_name in {".", ".."}:
@@ -798,7 +806,7 @@ class RichedApp(App):
             pass
         return "An item with that name already exists."
 
-    def _apply_file_tree_rename(self, source: Path, new_name: str) -> None:
+    def _apply_sidebar_rename(self, source: Path, new_name: str) -> None:
         old_path = source.expanduser().resolve(strict=False)
         destination = source.with_name(new_name).expanduser()
         new_path = destination.resolve(strict=False)
@@ -813,7 +821,7 @@ class RichedApp(App):
             source.rename(destination)
         except Exception as exc:
             self.notify(f"Rename failed: {exc}", severity="error")
-            self._file_tree().focus()
+            self._sidebar().focus()
             return
 
         if old_open_path is not None:
@@ -823,7 +831,7 @@ class RichedApp(App):
                 relative_open_path = None
             if relative_open_path is not None:
                 assert open_display_path is not None
-                self.path = self._open_path_after_file_tree_rename(
+                self.path = self._open_path_after_sidebar_rename(
                     open_display_path,
                     old_path,
                     new_name,
@@ -841,12 +849,12 @@ class RichedApp(App):
                         )
                     self._update_file_type_button()
 
-        self._file_tree().reload()
+        self._sidebar().reload()
         self._invalidate_quick_open_index()
-        self._file_tree().focus()
+        self._sidebar().focus()
         self.notify(f"Renamed {old_path.name} to {new_path.name}")
 
-    def _open_path_after_file_tree_rename(
+    def _open_path_after_sidebar_rename(
         self,
         open_path: Path,
         old_path: Path,
@@ -906,11 +914,11 @@ class RichedApp(App):
         self.push_screen(UnsavedChangesScreen(), handle)
 
     def _refresh_workspace_clean(self) -> None:
-        self._file_tree().reload()
+        self._sidebar().reload()
         self._invalidate_quick_open_index()
         if self.path is None:
-            self._show_file_tree()
-            self._file_tree().focus()
+            self._show_sidebar()
+            self._sidebar().focus()
             self.notify("Refreshed")
             return
 
@@ -942,7 +950,7 @@ class RichedApp(App):
         self._after_saved_or_discarded(lambda: self._open_path(selected))
 
     def _create_file_base(self) -> Path:
-        tree = self._file_tree()
+        tree = self._sidebar()
         node = tree.cursor_node
         root = self.root.expanduser().resolve(strict=False)
         if (
@@ -999,7 +1007,7 @@ class RichedApp(App):
             except Exception as exc:
                 self.notify(f"Create file failed: {exc}", severity="error")
                 return
-        self._file_tree().reload()
+        self._sidebar().reload()
         self._invalidate_quick_open_index()
         self._open_path(target)
         if existed:
@@ -1539,7 +1547,7 @@ class RichedApp(App):
     def action_quit_check(self) -> None:
         self._after_saved_or_discarded(self.exit)
 
-    def action_file_tree_quit_check(self) -> None:
+    def action_sidebar_quit_check(self) -> None:
         if self._is_dirty():
             self.action_quit_check()
             return
@@ -1555,19 +1563,19 @@ class RichedApp(App):
             return
         self._after_saved_or_discarded(self._close_buffer)
 
-    def action_toggle_file_tree(self) -> None:
+    def action_toggle_sidebar(self) -> None:
         editor = self._editor_or_none()
-        if self._is_file_tree_visible():
-            self._hide_file_tree()
+        if self._is_sidebar_visible():
+            self._hide_sidebar()
             if editor is not None:
                 editor.focus()
             return
-        self._show_file_tree()
+        self._show_sidebar()
 
-    def action_toggle_file_tree_focus(self) -> None:
-        tree = self._file_tree()
-        if not self._is_file_tree_visible():
-            self._show_file_tree()
+    def action_toggle_sidebar_focus(self) -> None:
+        tree = self._sidebar()
+        if not self._is_sidebar_visible():
+            self._show_sidebar()
             tree.focus()
             return
         editor = self._editor_or_none()
@@ -1577,7 +1585,7 @@ class RichedApp(App):
             return
         tree.focus()
 
-    def action_focus_file_tree(self) -> None:
-        if not self._is_file_tree_visible():
-            self._show_file_tree()
-        self._file_tree().focus()
+    def action_focus_sidebar(self) -> None:
+        if not self._is_sidebar_visible():
+            self._show_sidebar()
+        self._sidebar().focus()

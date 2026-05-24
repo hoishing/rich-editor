@@ -118,7 +118,8 @@ async def test_format_document_refocuses_editor_so_cmd_z_undoes() -> None:
         async with app.run_test() as pilot:
             await pilot.pause()
             editor = _editor(app)
-            _ = app.query_one("#file-tree", DirectoryTree).focus()
+            app._show_sidebar()
+            app._sidebar().focus()
             await pilot.pause()
 
             await _press(pilot, "alt+shift+f")

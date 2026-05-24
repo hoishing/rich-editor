@@ -31,7 +31,7 @@ async def test_open_directory_starts_with_no_buffer() -> None:
     f.write_text("content")
     async with app.run_test() as pilot:
         await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
+        tree = app.query_one("#sidebar", DirectoryTree)
         assert Path(tree.path) == tmp, tree.path
         assert app.path is None, app.path
         assert not list(app.query("#editor"))

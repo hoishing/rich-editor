@@ -8,8 +8,8 @@ app:
       key: f1
       display_keys:
         - f1
-    - name: toggle_file_tree
-      description: Toggle file tree
+    - name: toggle_sidebar
+      description: Toggle sidebar
       key: cmd+b,super+b
     - name: quick_open
       description: Quick open
@@ -129,7 +129,7 @@ editor:
     description: Select to line end
     show: false
 
-file_tree:
+sidebar:
   - key: cmd+backspace,super+backspace,ctrl+u
     action: trash_selected
     description: Move to Trash

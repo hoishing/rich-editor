@@ -25,7 +25,8 @@ def _find_tree_node(node: Any, path: Path) -> Any:
 
 
 async def _select_tree_path(pilot: Any, app: Any, path: Path) -> DirectoryTree:
-    tree = app.query_one("#file-tree", DirectoryTree)
+    app._show_sidebar()
+    tree = app.query_one("#sidebar", DirectoryTree)
     await tree.reload()
     await pilot.pause()
     tree.focus()
@@ -48,15 +49,16 @@ def _stub_trash(app: Any) -> list[Path]:
     return trashed
 
 
-async def test_file_tree_is_rooted_at_project_dir() -> None:
+async def test_sidebar_is_rooted_at_project_dir() -> None:
     tmp, _, app = _file_app("tree.txt", "tree", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
+        app._show_sidebar()
+        tree = app.query_one("#sidebar", DirectoryTree)
         assert Path(tree.path) == tmp, tree.path
 
 
-async def test_file_tree_switch_opens_selected_file() -> None:
+async def test_sidebar_switch_opens_selected_file() -> None:
     tmp, first, app = _file_app("first.txt", "first", root_is_tmp=True)
     second = tmp / "second.txt"
     second.write_text("second")
@@ -68,7 +70,7 @@ async def test_file_tree_switch_opens_selected_file() -> None:
         assert app.path == second, app.path
 
 
-async def test_file_tree_dirty_switch_prompts_then_discard_opens_file() -> None:
+async def test_sidebar_dirty_switch_prompts_then_discard_opens_file() -> None:
     tmp, first, app = _file_app("first.txt", "first", root_is_tmp=True)
     second = tmp / "second.txt"
     second.write_text("second")
@@ -86,7 +88,7 @@ async def test_file_tree_dirty_switch_prompts_then_discard_opens_file() -> None:
     assert first.read_text() == "first"
 
 
-async def test_file_tree_enter_renames_selected_file_without_opening_it() -> None:
+async def test_sidebar_enter_renames_selected_file_without_opening_it() -> None:
     tmp, first, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     renamed = tmp / "renamed.txt"
@@ -110,7 +112,7 @@ async def test_file_tree_enter_renames_selected_file_without_opening_it() -> Non
         assert _editor(app).text == "first"
 
 
-async def test_file_tree_rename_cancel_leaves_item_unchanged_and_refocuses_tree() -> None:
+async def test_sidebar_rename_cancel_leaves_item_unchanged_and_refocuses_tree() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -130,7 +132,7 @@ async def test_file_tree_rename_cancel_leaves_item_unchanged_and_refocuses_tree(
         assert tree.has_focus
 
 
-async def test_file_tree_enter_renames_selected_folder() -> None:
+async def test_sidebar_enter_renames_selected_folder() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "folder"
     renamed = tmp / "renamed"
@@ -197,7 +199,7 @@ async def test_renaming_open_file_parent_updates_open_path() -> None:
     assert (renamed / "open.txt").read_text() == "open"
 
 
-async def test_file_tree_space_still_opens_files_and_toggles_folders() -> None:
+async def test_sidebar_space_still_opens_files_and_toggles_folders() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -223,7 +225,7 @@ async def test_file_tree_space_still_opens_files_and_toggles_folders() -> None:
         assert node.is_expanded is not was_expanded
 
 
-async def test_file_tree_rename_duplicate_or_invalid_name_stays_open() -> None:
+async def test_sidebar_rename_duplicate_or_invalid_name_stays_open() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -256,7 +258,7 @@ async def test_file_tree_rename_duplicate_or_invalid_name_stays_open() -> None:
         assert selected.read_text() == "second"
 
 
-async def test_file_tree_cmd_backspace_moves_selected_file_to_trash() -> None:
+async def test_sidebar_cmd_backspace_moves_selected_file_to_trash() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -274,7 +276,7 @@ async def test_file_tree_cmd_backspace_moves_selected_file_to_trash() -> None:
     assert not selected.exists()
 
 
-async def test_file_tree_ctrl_u_moves_selected_file_to_trash() -> None:
+async def test_sidebar_ctrl_u_moves_selected_file_to_trash() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -292,7 +294,7 @@ async def test_file_tree_ctrl_u_moves_selected_file_to_trash() -> None:
     assert not selected.exists()
 
 
-async def test_file_tree_trash_confirmation_cancel_keeps_selected_file() -> None:
+async def test_sidebar_trash_confirmation_cancel_keeps_selected_file() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -309,7 +311,7 @@ async def test_file_tree_trash_confirmation_cancel_keeps_selected_file() -> None
     assert selected.read_text() == "second"
 
 
-async def test_file_tree_trash_dirty_open_file_warns_without_confirmation() -> None:
+async def test_sidebar_trash_dirty_open_file_warns_without_confirmation() -> None:
     tmp, child, app = _file_app("folder/child.txt", "child", root_is_tmp=True)
     selected = tmp / "folder"
     trashed = _stub_trash(app)
@@ -334,7 +336,7 @@ async def test_file_tree_trash_dirty_open_file_warns_without_confirmation() -> N
     assert child.exists()
 
 
-async def test_editor_cmd_backspace_does_not_trash_file_tree_selection() -> None:
+async def test_editor_cmd_backspace_does_not_trash_sidebar_selection() -> None:
     tmp, _, app = _file_app("first.txt", "hello world", root_is_tmp=True)
     selected = tmp / "second.txt"
     selected.write_text("second")
@@ -352,7 +354,7 @@ async def test_editor_cmd_backspace_does_not_trash_file_tree_selection() -> None
     assert selected.exists()
 
 
-async def test_trashing_open_file_closes_buffer_and_focuses_file_tree() -> None:
+async def test_trashing_open_file_closes_buffer_and_focuses_sidebar() -> None:
     tmp, path, app = _file_app("first.txt", "first", root_is_tmp=True)
     trashed = _stub_trash(app)
     async with app.run_test() as pilot:

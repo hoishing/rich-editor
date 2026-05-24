@@ -24,12 +24,13 @@ async def test_refresh_button_exists_in_header() -> None:
         assert refresh_button.content == "↻"
 
 
-async def test_refresh_button_reloads_file_tree() -> None:
+async def test_refresh_button_reloads_sidebar() -> None:
     tmp, _, app = _file_app("first.txt", "first", root_is_tmp=True)
     created = tmp / "created.txt"
     async with app.run_test() as pilot:
         await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
+        app._show_sidebar()
+        tree = app.query_one("#sidebar", DirectoryTree)
         await tree.reload()
         await pilot.pause()
         assert not _tree_has_path(tree.root, created)
@@ -104,25 +105,28 @@ async def test_refresh_dirty_cancel_leaves_buffer_unchanged() -> None:
         assert _editor(app).text == "changed"
 
 
-async def test_refresh_deleted_open_file_closes_buffer_and_focuses_file_tree() -> None:
+async def test_refresh_deleted_open_file_closes_buffer_and_focuses_sidebar() -> None:
     _, path, app = _file_app("missing-refresh.txt", "orig", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
         path.unlink()
         await _press(pilot, "cmd+r")
 
-        tree = app.query_one("#file-tree", DirectoryTree)
+        tree = app.query_one("#sidebar", DirectoryTree)
         assert app.path is None
         assert not list(app.query("#editor"))
         assert tree.has_focus
 
 
-async def test_refresh_no_buffer_reloads_file_tree_and_keeps_tree_focus() -> None:
+async def test_refresh_no_buffer_reloads_sidebar_and_keeps_sidebar_focus() -> None:
     tmp, app = _directory_app()
     created = tmp / "created.txt"
     async with app.run_test() as pilot:
         await pilot.pause()
-        tree = app.query_one("#file-tree", DirectoryTree)
+        app._show_sidebar()
+        tree = app.query_one("#sidebar", DirectoryTree)
+        tree.focus()
+        await pilot.pause()
         assert tree.has_focus
 
         created.write_text("created")

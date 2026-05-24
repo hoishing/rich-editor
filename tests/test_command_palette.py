@@ -44,7 +44,8 @@ def _find_tree_node(node: Any, path: Path) -> Any:
 
 
 async def _select_tree_path(pilot: Any, app: Any, path: Path) -> DirectoryTree:
-    tree = app.query_one("#file-tree", DirectoryTree)
+    app._show_sidebar()
+    tree = app.query_one("#sidebar", DirectoryTree)
     await tree.reload()
     await pilot.pause()
     tree.focus()
@@ -112,7 +113,7 @@ async def test_command_palette_includes_toggle_markdown_preview() -> None:
         )
 
 
-async def test_command_palette_includes_selected_file_tree_item_trash_command() -> None:
+async def test_command_palette_includes_selected_sidebar_item_trash_command() -> None:
     tmp, _, app = _file_app("palette.txt", "palette", root_is_tmp=True)
     selected = tmp / "archive"
     selected.mkdir()

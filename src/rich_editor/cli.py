@@ -18,6 +18,11 @@ def main() -> int:
         help="Show the version and exit",
     )
     parser.add_argument(
+        "--sidebar",
+        action="store_true",
+        help="Open sidebar at startup",
+    )
+    parser.add_argument(
         "filename",
         nargs="?",
         help="File or folder to open; defaults to the current folder",
@@ -36,5 +41,5 @@ def main() -> int:
     class ConfiguredRichEditorApp(RichedApp):
         BINDINGS = build_bindings()
 
-    ConfiguredRichEditorApp(path, root).run()
+    ConfiguredRichEditorApp(path, root, show_sidebar=args.sidebar).run()
     return 0

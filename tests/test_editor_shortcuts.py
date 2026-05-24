@@ -347,7 +347,7 @@ async def test_alt_z_toggles_word_wrap() -> None:
         assert editor.soft_wrap is False
 
 
-async def test_file_tree_toggle_aliases_with_and_without_open_buffer() -> None:
+async def test_sidebar_toggle_aliases_with_and_without_open_buffer() -> None:
     for key, with_buffer in (
         ("cmd+b", True),
         ("super+b", True),
@@ -360,12 +360,12 @@ async def test_file_tree_toggle_aliases_with_and_without_open_buffer() -> None:
             _, app = _directory_app()
         async with app.run_test() as pilot:
             await pilot.pause()
-            tree = app.query_one("#file-tree", DirectoryTree)
-            assert tree.styles.display == "block"
-            await _press(pilot, key)
-            assert tree.styles.display == "none", key
+            tree = app.query_one("#sidebar", DirectoryTree)
+            assert tree.styles.display == "none"
             await _press(pilot, key)
             assert tree.styles.display == "block", key
+            await _press(pilot, key)
+            assert tree.styles.display == "none", key
 
 
 async def test_undo_multiline_insert_that_removes_scrollbar() -> None:
