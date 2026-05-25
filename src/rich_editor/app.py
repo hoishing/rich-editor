@@ -478,6 +478,7 @@ class RichedApp(App):
         path: Path,
         root: Path | None = None,
         show_sidebar: bool = False,
+        edit_mode: bool = False,
     ) -> None:
         super().__init__()
         saved_theme = load_theme()
@@ -489,6 +490,7 @@ class RichedApp(App):
         self.path: Path | None = self._initial_path
         self.root = root or Path.cwd()
         self._show_sidebar_on_startup = show_sidebar
+        self._open_markdown_in_edit_mode = edit_mode
         self._saved_text = ""
         self._quick_open_entries: list[QuickOpenEntry] = []
         self._quick_open_complete = False
@@ -650,6 +652,21 @@ class RichedApp(App):
 
     def _is_markdown_path(self) -> bool:
         return self.path is not None and self.path.suffix.lower() in MARKDOWN_SUFFIXES
+
+    async def _enter_markdown_preview(self) -> None:
+        editor = self._editor_or_none()
+        if editor is None:
+            return
+        preview = RichedMarkdownViewer(
+            editor.text,
+            id="markdown-preview",
+            show_table_of_contents=False,
+            open_links=False,
+        )
+        editor.styles.display = "none"
+        await self.query_one("#editor-slot", Container).mount(preview)
+        self._set_markdown_toc_button_visible(True)
+        preview.document.focus()
 
     def _exit_markdown_preview(self) -> None:
         preview = self._markdown_preview_or_none()
@@ -889,7 +906,14 @@ class RichedApp(App):
         except Exception as exc:
             self.notify(f"Syntax highlight off: {exc}", severity="warning")
         self._update_file_type_button()
-        editor.focus()
+        if (
+            not self._open_markdown_in_edit_mode
+            and self._is_markdown_path()
+            and content.strip()
+        ):
+            self.call_later(self._enter_markdown_preview)
+        else:
+            editor.focus()
 
     def _is_dirty(self) -> bool:
         editor = self._editor_or_none()
@@ -1462,16 +1486,7 @@ class RichedApp(App):
             editor.focus()
             return
 
-        preview = RichedMarkdownViewer(
-            editor.text,
-            id="markdown-preview",
-            show_table_of_contents=False,
-            open_links=False,
-        )
-        editor.styles.display = "none"
-        await self.query_one("#editor-slot", Container).mount(preview)
-        self._set_markdown_toc_button_visible(True)
-        preview.document.focus()
+        await self._enter_markdown_preview()
 
     def action_save(self) -> None:
         if self.path is None:

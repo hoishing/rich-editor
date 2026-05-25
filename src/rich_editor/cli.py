@@ -23,6 +23,11 @@ def main() -> int:
         help="Open sidebar at startup",
     )
     parser.add_argument(
+        "--edit",
+        action="store_true",
+        help="Open markdown files in edit mode instead of preview",
+    )
+    parser.add_argument(
         "filename",
         nargs="?",
         help="File or folder to open; defaults to the current folder",
@@ -41,5 +46,5 @@ def main() -> int:
     class ConfiguredRichEditorApp(RichedApp):
         BINDINGS = build_bindings()
 
-    ConfiguredRichEditorApp(path, root, show_sidebar=args.sidebar).run()
+    ConfiguredRichEditorApp(path, root, show_sidebar=args.sidebar, edit_mode=args.edit).run()
     return 0
