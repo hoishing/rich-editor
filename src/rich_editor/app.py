@@ -319,6 +319,36 @@ class RichedDirectoryTree(DirectoryTree):
         if isinstance(app, RichedApp):
             app.trash_sidebar_path(Path(node.data.path))
 
+    def reveal_path(self, target: Path) -> None:
+        self.run_worker(self._reveal_path(target), exclusive=True, group="reveal")
+
+    async def _reveal_path(self, target: Path) -> None:
+        root_entry = self.root.data
+        if root_entry is None:
+            return
+        try:
+            rel = target.resolve().relative_to(Path(root_entry.path).resolve())
+        except (ValueError, OSError):
+            return
+        node = self.root
+        if not node.is_expanded:
+            node.expand()
+        await self._add_to_load_queue(node)
+        parts = rel.parts
+        for index, part in enumerate(parts):
+            match = next(
+                (c for c in node.children if c.data is not None and c.data.path.name == part),
+                None,
+            )
+            if match is None:
+                return
+            node = match
+            if index < len(parts) - 1:
+                if not node.is_expanded:
+                    node.expand()
+                await self._add_to_load_queue(node)
+        self.move_cursor(node, animate=False)
+
 
 class SidebarResizeHandle(Static):
     """Mouse handle for resizing the sidebar."""
@@ -369,7 +399,7 @@ class RichedMarkdownViewer(MarkdownViewer):
 
     BINDINGS = [
         *MarkdownViewer.BINDINGS,
-        Binding("escape", "focus_sidebar", "Focus sidebar", show=False),
+        Binding("escape", "sidebar_escape", "Sidebar / quit", show=False),
     ]
 
     async def go(self, location: str | Any) -> None:
@@ -380,10 +410,10 @@ class RichedMarkdownViewer(MarkdownViewer):
             return
         await super().go(location)
 
-    def action_focus_sidebar(self) -> None:
+    def action_sidebar_escape(self) -> None:
         app = self.app
         if isinstance(app, RichedApp):
-            app.action_focus_sidebar()
+            app.action_sidebar_escape()
 
 
 class RichedApp(App):
@@ -1600,7 +1630,11 @@ class RichedApp(App):
             return
         tree.focus()
 
-    def action_focus_sidebar(self) -> None:
+    def action_sidebar_escape(self) -> None:
         if not self._is_sidebar_visible():
-            self._show_sidebar()
-        self._sidebar().focus()
+            self.action_sidebar_quit_check()
+            return
+        tree = self._sidebar()
+        tree.focus()
+        if isinstance(tree, RichedDirectoryTree) and self.path is not None:
+            tree.reveal_path(self.path)

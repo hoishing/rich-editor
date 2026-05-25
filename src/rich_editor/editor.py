@@ -60,8 +60,8 @@ class RichedTextArea(TextArea):
             from .app import RichedApp
 
             app = self.app
-            if isinstance(app, RichedApp) and not app._is_sidebar_visible():
-                app.action_sidebar_quit_check()
+            if isinstance(app, RichedApp):
+                app.action_sidebar_escape()
                 event.stop()
                 event.prevent_default()
                 return
