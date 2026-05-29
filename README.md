@@ -74,7 +74,7 @@ App shortcuts:
 | `⌘B`         | Toggle sidebar         |
 | `⌘P`         | Quick open              |
 | `⌃H`         | Replace                 |
-| `⌥N`         | Create file             |
+| `⌃N`         | Create file             |
 | `⌘⇧V`        | Toggle Markdown preview |
 | `⌥⇧F`        | Format document         |
 | `⌘R`         | Refresh                 |
@@ -160,7 +160,7 @@ Use the `↻` title-bar button or `⌘R` to refresh the workspace. Refresh reloa
 
 ## Creating Files
 
-Use `⌥N` to create a file. Riched prompts for the file name and supports nested relative paths such as `notes/today.md`.
+Use `⌃N` to create a file. Riched prompts for the file name and supports nested relative paths such as `notes/today.md`.
 
 When a folder is highlighted in the sidebar, the new file is created inside that folder. Otherwise, the new file is created beside the currently open file. If no file is open, the new file is created in the project root.
 

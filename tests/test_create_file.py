@@ -46,11 +46,11 @@ async def _submit_create_file(app, pilot, name: str) -> None:
     await _press(pilot, "enter")
 
 
-async def test_alt_n_opens_create_file_prompt() -> None:
+async def test_ctrl_n_opens_create_file_prompt() -> None:
     _, _, app = _file_app("current.txt", "current", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        await _press(pilot, "alt+n")
+        await _press(pilot, "ctrl+n")
         assert isinstance(app.screen, mod.CreateFileScreen)
         assert app.screen.query_one("#filename", Input).has_focus
 
@@ -87,7 +87,7 @@ async def test_create_file_uses_highlighted_sidebar_folder() -> None:
         tree.move_cursor(_find_tree_node(tree.root, selected))
         await pilot.pause()
 
-        await _press(pilot, "alt+n")
+        await _press(pilot, "ctrl+n")
         await _submit_create_file(app, pilot, "new.txt")
 
         assert target.exists()
@@ -230,7 +230,7 @@ async def test_create_file_rejects_path_outside_base() -> None:
         assert _editor(app).text == "current"
 
 
-async def test_create_file_footer_and_key_help_show_alt_n() -> None:
+async def test_create_file_footer_and_key_help_show_ctrl_n() -> None:
     _, _, app = _file_app(
         "current.txt",
         "current",
@@ -241,12 +241,12 @@ async def test_create_file_footer_and_key_help_show_alt_n() -> None:
         await pilot.pause()
         footer = app.query_one(Footer)
         labels = _footer_labels(footer)
-        assert labels["Create file"] == "⌥N"
+        assert labels["Create file"] == "⌃N"
 
         app.action_show_keys_popup()
         await pilot.pause()
         rows = _key_help_rows(app)
-        assert ("⌥N", "Create file") in rows
+        assert ("⌃N", "Create file") in rows
 
 
 async def test_command_palette_includes_create_file() -> None:
@@ -262,10 +262,10 @@ async def test_command_palette_includes_create_file() -> None:
         assert isinstance(app.screen, mod.CreateFileScreen)
 
 
-async def test_command_palette_opens_from_alt_n() -> None:
+async def test_command_palette_opens_from_ctrl_n() -> None:
     _, _, app = _file_app("current.txt", "current", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
-        await _press(pilot, "alt+n")
+        await _press(pilot, "ctrl+n")
         assert not CommandPalette.is_open(app)
         assert isinstance(app.screen, mod.CreateFileScreen)

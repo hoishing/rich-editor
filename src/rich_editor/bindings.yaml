@@ -19,8 +19,8 @@ app:
       key: ctrl+h
     - name: create_file
       description: Create file
-      key: alt+n
-      preferred_key: alt+n
+      key: ctrl+n
+      preferred_key: ctrl+n
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
       key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v

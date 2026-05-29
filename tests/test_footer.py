@@ -48,7 +48,7 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert labels["Toggle sidebar"] == "⌘B"
         assert labels["Quick open"] == "⌘P"
         assert labels["Replace"] == "⌃H"
-        assert labels["Create file"] == "⌥N"
+        assert labels["Create file"] == "⌃N"
         assert labels["Toggle Markdown preview"] == "⌘⇧V"
         assert labels["Format document"] == "⌥⇧F"
         assert labels["Refresh"] == "⌘R"
