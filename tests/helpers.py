@@ -53,13 +53,17 @@ def _make_app(
     root: Path | None = None,
     markdown_preview_hotkey_conflicted: bool | None = None,
     ghostty_conflicted_hotkey_triggers: set[str] | None = None,
+    in_ghostty: bool | None = None,
+    **init_kwargs,
 ):
     cls = type(
         "ConfiguredRichEditorApp",
         (mod.RichedApp,),
         {"BINDINGS": mod.build_bindings()},
     )
-    app = cls(path, root or path.parent)
+    app = cls(path, root or path.parent, **init_kwargs)
+    if in_ghostty is not None:
+        app._in_ghostty = in_ghostty
     if ghostty_conflicted_hotkey_triggers is not None:
         app._ghostty_conflicted_hotkey_triggers = ghostty_conflicted_hotkey_triggers
     if markdown_preview_hotkey_conflicted is not None:

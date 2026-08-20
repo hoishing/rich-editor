@@ -97,7 +97,9 @@ async def test_command_palette_includes_show_key_bindings() -> None:
 
 
 async def test_command_palette_includes_toggle_markdown_preview() -> None:
-    _, _, app = _file_app("README.md", "# Palette", root_is_tmp=True)
+    _, _, app = _file_app(
+        "README.md", "# Palette", root_is_tmp=True, edit_mode=True
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         commands = _system_commands(app)

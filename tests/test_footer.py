@@ -27,7 +27,7 @@ def _conflicts_from_config(*lines: str) -> set[str]:
 
 
 async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview() -> None:
-    app = _footer_app(ghostty_conflicted_hotkey_triggers=set())
+    app = _footer_app(ghostty_conflicted_hotkey_triggers=set(), in_ghostty=False)
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -53,6 +53,15 @@ async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_previe
         assert labels["Format document"] == "⌥⇧F"
         assert labels["Refresh"] == "⌘R"
         assert not footer.query(".-command-palette")
+
+
+async def test_footer_shows_ctrl_b_for_sidebar_in_ghostty() -> None:
+    app = _footer_app(ghostty_conflicted_hotkey_triggers=set(), in_ghostty=True)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        footer = app.query_one(Footer)
+        labels = _footer_labels(footer)
+        assert labels["Toggle sidebar"] == "⌃B"
 
 
 async def test_footer_keeps_command_palette_f1_when_ghostty_has_no_cmd_shift_p_conflict() -> None:
@@ -89,6 +98,7 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
         footer = app.query_one(Footer)
         labels = _footer_labels(footer)
         assert labels["Command palette"] == "F1"
+        assert labels["Toggle sidebar"] == "⌘B"
         assert "Toggle Markdown preview" not in labels
 
 

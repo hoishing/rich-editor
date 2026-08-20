@@ -13,7 +13,7 @@ from rich_editor import cli
 captured = {}
 
 class StubApp:
-    def __init__(self, path, root, show_sidebar=False):
+    def __init__(self, path, root, show_sidebar=True, edit_mode=False):
         captured["path"] = path
         captured["root"] = root
 

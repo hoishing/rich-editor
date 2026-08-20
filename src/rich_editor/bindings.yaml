@@ -10,7 +10,12 @@ app:
         - f1
     - name: toggle_sidebar
       description: Toggle sidebar
-      key: cmd+b,super+b
+      key: cmd+b,super+b,ctrl+b
+      display_keys:
+        - cmd+b
+        - ctrl+b
+      ghostty_display_keys:
+        - ctrl+b
     - name: quick_open
       description: Quick open
       key: cmd+p,super+p

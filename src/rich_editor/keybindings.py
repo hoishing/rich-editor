@@ -137,12 +137,13 @@ def app_binding_display_key(
     key: str,
     *,
     conflicted_triggers: set[str] | None = None,
+    in_ghostty: bool = False,
 ) -> str:
     conflicted_triggers = conflicted_triggers or set()
     item = _app_command_or_none(action)
     if item is None:
         return display_key(key)
-    for display_key_candidate in _item_display_keys(item):
+    for display_key_candidate in _item_display_keys(item, in_ghostty=in_ghostty):
         display = display_key(display_key_candidate)
         if not _display_key_conflicted(display, conflicted_triggers):
             return display
@@ -166,7 +167,13 @@ def _help_display_key(item: dict[str, Any]) -> str:
     )
 
 
-def _item_display_keys(item: dict[str, Any]) -> list[str]:
+def _item_display_keys(
+    item: dict[str, Any], *, in_ghostty: bool = False
+) -> list[str]:
+    if in_ghostty:
+        ghostty_display_keys = item.get("ghostty_display_keys")
+        if isinstance(ghostty_display_keys, list):
+            return [str(key) for key in ghostty_display_keys]
     display_keys = item.get("display_keys")
     if isinstance(display_keys, list):
         return [str(key) for key in display_keys]
@@ -228,6 +235,11 @@ def _display_base_key(key: str) -> str:
     return base_key.title()
 
 
+def running_in_ghostty(env: Mapping[str, str] | None = None) -> bool:
+    env = environ if env is None else env
+    return env.get("TERM_PROGRAM") == "ghostty" or env.get("TERM") == "xterm-ghostty"
+
+
 def ghostty_conflicted_hotkey_triggers(
     env: Mapping[str, str] | None = None,
     run_command: Callable[..., CompletedProcess[str]] = run,
@@ -235,7 +247,7 @@ def ghostty_conflicted_hotkey_triggers(
 ) -> set[str]:
     triggers = _ghostty_conflict_triggers()
     env = environ if env is None else env
-    if env.get("TERM_PROGRAM") != "ghostty" and env.get("TERM") != "xterm-ghostty":
+    if not running_in_ghostty(env):
         return set(triggers)
 
     ghostty = _ghostty_binary(find_binary)

@@ -84,6 +84,8 @@ async def test_editor_escape_hidden_sidebar_clean_shows_quit_confirmation() -> N
     _, f, app = _file_app("editor-escape-clean.txt", "foo", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
+        app._hide_sidebar()
+        await pilot.pause()
         await _press(pilot, "escape")
         assert isinstance(app.screen, mod.QuitConfirmationScreen)
 
@@ -92,6 +94,7 @@ async def test_editor_escape_hidden_sidebar_dirty_shows_unsaved_changes() -> Non
     _, f, app = _file_app("editor-escape-dirty.txt", "orig", root_is_tmp=True)
     async with app.run_test() as pilot:
         await pilot.pause()
+        app._hide_sidebar()
         await _make_dirty(app, pilot)
         await _press(pilot, "escape")
         assert isinstance(app.screen, mod.UnsavedChangesScreen)

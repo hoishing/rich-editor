@@ -6,7 +6,9 @@ from .helpers import _editor, _file_app, _key_help_rows, _press
 
 
 async def test_markdown_preview_toggles_from_primary_key() -> None:
-    _, _, app = _file_app("README.md", "# Title\n\nBody", root_is_tmp=True)
+    _, _, app = _file_app(
+        "README.md", "# Title\n\nBody", root_is_tmp=True, edit_mode=True
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         editor = _editor(app)
@@ -26,7 +28,7 @@ async def test_markdown_preview_toggles_from_primary_key() -> None:
 
 async def test_markdown_preview_opens_from_alias_keys() -> None:
     for key, name in (("cmd+shift+v", "README.md"), ("super+shift+v", "README.markdown")):
-        _, _, app = _file_app(name, "# Title", root_is_tmp=True)
+        _, _, app = _file_app(name, "# Title", root_is_tmp=True, edit_mode=True)
         async with app.run_test() as pilot:
             await pilot.pause()
             await _press(pilot, key)
@@ -35,7 +37,7 @@ async def test_markdown_preview_opens_from_alias_keys() -> None:
 
 
 async def test_markdown_preview_uses_unsaved_editor_content() -> None:
-    _, f, app = _file_app("README.md", "# Saved", root_is_tmp=True)
+    _, f, app = _file_app("README.md", "# Saved", root_is_tmp=True, edit_mode=True)
     async with app.run_test() as pilot:
         await pilot.pause()
         editor = _editor(app)
@@ -53,6 +55,7 @@ async def test_markdown_preview_toc_button_only_shows_for_preview() -> None:
         "README.md",
         "# Title\n\n## Section",
         root_is_tmp=True,
+        edit_mode=True,
     )
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -102,7 +105,9 @@ async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
 
 
 async def test_switching_files_exits_markdown_preview() -> None:
-    tmp, first, app = _file_app("first.md", "# First", root_is_tmp=True)
+    tmp, first, app = _file_app(
+        "first.md", "# First", root_is_tmp=True, edit_mode=True
+    )
     second = tmp / "second.md"
     second.write_text("# Second")
     async with app.run_test() as pilot:
@@ -126,6 +131,7 @@ async def test_markdown_preview_external_link_opens_without_navigation() -> None
         "README.md",
         "[Rich](https://github.com/Textualize/rich)",
         root_is_tmp=True,
+        edit_mode=True,
     )
     opened_urls: list[str] = []
     app.open_url = lambda url, **kwargs: opened_urls.append(url)
@@ -148,7 +154,7 @@ async def test_markdown_preview_external_link_opens_without_navigation() -> None
 
 
 async def test_markdown_preview_escape_focuses_sidebar() -> None:
-    _, _, app = _file_app("README.md", "# Title", root_is_tmp=True)
+    _, _, app = _file_app("README.md", "# Title", root_is_tmp=True, edit_mode=True)
     async with app.run_test() as pilot:
         await pilot.pause()
 

@@ -41,6 +41,7 @@ from .keybindings import (
     build_static_bindings,
     display_key_with_symbols,
     ghostty_conflicted_hotkey_triggers,
+    running_in_ghostty,
 )
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
@@ -507,7 +508,7 @@ class RichedApp(App):
         self,
         path: Path,
         root: Path | None = None,
-        show_sidebar: bool = False,
+        show_sidebar: bool = True,
         edit_mode: bool = False,
     ) -> None:
         super().__init__()
@@ -533,6 +534,7 @@ class RichedApp(App):
         self._ghostty_conflicted_hotkey_triggers = (
             ghostty_conflicted_hotkey_triggers()
         )
+        self._in_ghostty = running_in_ghostty()
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -591,6 +593,7 @@ class RichedApp(App):
             binding.action,
             binding.key,
             conflicted_triggers=self._ghostty_conflicted_hotkey_triggers,
+            in_ghostty=self._in_ghostty,
         )
         return display_key_with_symbols(key)
 

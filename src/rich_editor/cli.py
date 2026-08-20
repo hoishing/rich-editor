@@ -20,7 +20,8 @@ def main() -> int:
     parser.add_argument(
         "--sidebar",
         action="store_true",
-        help="Open sidebar at startup",
+        default=True,
+        help="Open sidebar at startup (default)",
     )
     parser.add_argument(
         "--edit",
@@ -46,5 +47,7 @@ def main() -> int:
     class ConfiguredRichEditorApp(RichedApp):
         BINDINGS = build_bindings()
 
-    ConfiguredRichEditorApp(path, root, show_sidebar=args.sidebar, edit_mode=args.edit).run()
+    ConfiguredRichEditorApp(
+        path, root, show_sidebar=args.sidebar, edit_mode=args.edit
+    ).run()
     return 0

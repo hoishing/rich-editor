@@ -71,7 +71,7 @@ App shortcuts:
 | ------------ | ----------------------- |
 | `⌘S`         | Save                    |
 | `F1`         | Command palette         |
-| `⌘B`         | Toggle sidebar         |
+| `⌘B` / `⌃B`  | Toggle sidebar         |
 | `⌘P`         | Quick open              |
 | `⌃H`         | Replace                 |
 | `⌃N`         | Create file             |
