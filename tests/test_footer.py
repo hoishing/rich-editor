@@ -4,12 +4,12 @@ from subprocess import CompletedProcess
 
 from textual.widgets import Footer
 
-from .helpers import _file_app, _footer_labels, _temporary_env
+from .helpers import _directory_app, _file_app, _footer_labels, _temporary_env
 from rich_editor.keybindings import ghostty_conflicted_hotkey_triggers
 
 
-def _footer_app(**kwargs):
-    return _file_app("footer.txt", "footer", **kwargs)[2]
+def _footer_app(name: str = "footer.txt", content: str = "footer", **kwargs):
+    return _file_app(name, content, **kwargs)[2]
 
 
 def _conflicts_from_config(*lines: str) -> set[str]:
@@ -27,7 +27,12 @@ def _conflicts_from_config(*lines: str) -> set[str]:
 
 
 async def test_footer_uses_macos_modifier_symbols_with_preferred_markdown_preview() -> None:
-    app = _footer_app(ghostty_conflicted_hotkey_triggers=set(), in_ghostty=False)
+    app = _footer_app(
+        "footer.md",
+        "# footer",
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -81,7 +86,11 @@ async def test_footer_keeps_command_palette_f1_when_ghostty_has_no_cmd_shift_p_c
 
 
 async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
-    app = _footer_app(markdown_preview_hotkey_conflicted=True)
+    app = _footer_app(
+        "footer.md",
+        "# footer",
+        markdown_preview_hotkey_conflicted=True,
+    )
     async with app.run_test() as pilot:
         await pilot.pause()
         footer = app.query_one(Footer)
@@ -91,7 +100,7 @@ async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
 
 async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
     with _temporary_env(TERM="xterm-256color", TERM_PROGRAM=None):
-        app = _footer_app()
+        app = _footer_app("footer.md", "# footer")
 
     async with app.run_test() as pilot:
         await pilot.pause()
@@ -104,6 +113,8 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
 
 async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> None:
     app = _footer_app(
+        "footer.md",
+        "# footer",
         ghostty_conflicted_hotkey_triggers=_conflicts_from_config(
             "keybind = super+shift+,=reload_config",
             "keybind = super+shift+v=unbind",
@@ -115,3 +126,114 @@ async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> 
         footer = app.query_one(Footer)
         labels = _footer_labels(footer)
         assert labels["Toggle Markdown preview"] == "⌘⇧V"
+
+
+async def test_footer_shows_markdown_preview_for_open_markdown_file() -> None:
+    app = _footer_app(
+        "notes.md",
+        "# notes",
+        edit_mode=True,
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert labels["Toggle Markdown preview"] == "⌘⇧V"
+
+
+async def test_footer_shows_markdown_preview_for_markdown_extension() -> None:
+    app = _footer_app(
+        "notes.markdown",
+        "# notes",
+        edit_mode=True,
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert labels["Toggle Markdown preview"] == "⌘⇧V"
+
+
+async def test_footer_shows_markdown_preview_while_preview_is_open() -> None:
+    _, _, app = _file_app(
+        "notes.md",
+        "# notes",
+        root_is_tmp=True,
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        assert list(app.query("#markdown-preview"))
+        labels = _footer_labels(app.query_one(Footer))
+        assert labels["Toggle Markdown preview"] == "⌘⇧V"
+
+
+async def test_footer_hides_markdown_preview_for_non_markdown_file() -> None:
+    app = _footer_app(ghostty_conflicted_hotkey_triggers=set(), in_ghostty=False)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert "Toggle Markdown preview" not in labels
+
+
+async def test_footer_hides_markdown_preview_with_no_buffer() -> None:
+    _, app = _directory_app(
+        ghostty_conflicted_hotkey_triggers=set(), in_ghostty=False
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert "Toggle Markdown preview" not in labels
+
+
+async def test_footer_hides_markdown_preview_after_switching_from_markdown() -> None:
+    tmp, _, app = _file_app(
+        "notes.md",
+        "# notes",
+        root_is_tmp=True,
+        edit_mode=True,
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
+    other = tmp / "notes.txt"
+    other.write_text("plain")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app._switch_path(other)
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert "Toggle Markdown preview" not in labels
+
+
+async def test_footer_shows_markdown_preview_after_opening_markdown_from_directory() -> None:
+    tmp, app = _directory_app(
+        ghostty_conflicted_hotkey_triggers=set(), in_ghostty=False
+    )
+    path = tmp / "notes.md"
+    path.write_text("# notes")
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app._switch_path(path)
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert labels["Toggle Markdown preview"] == "⌘⇧V"
+
+
+async def test_footer_hides_markdown_preview_after_closing_markdown_buffer() -> None:
+    _, _, app = _file_app(
+        "notes.md",
+        "# notes",
+        root_is_tmp=True,
+        edit_mode=True,
+        ghostty_conflicted_hotkey_triggers=set(),
+        in_ghostty=False,
+    )
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app.action_close_buffer()
+        await pilot.pause()
+        labels = _footer_labels(app.query_one(Footer))
+        assert "Toggle Markdown preview" not in labels

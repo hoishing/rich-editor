@@ -588,6 +588,11 @@ class RichedApp(App):
     def get_key_display(self, binding: Binding) -> str:
         if binding.key_display:
             return binding.key_display
+        if (
+            binding.action == "toggle_markdown_preview"
+            and not self._is_markdown_path()
+        ):
+            return ""
 
         key = app_binding_display_key(
             binding.action,
@@ -651,6 +656,8 @@ class RichedApp(App):
         button = self._file_type_button_or_none()
         if button is not None:
             button.update(self._current_file_type_label())
+        for footer in self.query(RichedFooter):
+            footer.refresh(recompose=True)
 
     def _set_markdown_toc_button_visible(self, visible: bool) -> None:
         self._markdown_toc_button().styles.display = "block" if visible else "none"
