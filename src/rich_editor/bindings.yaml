@@ -28,11 +28,11 @@ app:
       preferred_key: ctrl+n
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
-      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
+      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,cmd+V,shift+cmd+V,super+V,shift+super+V,cmd+shift+V,super+shift+V
       preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
     - name: format_document
       description: Format document
-      key: alt+shift+f,shift+alt+f
+      key: alt+shift+f,shift+alt+f,alt+shift+F,shift+alt+F,alt+F
       preferred_key: alt+shift+f,shift+alt+f
     - name: refresh_workspace
       description: Refresh
@@ -88,7 +88,7 @@ editor:
     action: undo
     description: Undo
     show: false
-  - key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z
+  - key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z,cmd+Z,shift+cmd+Z,super+Z,shift+super+Z,cmd+shift+Z,super+shift+Z
     preferred_key: cmd+shift+z,shift+cmd+z,super+shift+z,shift+super+z
     action: redo
     description: Redo
@@ -117,7 +117,7 @@ editor:
     action: select_line
     description: Select line
     show: false
-  - key: cmd+shift+k,shift+cmd+k,super+shift+k,shift+super+k
+  - key: cmd+shift+k,shift+cmd+k,super+shift+k,shift+super+k,cmd+K,shift+cmd+K,super+K,shift+super+K,cmd+shift+K,super+shift+K
     action: delete_line
     description: Delete line
   - key: ctrl+shift+k,shift+ctrl+k
