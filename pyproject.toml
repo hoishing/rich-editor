@@ -1,6 +1,6 @@
 [project]
 name = "riched"
-version = "1.6.3"
+version = "1.6.4"
 description = "Terminal Editor with VS Code Keybindings"
 readme = "README.md"
 requires-python = ">=3.12"

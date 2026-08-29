@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from textual.widgets import DirectoryTree, Markdown, MarkdownViewer, Static
 
-from .helpers import _editor, _file_app, _key_help_rows, _press
+from .helpers import _directory_app, _editor, _file_app, _key_help_rows, _press
 
 
 async def test_markdown_preview_toggles_from_primary_key() -> None:
@@ -27,8 +27,19 @@ async def test_markdown_preview_toggles_from_primary_key() -> None:
 
 
 async def test_markdown_preview_opens_from_alias_keys() -> None:
-    for key, name in (("cmd+shift+v", "README.md"), ("super+shift+v", "README.markdown")):
-        _, _, app = _file_app(name, "# Title", root_is_tmp=True, edit_mode=True)
+    keys = (
+        "cmd+shift+v",
+        "shift+cmd+v",
+        "super+shift+v",
+        "shift+super+v",
+        "cmd+V",
+        "super+V",
+        "ctrl+shift+v",
+        "shift+ctrl+v",
+        "ctrl+V",
+    )
+    for key in keys:
+        _, _, app = _file_app("README.md", "# Title", root_is_tmp=True, edit_mode=True)
         async with app.run_test() as pilot:
             await pilot.pause()
             await _press(pilot, key)
@@ -83,6 +94,20 @@ async def test_markdown_preview_toc_button_only_shows_for_preview() -> None:
 
         assert not list(app.query("#markdown-preview"))
         assert toc_button.styles.display == "none"
+
+
+async def test_markdown_preview_hotkeys_warn_without_open_buffer() -> None:
+    for key in ("cmd+shift+v", "super+shift+v", "ctrl+shift+v"):
+        _, app = _directory_app()
+        notifications: list[tuple[str, str | None]] = []
+        app.notify = lambda message, **kwargs: notifications.append(
+            (str(message), kwargs.get("severity"))
+        )
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            await _press(pilot, key)
+            assert not list(app.query("#markdown-preview")), key
+            assert notifications == [("No file open", "warning")], key
 
 
 async def test_cmd_shift_v_warns_for_non_markdown_file() -> None:
@@ -205,5 +230,5 @@ async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None
         assert ("⚠️ ⌘⇧V / ⌃⇧V", "Toggle Markdown preview") in rows
         assert (
             app.screen.query_one(".binding-legend", Static).content
-            == "⚠️ Unbind this shortcut in Ghostty config to use it in Riched."
+            == "⚠️ Unbind this shortcut in your terminal config to use it in Riched."
         )
