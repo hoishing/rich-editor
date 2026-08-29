@@ -53,7 +53,7 @@ APP_COMMAND_BY_NAME: dict[str, dict[str, Any]] = {
     item["name"]: item for item in APP_COMMANDS
 }
 COMMANDS: list[tuple[str, str, str]] = [
-    (item["name"], item["description"], item["key"]) for item in APP_COMMANDS
+    (item["name"], item["description"], item["key"]) for item in APP_COMMANDS if item.get("key")
 ]
 DEFAULT_BINDINGS: dict[str, str] = {name: key for name, _, key in COMMANDS}
 
@@ -184,7 +184,13 @@ def _item_display_keys(
     display_keys = item.get("display_keys")
     if isinstance(display_keys, list):
         return [str(key) for key in display_keys]
-    return [str(item.get("preferred_key") or item["key"])]
+    preferred = item.get("preferred_key")
+    if preferred:
+        return [str(preferred)]
+    key = item.get("key")
+    if key:
+        return [str(key)]
+    return []
 
 
 def _display_key_conflicted(key: str, conflicted_triggers: set[str]) -> bool:
@@ -291,11 +297,7 @@ def ghostty_markdown_preview_hotkey_conflicted(
     run_command: Callable[..., CompletedProcess[str]] = run,
     find_binary: Callable[[str], str | None] = which,
 ) -> bool:
-    return "super+shift+v" in ghostty_conflicted_hotkey_triggers(
-        env,
-        run_command,
-        find_binary,
-    )
+    return False
 
 
 def _ghostty_binary(find_binary: Callable[[str], str | None]) -> str | None:
@@ -361,12 +363,7 @@ def _ghostty_config_conflicted_triggers(
 
 
 def _ghostty_config_has_conflict(config: str) -> bool:
-    return bool(
-        _ghostty_config_conflicted_triggers(
-            config,
-            {"super+shift+v"},
-        )
-    )
+    return False
 
 
 WEZTERM_CONFIG_TIMEOUT_SECONDS = 1.0

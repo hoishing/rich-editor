@@ -75,7 +75,7 @@ App shortcuts:
 | `⌘P`         | Quick open              |
 | `⌃H`         | Replace                 |
 | `⌃N`         | Create file             |
-| `⌘⇧V`        | Toggle Markdown preview |
+| `⌃⇧V`        | Toggle Markdown preview |
 | `⌥⇧F`        | Format document         |
 | `⌘R`         | Refresh                 |
 
@@ -122,7 +122,7 @@ Riched persists the selected Textual theme in `settings.yaml` under the user con
 
 ## Markdown Preview
 
-Use `⌘⇧V` to toggle an in-terminal rendered preview for Markdown files. The preview uses the current editor buffer, so unsaved edits are shown without writing them to disk.
+Use `⌃⇧V`, the `Preview` button in the footer, or `F1` → `Toggle Markdown preview` to toggle an in-terminal rendered preview for Markdown files. The preview uses the current editor buffer, so unsaved edits are shown without writing them to disk.
 
 When Markdown preview is open, the header shows a `☰` button on the right. Click it to show or hide the Markdown table of contents. The button is hidden while editing the text buffer.
 
@@ -186,7 +186,7 @@ On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Riched bi
 
 ### Ghostty hotkey conflicts
 
-- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
+- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
 - Riched detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
@@ -204,7 +204,6 @@ Ghostty keybindings can be unbound in the Ghostty config file. On macOS, use one
 Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to use in Riched:
 
 ```conf
-keybind = super+shift+v=unbind
 keybind = super+[=unbind
 keybind = super+]=unbind
 keybind = super+enter=unbind

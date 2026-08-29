@@ -33,12 +33,9 @@ app:
       preferred_key: ctrl+n
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
-      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,cmd+V,super+V,ctrl+shift+v,shift+ctrl+v,ctrl+V,alt+shift+v,shift+alt+v,alt+shift+V,shift+alt+V,alt+v
-      preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
+      key: ctrl+shift+v,shift+ctrl+v,ctrl+V,alt+shift+v,shift+alt+v,alt+shift+V,shift+alt+V,alt+v
+      preferred_key: ctrl+shift+v
       display_keys:
-        - cmd+shift+v
-        - ctrl+shift+v
-      ghostty_display_keys:
         - ctrl+shift+v
       wezterm_display_keys:
         - ctrl+shift+v
