@@ -53,9 +53,7 @@ def _make_app(
     root: Path | None = None,
     markdown_preview_hotkey_conflicted: bool | None = None,
     ghostty_conflicted_hotkey_triggers: set[str] | None = None,
-    wezterm_conflicted_hotkey_triggers: set[str] | None = None,
     in_ghostty: bool | None = None,
-    in_wezterm: bool | None = None,
     **init_kwargs,
 ):
     cls = type(
@@ -64,37 +62,11 @@ def _make_app(
         {"BINDINGS": mod.build_bindings()},
     )
     app = cls(path, root or path.parent, **init_kwargs)
-    # Preserve original auto-detection when not overridden, but ensure
-    # WezTerm outside detection does not pollute tests that explicitly
-    # configure Ghostty. Tests that pass ghostty params expect generic
-    # display ("⌘⇧V") even when the runner is inside WezTerm.
     if in_ghostty is not None:
         app._in_ghostty = in_ghostty
-    if in_wezterm is not None:
-        app._in_wezterm = in_wezterm
     if ghostty_conflicted_hotkey_triggers is not None:
         app._ghostty_conflicted_hotkey_triggers = ghostty_conflicted_hotkey_triggers
-        # When Ghostty is explicitly configured, assume WezTerm not relevant
-        # unless explicitly provided, to keep footer tests stable in WezTerm env.
-        if wezterm_conflicted_hotkey_triggers is None and in_wezterm is None:
-            app._in_wezterm = False
-            app._wezterm_conflicted_hotkey_triggers = set()
-    if wezterm_conflicted_hotkey_triggers is not None:
-        app._wezterm_conflicted_hotkey_triggers = wezterm_conflicted_hotkey_triggers
-        if ghostty_conflicted_hotkey_triggers is None and in_ghostty is None:
-            # When WezTerm explicitly configured but Ghostty not, keep Ghostty empty
-            pass
-    # Recompute combined if either was overridden
-    if (
-        ghostty_conflicted_hotkey_triggers is not None
-        or wezterm_conflicted_hotkey_triggers is not None
-        or in_ghostty is not None
-        or in_wezterm is not None
-    ):
-        app._conflicted_hotkey_triggers = (
-            app._ghostty_conflicted_hotkey_triggers
-            | app._wezterm_conflicted_hotkey_triggers
-        )
+        app._conflicted_hotkey_triggers = ghostty_conflicted_hotkey_triggers
     if markdown_preview_hotkey_conflicted is not None:
         conflicts = set(app._ghostty_conflicted_hotkey_triggers)
         if markdown_preview_hotkey_conflicted:
@@ -102,9 +74,7 @@ def _make_app(
         else:
             conflicts.discard("super+shift+v")
         app._ghostty_conflicted_hotkey_triggers = conflicts
-        app._conflicted_hotkey_triggers = conflicts | getattr(
-            app, "_wezterm_conflicted_hotkey_triggers", set()
-        )
+        app._conflicted_hotkey_triggers = conflicts
     return app
 
 

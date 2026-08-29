@@ -37,9 +37,6 @@ app:
       preferred_key: ctrl+shift+v
       display_keys:
         - ctrl+shift+v
-      wezterm_display_keys:
-        - ctrl+shift+v
-        - alt+shift+v
     - name: format_document
       description: Format document
       key: alt+shift+f,shift+alt+f,alt+shift+F,shift+alt+F,alt+F
