@@ -138,12 +138,15 @@ def app_binding_display_key(
     *,
     conflicted_triggers: set[str] | None = None,
     in_ghostty: bool = False,
+    in_wezterm: bool = False,
 ) -> str:
     conflicted_triggers = conflicted_triggers or set()
     item = _app_command_or_none(action)
     if item is None:
         return display_key(key)
-    for display_key_candidate in _item_display_keys(item, in_ghostty=in_ghostty):
+    for display_key_candidate in _item_display_keys(
+        item, in_ghostty=in_ghostty, in_wezterm=in_wezterm
+    ):
         display = display_key(display_key_candidate)
         if not _display_key_conflicted(display, conflicted_triggers):
             return display
@@ -168,12 +171,16 @@ def _help_display_key(item: dict[str, Any]) -> str:
 
 
 def _item_display_keys(
-    item: dict[str, Any], *, in_ghostty: bool = False
+    item: dict[str, Any], *, in_ghostty: bool = False, in_wezterm: bool = False
 ) -> list[str]:
     if in_ghostty:
         ghostty_display_keys = item.get("ghostty_display_keys")
         if isinstance(ghostty_display_keys, list):
             return [str(key) for key in ghostty_display_keys]
+    if in_wezterm:
+        wezterm_display_keys = item.get("wezterm_display_keys")
+        if isinstance(wezterm_display_keys, list):
+            return [str(key) for key in wezterm_display_keys]
     display_keys = item.get("display_keys")
     if isinstance(display_keys, list):
         return [str(key) for key in display_keys]
@@ -238,6 +245,11 @@ def _display_base_key(key: str) -> str:
 def running_in_ghostty(env: Mapping[str, str] | None = None) -> bool:
     env = environ if env is None else env
     return env.get("TERM_PROGRAM") == "ghostty" or env.get("TERM") == "xterm-ghostty"
+
+
+def running_in_wezterm(env: Mapping[str, str] | None = None) -> bool:
+    env = environ if env is None else env
+    return env.get("TERM_PROGRAM") == "WezTerm"
 
 
 def ghostty_conflicted_hotkey_triggers(
@@ -312,7 +324,7 @@ def _hotkey_conflict_triggers(key: str) -> set[str]:
                 "+".join("super" if part == "cmd" else part for part in parts)
             )
         }
-    if "super" in parts or "alt" in parts:
+    if "super" in parts or "alt" in parts or "ctrl" in parts or "control" in parts:
         return {_canonical_hotkey_trigger(key)}
     return set()
 
@@ -354,4 +366,59 @@ def _ghostty_config_has_conflict(config: str) -> bool:
             config,
             {"super+shift+v"},
         )
+    )
+
+
+WEZTERM_CONFIG_TIMEOUT_SECONDS = 1.0
+
+
+def wezterm_conflicted_hotkey_triggers(
+    env: Mapping[str, str] | None = None,
+    run_command: Callable[..., CompletedProcess[str]] = run,
+    find_binary: Callable[[str], str | None] = which,
+) -> set[str]:
+    env = environ if env is None else env
+    if not running_in_wezterm(env):
+        return set()
+    wezterm = find_binary("wezterm")
+    if wezterm is None:
+        # WezTerm default binds Ctrl+Shift+V to Paste, so assume conflict
+        # when we cannot inspect the config.
+        return {"ctrl+shift+v"}
+    try:
+        result = run_command(
+            [wezterm, "show-keys"],
+            stdout=PIPE,
+            stderr=PIPE,
+            text=True,
+            timeout=WEZTERM_CONFIG_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except Exception:
+        return {"ctrl+shift+v"}
+    if result.returncode != 0:
+        return {"ctrl+shift+v"}
+    if "PasteFrom" not in result.stdout:
+        return set()
+    # If show-keys still lists Ctrl+Shift+V -> Paste, it is intercepted.
+    conflicted: set[str] = set()
+    for line in result.stdout.splitlines():
+        if "PasteFrom" not in line:
+            continue
+        # WezTerm show-keys lines contain e.g. "CTRL                 V" or "SHIFT | CTRL         V"
+        # Any Paste binding involving V with CTRL+SHIFT implies conflict.
+        if "CTRL" in line and "V" in line:
+            if "SHIFT" in line or line.strip().startswith("CTRL"):
+                conflicted.add("ctrl+shift+v")
+                break
+    return conflicted
+
+
+def wezterm_markdown_preview_hotkey_conflicted(
+    env: Mapping[str, str] | None = None,
+    run_command: Callable[..., CompletedProcess[str]] = run,
+    find_binary: Callable[[str], str | None] = which,
+) -> bool:
+    return "ctrl+shift+v" in wezterm_conflicted_hotkey_triggers(
+        env, run_command, find_binary
     )

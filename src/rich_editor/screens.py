@@ -659,7 +659,18 @@ class KeysHelpScreen(_DismissOnCloseScreen, ModalScreen[None]):
                                 yield Static(display_key, classes=key_classes)
                                 yield Static(description, classes="binding-description")
                 if has_warnings:
+                    # Show a generic hint; Ghostty needs `keybind = super+shift+v=unbind`,
+                    # WezTerm needs `config.keys` DisableDefaultAssignment for Ctrl+Shift+V.
+                    legend = "⚠️ Unbind this shortcut in your terminal config to use it in Riched."
+                    if any(
+                        "super+shift+v" in t for t in self._conflicted_triggers
+                    ):
+                        legend = "⚠️ Unbind this shortcut in Ghostty config to use it in Riched."
+                    elif any(
+                        "ctrl+shift+v" in t for t in self._conflicted_triggers
+                    ):
+                        legend = "⚠️ Unbind Ctrl+Shift+V in WezTerm config (DisableDefaultAssignment) or use Alt+Shift+V."
                     yield Static(
-                        "⚠️ Unbind this shortcut in Ghostty config to use it in Riched.",
+                        legend,
                         classes="binding-legend",
                     )

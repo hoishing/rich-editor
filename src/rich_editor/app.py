@@ -42,6 +42,8 @@ from .keybindings import (
     display_key_with_symbols,
     ghostty_conflicted_hotkey_triggers,
     running_in_ghostty,
+    running_in_wezterm,
+    wezterm_conflicted_hotkey_triggers,
 )
 from .quick_open import (
     MAX_QUICK_OPEN_INDEX_FILES,
@@ -562,7 +564,15 @@ class RichedApp(App):
         self._ghostty_conflicted_hotkey_triggers = (
             ghostty_conflicted_hotkey_triggers()
         )
+        self._wezterm_conflicted_hotkey_triggers = (
+            wezterm_conflicted_hotkey_triggers()
+        )
+        self._conflicted_hotkey_triggers = (
+            self._ghostty_conflicted_hotkey_triggers
+            | self._wezterm_conflicted_hotkey_triggers
+        )
         self._in_ghostty = running_in_ghostty()
+        self._in_wezterm = running_in_wezterm()
 
     def _save_theme(self, theme: str) -> None:
         try:
@@ -625,8 +635,9 @@ class RichedApp(App):
         key = app_binding_display_key(
             binding.action,
             binding.key,
-            conflicted_triggers=self._ghostty_conflicted_hotkey_triggers,
+            conflicted_triggers=self._conflicted_hotkey_triggers,
             in_ghostty=self._in_ghostty,
+            in_wezterm=self._in_wezterm,
         )
         return display_key_with_symbols(key)
 
@@ -1345,7 +1356,7 @@ class RichedApp(App):
     def action_show_keys_popup(self) -> None:
         self.push_screen(
             KeysHelpScreen(
-                conflicted_triggers=self._ghostty_conflicted_hotkey_triggers
+                conflicted_triggers=self._conflicted_hotkey_triggers
             )
         )
 
