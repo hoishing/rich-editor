@@ -95,7 +95,7 @@ async def test_footer_hides_markdown_preview_for_ghostty_conflict() -> None:
         await pilot.pause()
         footer = app.query_one(Footer)
         labels = _footer_labels(footer)
-        assert "Toggle Markdown preview" not in labels
+        assert labels["Toggle Markdown preview"] == "⌃⇧V"
 
 
 async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
@@ -108,7 +108,7 @@ async def test_footer_hides_markdown_preview_outside_ghostty() -> None:
         labels = _footer_labels(footer)
         assert labels["Command palette"] == "F1"
         assert labels["Toggle sidebar"] == "⌘B"
-        assert "Toggle Markdown preview" not in labels
+        assert labels["Toggle Markdown preview"] == "⌃⇧V"
 
 
 async def test_footer_uses_markdown_preview_preferred_when_ghostty_unbound() -> None:

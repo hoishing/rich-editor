@@ -178,6 +178,7 @@ class RichedFooter(Footer):
                         disabled=not enabled,
                         tooltip=binding.tooltip or binding.description or tooltip,
                     )
+        yield MarkdownPreviewButton()
         yield FileTypeButton()
 
 
@@ -198,6 +199,20 @@ class FileTypeButton(Static):
     async def on_click(self, event: events.Click) -> None:
         event.stop()
         await self.run_action("app.toggle_file_type_picker")
+
+
+class MarkdownPreviewButton(Static):
+    """Footer control for toggling Markdown preview."""
+
+    can_focus = False
+
+    def __init__(self) -> None:
+        super().__init__("Preview", id="markdown-preview-button")
+        self.tooltip = "Toggle Markdown preview"
+
+    async def on_click(self, event: events.Click) -> None:
+        event.stop()
+        await self.run_action("app.toggle_markdown_preview")
 
 
 class FileTypePicker(OptionList):
@@ -477,6 +492,19 @@ class RichedApp(App):
     }
     #markdown-toc-button:hover {
         background: $foreground 10%;
+    }
+    #markdown-preview-button {
+        dock: right;
+        width: auto;
+        min-width: 10;
+        height: 1;
+        padding: 0 1;
+        content-align: center middle;
+        border-left: vkey $foreground 20%;
+        background: $footer-item-background;
+    }
+    #markdown-preview-button:hover {
+        background: $block-hover-background;
     }
     #file-type-button {
         dock: right;

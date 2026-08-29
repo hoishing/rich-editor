@@ -185,7 +185,7 @@ async def test_keys_help_includes_markdown_preview_binding() -> None:
         await pilot.pause()
 
         rows = _key_help_rows(app)
-        assert ("⌘⇧V", "Toggle Markdown preview") in rows
+        assert ("⌘⇧V / ⌃⇧V", "Toggle Markdown preview") in rows
 
 
 async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None:
@@ -202,7 +202,7 @@ async def test_keys_help_warns_for_ghostty_conflicted_markdown_preview() -> None
         await pilot.pause()
 
         rows = _key_help_rows(app)
-        assert ("⚠️ ⌘⇧V", "Toggle Markdown preview") in rows
+        assert ("⚠️ ⌘⇧V / ⌃⇧V", "Toggle Markdown preview") in rows
         assert (
             app.screen.query_one(".binding-legend", Static).content
             == "⚠️ Unbind this shortcut in Ghostty config to use it in Riched."

@@ -18,7 +18,12 @@ app:
         - ctrl+b
     - name: quick_open
       description: Quick open
-      key: cmd+p,super+p
+      key: cmd+p,super+p,ctrl+p
+      display_keys:
+        - cmd+p
+        - ctrl+p
+      ghostty_display_keys:
+        - ctrl+p
     - name: replace
       description: Replace
       key: ctrl+h
@@ -28,8 +33,13 @@ app:
       preferred_key: ctrl+n
     - name: toggle_markdown_preview
       description: Toggle Markdown preview
-      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,cmd+V,shift+cmd+V,super+V,shift+super+V,cmd+shift+V,super+shift+V
+      key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v,cmd+V,shift+cmd+V,super+V,shift+super+V,cmd+shift+V,super+shift+V,ctrl+shift+v,shift+ctrl+v,ctrl+V,shift+ctrl+V,ctrl+shift+V,shift+ctrl+V
       preferred_key: cmd+shift+v,shift+cmd+v,super+shift+v,shift+super+v
+      display_keys:
+        - cmd+shift+v
+        - ctrl+shift+v
+      ghostty_display_keys:
+        - ctrl+shift+v
     - name: format_document
       description: Format document
       key: alt+shift+f,shift+alt+f,alt+shift+F,shift+alt+F,alt+F
