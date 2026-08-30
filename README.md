@@ -41,6 +41,7 @@ Terminal Editor with VS Code Keybindings Powered by [Rich](https://github.com/Te
 - project sidebar with create, rename, quick refresh, and move-to-trash support
 - quick file open with fuzzy search
 - in-terminal Markdown preview with table of contents toggle
+- mouse select-to-copy in the source editor and Markdown preview
 - document formatting through external formatter CLIs
 - multiple built-in theme(atom, drcula, nordic ...etc)
 - syntax highlighting for major file formats with manual file type override
@@ -123,6 +124,8 @@ Riched persists the selected Textual theme in `settings.yaml` under the user con
 ## Markdown Preview
 
 Use `⌘⇧V` (`⌃⇧V` if Ghostty still owns `⌘⇧V`), the `Preview` button in the footer, or `F1` → `Toggle Markdown preview` to toggle an in-terminal rendered preview for Markdown files. The preview uses the current editor buffer, so unsaved edits are shown without writing them to disk.
+
+Drag to select text in the preview to copy the rendered text to the clipboard. The same select-to-copy behavior works in the source editor.
 
 When Markdown preview is open, the header shows a `☰` button on the right. Click it to show or hide the Markdown table of contents. The button is hidden while editing the text buffer.
 

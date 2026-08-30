@@ -669,6 +669,27 @@ class RichedApp(App):
         previews = list(self.query("#markdown-preview"))
         return previews[0] if previews else None
 
+    def _copy_preview_selection(self) -> None:
+        preview = self._markdown_preview_or_none()
+        if preview is None:
+            return
+        selected = self.screen.get_selected_text()
+        if not selected:
+            return
+        in_preview = any(
+            preview in widget.ancestors_with_self for widget in self.screen.selections
+        )
+        if not in_preview:
+            return
+        self.copy_to_clipboard(selected)
+
+    def on_text_selected(self, event: events.TextSelected) -> None:
+        self._copy_preview_selection()
+
+    def on_click(self, event: events.Click) -> None:
+        if event.chain >= 2:
+            self._copy_preview_selection()
+
     def _sidebar(self) -> DirectoryTree:
         return self.query_one("#sidebar", DirectoryTree)
 

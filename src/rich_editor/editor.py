@@ -53,7 +53,14 @@ class _FormattingApp(Protocol):
 class RichedTextArea(TextArea):
     """TextArea with VS Code-style line-edit shortcuts."""
 
+    ALLOW_SELECT = False
     BINDINGS = build_static_bindings("editor")
+
+    def _end_mouse_selection(self) -> None:
+        was_selecting = self._selecting
+        super()._end_mouse_selection()
+        if was_selecting and self.selected_text:
+            self.app.copy_to_clipboard(self.selected_text)
 
     async def _on_key(self, event: events.Key) -> None:
         if event.key == "escape":
