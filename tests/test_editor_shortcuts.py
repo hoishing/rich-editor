@@ -87,22 +87,6 @@ async def test_copy_line_shortcuts() -> None:
         )
 
 
-async def test_insert_line_aliases() -> None:
-    cases = (
-        (("cmd+enter", "super+enter"), (0, 2)),
-        (("cmd+shift+enter", "super+shift+enter"), (1, 2)),
-    )
-    for keys, cursor in cases:
-        for key in keys:
-            await _run_editor_case(
-                key=key,
-                content="aaa\nbbb",
-                cursor=cursor,
-                expected_text="aaa\n\nbbb",
-                expected_cursor=(1, 0),
-            )
-
-
 async def test_indent_and_outdent_aliases() -> None:
     cases = (
         (

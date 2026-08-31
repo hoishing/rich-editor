@@ -66,16 +66,6 @@ editor:
     action: copy_line_down
     description: Copy line down
     show: false
-  - key: cmd+enter,super+enter
-    preferred_key: cmd+enter,super+enter
-    action: insert_line_below
-    description: Insert line below
-    show: false
-  - key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter
-    preferred_key: cmd+shift+enter,shift+cmd+enter,super+shift+enter,shift+super+enter
-    action: insert_line_above
-    description: Insert line above
-    show: false
   - key: cmd+],super+],cmd+right_square_bracket,super+right_square_bracket
     preferred_key: cmd+],super+]
     action: indent_line

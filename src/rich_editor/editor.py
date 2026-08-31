@@ -158,22 +158,6 @@ class RichedTextArea(TextArea):
             self.insert(line + "\n", (row, 0), maintain_selection_offset=False)
             self.move_cursor((row, col))
 
-    def action_insert_line_below(self) -> None:
-        self._insert_blank_line(1)
-
-    def action_insert_line_above(self) -> None:
-        self._insert_blank_line(-1)
-
-    def _insert_blank_line(self, direction: int) -> None:
-        row, _col = self.cursor_location
-        if direction > 0:
-            line = self.document.get_line(row)
-            self.insert("\n", (row, len(line)), maintain_selection_offset=False)
-            self.move_cursor((row + 1, 0))
-        else:
-            self.insert("\n", (row, 0), maintain_selection_offset=False)
-            self.move_cursor((row, 0))
-
     def action_indent_line(self) -> None:
         self._shift_target_line_indent(2)
 

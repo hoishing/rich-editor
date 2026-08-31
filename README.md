@@ -88,8 +88,6 @@ Editor shortcuts:
 | `⌥↓`         | Move line down       |
 | `⌥⇧↑`        | Copy line up         |
 | `⌥⇧↓`        | Copy line down       |
-| `⌘Enter`     | Insert line below    |
-| `⌘⇧Enter`    | Insert line above    |
 | `⌘]`         | Indent line          |
 | `⌘[`         | Outdent line         |
 | `⌥⌫`         | Delete word left     |
@@ -189,7 +187,7 @@ On stock Ghostty, `⌘⌫` is delivered to terminal apps as `⌃U`, so Riched bi
 
 ### Ghostty hotkey conflicts
 
-- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘⇧V`, `⌘Enter`, `⌘⇧Enter`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
+- some hotkeys are bound by Ghostty by default. eg. `⌘Z`, `⌘⇧Z`, `⌘⇧V`, `⌘[`, `⌘]`, `⌘W`, `⌘Q`...etc
 - Riched detects conflicted shortcuts at startup.
 - Conflicted shortcuts are hidden from the footer until they are unbound in Ghostty config, unless the command has another available alternative.
 - The key bindings popup marks conflicted shortcuts with `⚠️` and shows a Ghostty config reminder.
@@ -209,8 +207,6 @@ Add one `keybind = <trigger>=unbind` line per conflicted shortcut you want to us
 ```conf
 keybind = super+[=unbind
 keybind = super+]=unbind
-keybind = super+enter=unbind
-keybind = super+shift+enter=unbind
 keybind = super+z=unbind
 keybind = super+shift+z=unbind
 keybind = super+shift+v=unbind

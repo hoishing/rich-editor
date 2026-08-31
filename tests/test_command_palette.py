@@ -159,8 +159,6 @@ async def test_keys_help_includes_command_palette_binding() -> None:
 
         rows = _key_help_rows(app)
         assert ("F1", "Command palette") in rows
-        assert ("⌘Enter", "Insert line below") in rows
-        assert ("⌘⇧Enter", "Insert line above") in rows
         assert ("⌘]", "Indent line") in rows
         assert ("⌘[", "Outdent line") in rows
         assert ("⌥⇧F", "Format document") in rows
