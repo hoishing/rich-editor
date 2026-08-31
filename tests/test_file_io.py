@@ -43,11 +43,12 @@ async def test_open_directory_starts_with_no_buffer() -> None:
 
 
 async def test_save_writes_file() -> None:
-    _, f, app = _file_app("out.txt")
-    async with app.run_test() as pilot:
-        await pilot.pause()
-        _editor(app).load_text("typed content")
-        await pilot.pause()
-        await pilot.press("cmd+s")
-        await pilot.pause()
-    assert f.read_text() == "typed content"
+    for key in ("cmd+s", "super+s", "ctrl+s"):
+        _, f, app = _file_app("out.txt")
+        async with app.run_test() as pilot:
+            await pilot.pause()
+            _editor(app).load_text(f"typed content {key}")
+            await pilot.pause()
+            await pilot.press(key)
+            await pilot.pause()
+        assert f.read_text() == f"typed content {key}", key

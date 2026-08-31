@@ -70,7 +70,7 @@ App shortcuts:
 
 | Shortcut      | Action                  |
 | ------------- | ----------------------- |
-| `⌘S`          | Save                    |
+| `⌘S` / `⌃S`   | Save                    |
 | `F1`          | Command palette         |
 | `⌘B` / `⌃B`   | Toggle sidebar          |
 | `⌘P`          | Quick open              |

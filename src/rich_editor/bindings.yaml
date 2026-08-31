@@ -2,7 +2,10 @@ app:
   commands:
     - name: save
       description: Save
-      key: cmd+s,super+s
+      key: cmd+s,super+s,ctrl+s
+      display_keys:
+        - cmd+s
+        - ctrl+s
     - name: command_palette
       description: Command palette
       key: f1
